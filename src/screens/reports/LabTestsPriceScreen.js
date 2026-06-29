@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  Dimensions, Platform, StatusBar, ImageBackground,
+  Dimensions, Platform, StatusBar,
   SafeAreaView, TextInput, ScrollView
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { COLORS, SIZES, SHADOWS } from '../../theme';
 
 const { width, height } = Dimensions.get('window');
 
@@ -67,13 +68,13 @@ const LabTestsPriceScreen = ({ navigation }) => {
 
   const getCategoryColor = (category) => {
     const colors = {
-      'Hematology': '#EF4444',
-      'Biochemistry': '#10B981',
-      'Microbiology': '#8B5CF6',
-      'Immunology': '#F59E0B',
-      'Urinalysis': '#06B6D4',
+      'Hematology': COLORS.danger,
+      'Biochemistry': COLORS.success,
+      'Microbiology': COLORS.appointment,
+      'Immunology': COLORS.warning,
+      'Urinalysis': COLORS.info,
     };
-    return colors[category] || '#04e1f5';
+    return colors[category] || COLORS.primary;
   };
 
   const totalTests = tests.length;
@@ -104,15 +105,12 @@ const LabTestsPriceScreen = ({ navigation }) => {
   );
 
   const renderTestItem = ({ item }) => (
-    <TouchableOpacity style={styles.testCard} activeOpacity={0.85}>
-      <LinearGradient
-        colors={['rgba(0, 0, 0, 0.55)', 'rgba(0, 0, 0, 0.45)']}
-        style={styles.cardGradient}
-      >
+    <TouchableOpacity style={[styles.testCard, styles.cardShadow]} activeOpacity={0.85}>
+      <View style={styles.cardContent}>
         <View style={styles.testInfo}>
           <View style={styles.testHeader}>
             <Text style={styles.testName}>{item.name}</Text>
-            <View style={[styles.categoryBadge, { backgroundColor: getCategoryColor(item.category) + '20' }]}>
+            <View style={[styles.categoryBadge, { backgroundColor: getCategoryColor(item.category) + '15' }]}>
               <Text style={[styles.categoryText, { color: getCategoryColor(item.category) }]}>
                 {item.category}
               </Text>
@@ -121,7 +119,7 @@ const LabTestsPriceScreen = ({ navigation }) => {
           <Text style={styles.testDescription}>{item.description}</Text>
           <View style={styles.testMeta}>
             <View style={styles.metaItem}>
-              <Ionicons name="time-outline" size={wp(3)} color="#64748B" />
+              <Ionicons name="time-outline" size={wp(2.5)} color={COLORS.textSecondary} />
               <Text style={styles.metaText}>Turnaround: {item.turnaround}</Text>
             </View>
           </View>
@@ -132,7 +130,7 @@ const LabTestsPriceScreen = ({ navigation }) => {
             <Text style={styles.bookBtnText}>Book</Text>
           </TouchableOpacity>
         </View>
-      </LinearGradient>
+      </View>
     </TouchableOpacity>
   );
 
@@ -140,145 +138,156 @@ const LabTestsPriceScreen = ({ navigation }) => {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
       
-      <ImageBackground
-        source={{ uri: 'https://i.pinimg.com/736x/3d/01/5f/3d015f0c3c861532da0215caa8207a15.jpg' }}
-        style={styles.backgroundImage}
-        resizeMode="cover"
-      >
-        <View style={styles.overlay}>
-          <SafeAreaView style={styles.safeArea}>
-            <ScrollView 
-              style={styles.mainScroll}
-              contentContainerStyle={styles.scrollContent}
-              showsVerticalScrollIndicator={false}
-            >
-              {/* Header */}
-              <LinearGradient
-                colors={['rgba(0, 29, 61, 0.95)', 'rgba(0, 8, 20, 0.85)']}
-                style={styles.headerGradient}
-              >
-                <View style={styles.topHeader}>
-                  <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.goBack()}>
-                    <Ionicons name="chevron-back" size={wp(6)} color="#04e1f5" />
-                  </TouchableOpacity>
-                  <Text style={styles.headerTitle}>Lab Test Prices</Text>
-                  <View style={{ width: wp(10) }} />
-                </View>
+      <LinearGradient
+        colors={[COLORS.primary, COLORS.secondary, COLORS.background]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 0.25 }}
+        style={styles.gradientBackground}
+      />
 
-                {/* Search Bar */}
-                <View style={styles.searchContainer}>
-                  <Ionicons name="search" size={wp(5)} color="#04e1f5" />
-                  <TextInput 
-                    style={styles.searchInput}
-                    placeholder="Search by test name..."
-                    placeholderTextColor="#94A3B8"
-                    value={searchQuery}
-                    onChangeText={setSearchQuery}
-                  />
-                  {searchQuery.length > 0 && (
-                    <TouchableOpacity onPress={() => setSearchQuery('')}>
-                      <Ionicons name="close-circle" size={wp(4.5)} color="#64748B" />
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </LinearGradient>
+      <SafeAreaView style={styles.safeArea}>
+        <ScrollView 
+          style={styles.mainScroll}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Header */}
+          <View style={styles.headerContainer}>
+            <View style={styles.topHeader}>
+              <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+                <Ionicons name="arrow-back" size={wp(5.5)} color={COLORS.white} />
+              </TouchableOpacity>
+              <Text style={styles.headerTitle}>Lab Test Prices</Text>
+              <View style={{ width: wp(10) }} />
+            </View>
 
-              {/* Stats Banner */}
-              <View style={styles.statsBanner}>
-                <View style={styles.statItem}>
-                  <Ionicons name="flask" size={wp(4.5)} color="#10B981" />
-                  <View>
-                    <Text style={styles.statValue}>{totalTests}</Text>
-                    <Text style={styles.statLabel}>Total Tests</Text>
-                  </View>
-                </View>
-                <View style={styles.statDivider} />
-                <View style={styles.statItem}>
-                  <Ionicons name="cash" size={wp(4.5)} color="#F59E0B" />
-                  <View>
-                    <Text style={styles.statValue}>Rs. {avgPrice.toLocaleString()}</Text>
-                    <Text style={styles.statLabel}>Average Price</Text>
-                  </View>
-                </View>
-                <View style={styles.statDivider} />
-                <View style={styles.statItem}>
-                  <Ionicons name="time" size={wp(4.5)} color="#04e1f5" />
-                  <View>
-                    <Text style={styles.statValue}>24-48h</Text>
-                    <Text style={styles.statLabel}>Results Time</Text>
-                  </View>
-                </View>
-              </View>
-
-              {/* Category Filter */}
-              <CategoryFilter />
-
-              {/* Tests List */}
-              <FlatList
-                data={filteredTests}
-                keyExtractor={item => item.id}
-                renderItem={renderTestItem}
-                scrollEnabled={false}
-                contentContainerStyle={styles.listContent}
-                ListEmptyComponent={
-                  <View style={styles.emptyState}>
-                    <Ionicons name="search-outline" size={wp(15)} color="#4B5563" />
-                    <Text style={styles.emptyTitle}>No Tests Found</Text>
-                    <Text style={styles.emptySubtitle}>Try adjusting your search or filter</Text>
-                  </View>
-                }
+            {/* Search Bar */}
+            <View style={styles.searchContainer}>
+              <Ionicons name="search-outline" size={wp(4.5)} color={COLORS.textSecondary} />
+              <TextInput 
+                style={styles.searchInput}
+                placeholder="Search by test name..."
+                placeholderTextColor={COLORS.textLight}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
               />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setSearchQuery('')}>
+                  <Ionicons name="close-circle" size={wp(4)} color={COLORS.textSecondary} />
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
 
-              {/* Info Note */}
-              <View style={styles.infoNote}>
-                <Ionicons name="information-circle" size={wp(4.5)} color="#04e1f5" />
-                <Text style={styles.infoText}>
-                  Home sample collection available for selected tests. Additional charges may apply.
-                </Text>
+          {/* Stats Banner */}
+          <View style={[styles.statsBanner, styles.cardShadow]}>
+            <View style={styles.statItem}>
+              <Ionicons name="flask-outline" size={wp(4)} color={COLORS.success} />
+              <View>
+                <Text style={styles.statValue}>{totalTests}</Text>
+                <Text style={styles.statLabel}>Total Tests</Text>
               </View>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Ionicons name="cash-outline" size={wp(4)} color={COLORS.warning} />
+              <View>
+                <Text style={styles.statValue}>Rs. {avgPrice.toLocaleString()}</Text>
+                <Text style={styles.statLabel}>Average Price</Text>
+              </View>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Ionicons name="time-outline" size={wp(4)} color={COLORS.primary} />
+              <View>
+                <Text style={styles.statValue}>24-48h</Text>
+                <Text style={styles.statLabel}>Results Time</Text>
+              </View>
+            </View>
+          </View>
 
-              <View style={{ height: hp(5) }} />
-            </ScrollView>
-          </SafeAreaView>
-        </View>
-      </ImageBackground>
+          {/* Category Filter */}
+          <CategoryFilter />
+
+          {/* Tests List */}
+          <FlatList
+            data={filteredTests}
+            keyExtractor={item => item.id}
+            renderItem={renderTestItem}
+            scrollEnabled={false}
+            contentContainerStyle={styles.listContent}
+            ListEmptyComponent={
+              <View style={styles.emptyState}>
+                <Ionicons name="search-outline" size={wp(12)} color={COLORS.border} />
+                <Text style={styles.emptyTitle}>No Tests Found</Text>
+                <Text style={styles.emptySubtitle}>Try adjusting your search or filter</Text>
+              </View>
+            }
+          />
+
+          {/* Info Note */}
+          <View style={styles.infoNote}>
+            <Ionicons name="information-circle" size={wp(4)} color={COLORS.primary} />
+            <Text style={styles.infoText}>
+              Home sample collection available for selected tests. Additional charges may apply.
+            </Text>
+          </View>
+
+          <View style={{ height: hp(5) }} />
+        </ScrollView>
+      </SafeAreaView>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  backgroundImage: { flex: 1 },
-  overlay: { flex: 1, backgroundColor: 'rgba(13, 6, 73, 0.38)' },
-  safeArea: { flex: 1 },
-  mainScroll: { flex: 1 },
-  scrollContent: { paddingBottom: hp(5) },
+  container: { 
+    flex: 1, 
+    backgroundColor: COLORS.background 
+  },
+  gradientBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '100%',
+  },
+  safeArea: { 
+    flex: 1 
+  },
+  mainScroll: { 
+    flex: 1 
+  },
+  scrollContent: { 
+    paddingBottom: hp(5) 
+  },
 
-  headerGradient: {
-    paddingTop: Platform.OS === 'ios' ? hp(2) : StatusBar.currentHeight + hp(2),
-    paddingBottom: hp(2.5),
-    borderBottomLeftRadius: wp(6),
-    borderBottomRightRadius: wp(6),
+  cardShadow: { ...SHADOWS.medium },
+
+  // Header
+  headerContainer: {
+    paddingBottom: hp(1),
   },
   topHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: wp(5),
-    paddingTop: hp(1),
+    paddingTop: Platform.OS === 'ios' ? hp(1) : StatusBar.currentHeight + hp(1),
+    paddingBottom: hp(1.5),
   },
-  iconBtn: {
+  backBtn: {
     width: wp(10),
     height: wp(10),
     borderRadius: wp(3),
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    backgroundColor: 'rgba(255,255,255,0.15)',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(4, 225, 245, 0.3)',
+    borderColor: 'rgba(255,255,255,0.2)',
   },
   headerTitle: { 
-    color: '#fff', 
+    color: COLORS.white, 
     fontSize: wp(5), 
     fontWeight: 'bold',
   },
@@ -286,33 +295,34 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    backgroundColor: COLORS.white,
     marginHorizontal: wp(5),
-    marginTop: hp(2),
-    paddingHorizontal: wp(4),
-    borderRadius: wp(6),
+    marginTop: hp(1.5),
+    paddingHorizontal: wp(3.5),
+    borderRadius: wp(3.5),
     borderWidth: 1,
-    borderColor: 'rgba(4, 225, 245, 0.3)',
-    gap: wp(2.5),
+    borderColor: COLORS.border,
+    gap: wp(2),
+    ...SHADOWS.small,
   },
   searchInput: { 
     flex: 1, 
-    color: '#fff', 
+    color: COLORS.text, 
     fontSize: wp(3.5), 
-    paddingVertical: hp(1.5),
+    paddingVertical: hp(1.2),
   },
 
   statsBanner: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     marginHorizontal: wp(4),
-    marginTop: hp(2),
+    marginTop: hp(1.5),
     marginBottom: hp(1),
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    backgroundColor: COLORS.white,
     borderRadius: wp(4),
     paddingVertical: hp(1.2),
     borderWidth: 1,
-    borderColor: 'rgba(4, 225, 245, 0.15)',
+    borderColor: COLORS.border,
   },
   statItem: {
     flexDirection: 'row',
@@ -320,18 +330,18 @@ const styles = StyleSheet.create({
     gap: wp(2),
   },
   statValue: {
-    color: '#fff',
+    color: COLORS.text,
     fontSize: wp(3.8),
     fontWeight: 'bold',
   },
   statLabel: {
-    color: '#94A3B8',
+    color: COLORS.textSecondary,
     fontSize: wp(2.5),
   },
   statDivider: {
     width: 1,
     height: hp(3),
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: COLORS.border,
   },
 
   filterContainer: {
@@ -340,41 +350,43 @@ const styles = StyleSheet.create({
   },
   filterScroll: {
     paddingHorizontal: wp(4),
-    gap: wp(2.5),
+    gap: wp(2),
   },
   filterChip: {
     paddingHorizontal: wp(4),
-    paddingVertical: hp(1),
+    paddingVertical: hp(0.8),
     borderRadius: wp(5),
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    backgroundColor: COLORS.white,
     borderWidth: 1,
-    borderColor: 'rgba(4, 225, 245, 0.3)',
+    borderColor: COLORS.border,
+    ...SHADOWS.small,
   },
   filterChipActive: {
-    backgroundColor: '#04e1f5',
-    borderColor: '#04e1f5',
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
   },
   filterText: {
-    color: '#04e1f5',
-    fontSize: wp(3.2),
-    fontWeight: '600',
+    color: COLORS.textSecondary,
+    fontSize: wp(3),
+    fontWeight: '500',
   },
   filterTextActive: {
-    color: '#fff',
+    color: COLORS.white,
   },
 
   listContent: {
     padding: wp(4),
-    gap: hp(1.2),
+    gap: hp(1),
   },
 
   testCard: {
     borderRadius: wp(4),
     overflow: 'hidden',
+    backgroundColor: COLORS.white,
     borderWidth: 1,
-    borderColor: 'rgba(4, 225, 245, 0.15)',
+    borderColor: COLORS.border,
   },
-  cardGradient: {
+  cardContent: {
     flexDirection: 'row',
     padding: wp(3.5),
     gap: wp(2),
@@ -384,24 +396,24 @@ const styles = StyleSheet.create({
 
   testInfo: {
     flex: 1,
-    gap: hp(0.5),
+    gap: hp(0.3),
   },
   testHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     flexWrap: 'wrap',
-    gap: wp(1.5),
+    gap: wp(1),
   },
   testName: {
-    color: '#fff',
+    color: COLORS.text,
     fontSize: wp(3.8),
     fontWeight: 'bold',
     flex: 1,
   },
   categoryBadge: {
     paddingHorizontal: wp(2),
-    paddingVertical: hp(0.3),
+    paddingVertical: hp(0.2),
     borderRadius: wp(2),
   },
   categoryText: {
@@ -409,13 +421,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   testDescription: {
-    color: '#94A3B8',
+    color: COLORS.textSecondary,
     fontSize: wp(2.8),
   },
   testMeta: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: hp(0.3),
+    marginTop: hp(0.2),
   },
   metaItem: {
     flexDirection: 'row',
@@ -423,27 +435,27 @@ const styles = StyleSheet.create({
     gap: wp(1),
   },
   metaText: {
-    color: '#64748B',
+    color: COLORS.textSecondary,
     fontSize: wp(2.5),
   },
 
   priceSection: {
     alignItems: 'flex-end',
-    gap: hp(0.8),
+    gap: hp(0.5),
   },
   price: {
-    color: '#04e1f5',
+    color: COLORS.primary,
     fontSize: wp(4),
     fontWeight: 'bold',
   },
   bookBtn: {
-    backgroundColor: '#04e1f5',
+    backgroundColor: COLORS.primary,
     paddingHorizontal: wp(3),
-    paddingVertical: hp(0.5),
+    paddingVertical: hp(0.4),
     borderRadius: wp(2),
   },
   bookBtnText: {
-    color: '#000',
+    color: COLORS.white,
     fontSize: wp(2.5),
     fontWeight: 'bold',
   },
@@ -451,16 +463,16 @@ const styles = StyleSheet.create({
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: hp(10),
+    paddingVertical: hp(8),
   },
   emptyTitle: {
-    color: '#9CA3AF',
+    color: COLORS.text,
     fontSize: wp(4),
     fontWeight: 'bold',
     marginTop: hp(2),
   },
   emptySubtitle: {
-    color: '#6B7280',
+    color: COLORS.textSecondary,
     fontSize: wp(3.2),
     marginTop: hp(1),
   },
@@ -471,14 +483,14 @@ const styles = StyleSheet.create({
     marginHorizontal: wp(4),
     marginTop: hp(1),
     padding: wp(3),
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    backgroundColor: COLORS.primary + '10',
     borderRadius: wp(3),
     gap: wp(2),
     borderWidth: 1,
-    borderColor: 'rgba(4, 225, 245, 0.15)',
+    borderColor: COLORS.primary + '20',
   },
   infoText: {
-    color: '#94A3B8',
+    color: COLORS.textSecondary,
     fontSize: wp(2.8),
     flex: 1,
   },

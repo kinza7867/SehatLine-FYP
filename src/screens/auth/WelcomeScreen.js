@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   Image,
-  ImageBackground,
   TouchableOpacity,
   Dimensions,
   SafeAreaView,
@@ -22,13 +21,9 @@ import Animated, {
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { COLORS, SIZES, SHADOWS } from '../../theme';
 
 const { width } = Dimensions.get('window');
-
-const BRAND = '#04e1f5';
-const BRAND_DEEP = '#06a5f5';
-const DARK_BG = '#0A1520';
-
 
 const WelcomeScreen = ({ navigation }) => {
   // Gentle animation values
@@ -98,11 +93,12 @@ const WelcomeScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-      <ImageBackground
-        source={{ uri: 'https://i.pinimg.com/736x/3d/01/5f/3d015f0c3c861532da0215caa8207a15.jpg' }}
-        style={styles.backgroundImage}
-        resizeMode="cover"
+      <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
+      <LinearGradient
+        colors={[COLORS.primary, COLORS.background, COLORS.background]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.gradientBackground}
       >
         <SafeAreaView style={styles.content}>
           {/* CENTER — LOGO + TITLE */}
@@ -112,7 +108,7 @@ const WelcomeScreen = ({ navigation }) => {
               <Animated.View style={[styles.halo, animatedHaloStyle]} />
               <Animated.View style={[styles.logoOuterRing, animatedLogoStyle]}>
                 <LinearGradient
-                  colors={[BRAND, BRAND_DEEP]}
+                  colors={[COLORS.primary, COLORS.secondary]}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={styles.logoGradientRing}
@@ -143,7 +139,7 @@ const WelcomeScreen = ({ navigation }) => {
           {/* BOTTOM — CDA + BUTTON */}
           <View style={styles.bottomSection}>
             <Animated.View style={[styles.cdaBadge, animatedCdaStyle]}>
-              <Ionicons name="ribbon-outline" size={14} color={BRAND} />
+              <Ionicons name="ribbon-outline" size={SIZES.iconSmall} color={COLORS.primary} />
               <Text style={styles.cdaText}>
                 In association with{' '}
                 <Text style={styles.cdaHighlight}>CDA Hospital, Islamabad</Text>
@@ -157,7 +153,7 @@ const WelcomeScreen = ({ navigation }) => {
                 onPress={() => navigation.replace('Login')}
               >
                 <LinearGradient
-                  colors={[BRAND, BRAND_DEEP]}
+                  colors={[COLORS.primary, COLORS.secondary]}
                   start={{ x: 1, y: 0 }}
                   end={{ x: 0, y: 0 }}
                   style={styles.button}
@@ -165,9 +161,9 @@ const WelcomeScreen = ({ navigation }) => {
                   <Text style={styles.buttonText}>Get Started</Text>
                   <Ionicons
                     name="arrow-forward"
-                    size={18}
-                    color="#FFFFFF"
-                    style={{ marginLeft: 10 }}
+                    size={SIZES.iconMedium}
+                    color={COLORS.white}
+                    style={{ marginLeft: SIZES.sm }}
                   />
                 </LinearGradient>
               </TouchableOpacity>
@@ -176,7 +172,7 @@ const WelcomeScreen = ({ navigation }) => {
             </Animated.View>
           </View>
         </SafeAreaView>
-      </ImageBackground>
+      </LinearGradient>
     </View>
   );
 };
@@ -184,16 +180,16 @@ const WelcomeScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: DARK_BG,
+    backgroundColor: COLORS.background,
   },
-  backgroundImage: {
+  gradientBackground: {
     flex: 1,
   },
   content: {
     flex: 1,
     justifyContent: 'space-between',
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight + 10 : 10,
-    paddingHorizontal: 24,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight + SIZES.xs : SIZES.xs,
+    paddingHorizontal: SIZES.xl,
   },
 
   /* CENTER — LOGO + TITLE */
@@ -216,7 +212,7 @@ const styles = StyleSheet.create({
     height: 180,
     borderRadius: 90,
     borderWidth: 2,
-    borderColor: BRAND,
+    borderColor: COLORS.primary,
   },
   halo: {
     position: 'absolute',
@@ -224,7 +220,7 @@ const styles = StyleSheet.create({
     height: 150,
     borderRadius: 75,
     borderWidth: 1,
-    borderColor: BRAND,
+    borderColor: COLORS.primary,
   },
   logoOuterRing: {
     width: 124,
@@ -232,7 +228,7 @@ const styles = StyleSheet.create({
     borderRadius: 62,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: BRAND,
+    shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.55,
     shadowRadius: 18,
@@ -250,12 +246,11 @@ const styles = StyleSheet.create({
     width: 118,
     height: 118,
     borderRadius: 59,
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.background,
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
   },
-  // Logo image now fills the white circle so there's no big empty space around it
   logoImage: {
     width: 118,
     height: 118,
@@ -265,45 +260,45 @@ const styles = StyleSheet.create({
   /* TITLE */
   titleGroup: {
     alignItems: 'center',
-    marginTop: 28,
+    marginTop: SIZES.xxl,
   },
   title: {
-    color: BRAND,
-    fontSize: 38,
+    color: COLORS.primary,
+    fontSize: SIZES.h1 + 10,
     fontWeight: '900',
     letterSpacing: 4,
-    textShadowColor: 'rgba(0, 0, 0, 0.45)',
+    textShadowColor: COLORS.shadowDark,
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 8,
   },
   titleWhite: {
-    color: '#FFFFFF',
-    fontWeight: '900',
+    color: COLORS.text,
+    fontWeight: '800',
   },
   dividerLine: {
     width: 50,
     height: 3,
-    backgroundColor: BRAND,
-    borderRadius: 2,
-    marginVertical: 12,
+    backgroundColor: COLORS.primary,
+    borderRadius: SIZES.radiusSm,
+    marginVertical: SIZES.md,
   },
   subtitle: {
-    color: '#FFFFFF',
-    fontSize: 14,
+    color: COLORS.secondary,
+    fontSize: SIZES.body,
     letterSpacing: 1,
     fontWeight: '700',
-    textShadowColor: 'rgba(0,0,0,0.5)',
+    textShadowColor: COLORS.shadowDark,
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
   },
   description: {
-    color: '#e8f7f9',
-    fontSize: 12.5,
+    color: COLORS.accent,
+    fontSize: SIZES.small + 0.5,
     textAlign: 'center',
     lineHeight: 18,
-    marginTop: 8,
-    paddingHorizontal: 30,
-    textShadowColor: 'rgba(0,0,0,0.45)',
+    marginTop: SIZES.sm,
+    paddingHorizontal: SIZES.xxl + 6,
+    textShadowColor: COLORS.shadowDark,
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
   },
@@ -311,27 +306,27 @@ const styles = StyleSheet.create({
   /* BOTTOM */
   bottomSection: {
     alignItems: 'center',
-    paddingBottom: Platform.OS === 'ios' ? 30 : 22,
+    paddingBottom: Platform.OS === 'ios' ? SIZES.xxl + 6 : SIZES.xl + 2,
   },
   cdaBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: 'rgba(10, 21, 32, 0.55)',
+    paddingHorizontal: SIZES.md,
+    paddingVertical: SIZES.sm,
+    borderRadius: SIZES.radiusXl,
+    backgroundColor: 'rgba(115, 170, 184, 0.63)',
     borderWidth: 1,
-    borderColor: 'rgba(4, 225, 245, 0.4)',
-    marginBottom: 22,
+    borderColor: COLORS.primary + '66',
+    marginBottom: SIZES.xl + 2,
   },
   cdaText: {
-    color: '#FFFFFF',
-    fontSize: 11.5,
-    marginLeft: 8,
+    color: COLORS.white,
+    fontSize: SIZES.small - 0.5,
+    marginLeft: SIZES.sm,
     fontWeight: '500',
   },
   cdaHighlight: {
-    color: BRAND,
+    color: COLORS.secondary,
     fontWeight: '800',
   },
   buttonWrap: {
@@ -340,32 +335,32 @@ const styles = StyleSheet.create({
   },
   buttonShadow: {
     width: '100%',
-    shadowColor: BRAND,
+    shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.45,
     shadowRadius: 14,
     elevation: 10,
-    borderRadius: 30,
+    borderRadius: SIZES.radiusXl + 6,
   },
   button: {
     flexDirection: 'row',
-    paddingVertical: 16,
-    borderRadius: 30,
+    paddingVertical: SIZES.lg,
+    borderRadius: SIZES.radiusXl + 6,
     justifyContent: 'center',
     alignItems: 'center',
   },
   buttonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
+    color: COLORS.white,
+    fontSize: SIZES.h4,
     fontWeight: '800',
     letterSpacing: 1.2,
   },
   versionText: {
-    marginTop: 14,
-    color: '#cfeef3',
-    fontSize: 10,
+    marginTop: SIZES.md,
+    color: COLORS.accent,
+    fontSize: SIZES.xSmall,
     letterSpacing: 1,
-    textShadowColor: 'rgba(0,0,0,0.4)',
+    textShadowColor: COLORS.shadowDark,
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
   },

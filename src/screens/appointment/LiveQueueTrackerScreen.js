@@ -1,8 +1,22 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, Platform } from 'react-native';
+import { 
+  View, Text, StyleSheet, ScrollView, SafeAreaView, 
+  Platform, TouchableOpacity, Dimensions, StatusBar 
+} from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withTiming, interpolate } from 'react-native-reanimated';
+import Animated, { 
+  useSharedValue, 
+  useAnimatedStyle, 
+  withRepeat, 
+  withTiming, 
+  interpolate 
+} from 'react-native-reanimated';
+import { COLORS, SIZES, SHADOWS } from '../../theme';
+
+const { width, height } = Dimensions.get('window');
+const wp = (percentage) => (width * percentage) / 100;
+const hp = (percentage) => (height * percentage) / 100;
 
 const QueueTrackerScreen = ({ navigation }) => {
   const pulse = useSharedValue(1);
@@ -17,154 +31,443 @@ const QueueTrackerScreen = ({ navigation }) => {
   }));
 
   return (
-    <SafeAreaView style={styles.container}>
-      <LinearGradient colors={['#000033', '#000022']} style={StyleSheet.absoluteFill} />
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
       
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Ionicons name="arrow-back" size={28} color="#00EAFF" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>LIVE QUEUE</Text>
-          <Ionicons name="notifications-outline" size={24} color="#00EAFF" />
-        </View>
+      <LinearGradient
+        colors={[COLORS.primary, COLORS.secondary, COLORS.background]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 0.7 }}
+        style={styles.gradientBackground}
+      />
 
-        {/* 🏥 Doctor Info Card */}
-        <View style={styles.doctorBrief}>
-          <Text style={styles.docName}>Dr. Sarah Ahmed</Text>
-          <Text style={styles.deptText}>Cardiology Dept | Room 402</Text>
-        </View>
-
-        {/* 🔢 Main Queue Display */}
-        <View style={styles.mainDisplay}>
-          <Animated.View style={[styles.pulseCircle, animatedPulse]} />
-          <View style={styles.tokenCircle}>
-            <Text style={styles.tokenLabel}>YOUR TOKEN</Text>
-            <Text style={styles.tokenNumber}>A-12</Text>
+      <SafeAreaView style={styles.safeArea}>
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+              <Ionicons name="arrow-back" size={24} color={COLORS.white} />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>LIVE QUEUE</Text>
+            <TouchableOpacity style={styles.notifBtn}>
+              <Ionicons name="notifications-outline" size={24} color={COLORS.white} />
+              <View style={styles.badgeDot} />
+            </TouchableOpacity>
           </View>
-        </View>
 
-        {/* 📊 Status Stats */}
-        <View style={styles.statsRow}>
-          <StatBox label="Ahead of You" value="04" icon="people" color="#00EAFF" />
-          <StatBox label="Est. Wait" value="25m" icon="time" color="#FFD700" />
-        </View>
-
-        {/* 🕒 Timeline of Current Progress */}
-        <View style={styles.timelineSection}>
-          <Text style={styles.sectionTitle}>Queue Progress</Text>
-          
-          <TimelineItem 
-            token="A-09" status="Currently with Doctor" 
-            isCurrent={true} isDone={false} 
-          />
-          <TimelineItem 
-            token="A-10" status="At the Door" 
-            isCurrent={false} isDone={false} 
-          />
-          <TimelineItem 
-            token="A-11" status="Waiting" 
-            isCurrent={false} isDone={false} 
-          />
-          <View style={styles.yourTurnMarker}>
-            <Text style={styles.yourTurnText}>YOUR TURN NEXT</Text>
+          {/* 🏥 Doctor Info Card */}
+          <View style={[styles.doctorBrief, styles.cardShadow]}>
+            <LinearGradient
+              colors={[COLORS.white, COLORS.backgroundSecondary]}
+              style={styles.doctorCard}
+            >
+              <View style={styles.doctorAvatar}>
+                <Text style={styles.doctorAvatarText}>DS</Text>
+              </View>
+              <View>
+                <Text style={styles.docName}>Dr. Sarah Ahmed</Text>
+                <Text style={styles.deptText}>Cardiology Dept | Room 402</Text>
+              </View>
+            </LinearGradient>
           </View>
-        </View>
 
-      </ScrollView>
-    </SafeAreaView>
+          {/* 🔢 Main Queue Display */}
+          <View style={styles.mainDisplay}>
+            <Animated.View style={[styles.pulseCircle, animatedPulse]} />
+            <View style={styles.tokenCircle}>
+              <Text style={styles.tokenLabel}>YOUR TOKEN</Text>
+              <Text style={styles.tokenNumber}>A-12</Text>
+              <Text style={styles.tokenStatus}>In Progress</Text>
+            </View>
+          </View>
+
+          {/* 📊 Status Stats */}
+          <View style={styles.statsRow}>
+            <View style={[styles.statBox, styles.cardShadow]}>
+              <Ionicons name="people-outline" size={22} color={COLORS.primary} />
+              <Text style={styles.statValue}>04</Text>
+              <Text style={styles.statLabel}>Ahead of You</Text>
+            </View>
+            <View style={[styles.statBox, styles.cardShadow]}>
+              <Ionicons name="time-outline" size={22} color={COLORS.warning} />
+              <Text style={styles.statValue}>25m</Text>
+              <Text style={styles.statLabel}>Est. Wait</Text>
+            </View>
+          </View>
+
+          {/* 🕒 Timeline of Current Progress */}
+          <View style={styles.timelineSection}>
+            <Text style={styles.sectionTitle}>Queue Progress</Text>
+            
+            <TimelineItem 
+              token="A-09" 
+              status="Currently with Doctor" 
+              isCurrent={true} 
+              isDone={false} 
+            />
+            <TimelineItem 
+              token="A-10" 
+              status="At the Door" 
+              isCurrent={false} 
+              isDone={false} 
+            />
+            <TimelineItem 
+              token="A-11" 
+              status="Waiting" 
+              isCurrent={false} 
+              isDone={false} 
+            />
+            
+            <View style={styles.yourTurnMarker}>
+              <LinearGradient 
+                colors={[COLORS.primary, COLORS.secondary]} 
+                style={styles.yourTurnGradient}
+              >
+                <Text style={styles.yourTurnText}>YOUR TURN NEXT</Text>
+                <Ionicons name="arrow-forward" size={18} color={COLORS.white} />
+              </LinearGradient>
+            </View>
+          </View>
+
+          {/* Footer */}
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>SehatLine v2.0</Text>
+            <Text style={styles.footerSub}>Live Queue Tracking</Text>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </View>
   );
 };
 
 // --- Helper Components ---
 
-const StatBox = ({ label, value, icon, color }) => (
-  <View style={styles.statBox}>
-    <Ionicons name={icon} size={20} color={color} />
-    <Text style={styles.statValue}>{value}</Text>
-    <Text style={styles.statLabel}>{label}</Text>
-  </View>
-);
-
 const TimelineItem = ({ token, status, isCurrent, isDone }) => (
   <View style={styles.timelineItem}>
     <View style={styles.timelineLeft}>
       <View style={[styles.dot, isCurrent && styles.activeDot]} />
-      <View style={styles.line} />
+      {!isCurrent && <View style={styles.line} />}
     </View>
-    <View style={[styles.timelineCard, isCurrent && styles.activeCard]}>
+    <View style={[styles.timelineCard, isCurrent && styles.activeCard, styles.cardShadow]}>
       <Text style={[styles.timelineToken, isCurrent && styles.activeText]}>{token}</Text>
       <Text style={[styles.timelineStatus, isCurrent && styles.activeText]}>{status}</Text>
+      {isCurrent && (
+        <View style={styles.liveBadge}>
+          <View style={styles.liveDot} />
+          <Text style={styles.liveText}>LIVE</Text>
+        </View>
+      )}
     </View>
   </View>
 );
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000033' },
-  scrollContent: { padding: 20 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  headerTitle: { color: '#FFF', fontSize: 18, fontWeight: '900', letterSpacing: 2 },
-  
-  doctorBrief: { alignItems: 'center', marginBottom: 30 },
-  docName: { color: '#FFF', fontSize: 22, fontWeight: 'bold' },
-  deptText: { color: '#00EAFF', fontSize: 13, opacity: 0.8 },
-
-  mainDisplay: { alignItems: 'center', justifyContent: 'center', height: 250 },
-  pulseCircle: {
-    position: 'absolute',
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    backgroundColor: 'rgba(0, 234, 255, 0.2)',
+  container: { 
+    flex: 1, 
+    backgroundColor: COLORS.background 
   },
-  tokenCircle: {
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    backgroundColor: '#00EAFF',
+  gradientBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '100%',
+  },
+  safeArea: { 
+    flex: 1 
+  },
+  scrollContent: { 
+    padding: wp(5), 
+    paddingBottom: hp(4) 
+  },
+
+  // Card Shadow
+  cardShadow: { ...SHADOWS.medium },
+
+  // Header
+  header: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    marginBottom: hp(2) 
+  },
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.15)',
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 20,
-    shadowColor: '#00EAFF',
-    shadowOpacity: 0.5,
-    shadowRadius: 15,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
   },
-  tokenLabel: { color: '#000033', fontSize: 12, fontWeight: '900', opacity: 0.6 },
-  tokenNumber: { color: '#000033', fontSize: 52, fontWeight: '900' },
+  headerTitle: { 
+    color: COLORS.white, 
+    fontSize: wp(4.5), 
+    fontWeight: '900', 
+    letterSpacing: 2 
+  },
+  notifBtn: {
+    position: 'relative',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  badgeDot: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.danger,
+    borderWidth: 1.5,
+    borderColor: COLORS.white,
+  },
 
-  statsRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 20 },
+  // Doctor Card
+  doctorBrief: { 
+    marginBottom: hp(2) 
+  },
+  doctorCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: wp(4),
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    gap: wp(3),
+  },
+  doctorAvatar: {
+    width: wp(12),
+    height: wp(12),
+    borderRadius: wp(6),
+    backgroundColor: COLORS.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  doctorAvatarText: {
+    color: COLORS.white,
+    fontSize: wp(4),
+    fontWeight: 'bold',
+  },
+  docName: { 
+    color: COLORS.text, 
+    fontSize: wp(4.5), 
+    fontWeight: 'bold' 
+  },
+  deptText: { 
+    color: COLORS.textSecondary, 
+    fontSize: wp(3), 
+    marginTop: hp(0.2) 
+  },
+
+  // Main Display
+  mainDisplay: { 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    height: hp(28),
+    marginBottom: hp(1),
+  },
+  pulseCircle: {
+    position: 'absolute',
+    width: wp(45),
+    height: wp(45),
+    borderRadius: wp(22.5),
+    backgroundColor: COLORS.primary + '30',
+  },
+  tokenCircle: {
+    width: wp(40),
+    height: wp(40),
+    borderRadius: wp(20),
+    backgroundColor: COLORS.white,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...SHADOWS.large,
+    borderWidth: 2,
+    borderColor: COLORS.primary + '40',
+  },
+  tokenLabel: { 
+    color: COLORS.textSecondary, 
+    fontSize: wp(2.8), 
+    fontWeight: '900', 
+    opacity: 0.6,
+    letterSpacing: 1,
+  },
+  tokenNumber: { 
+    color: COLORS.primary, 
+    fontSize: wp(12), 
+    fontWeight: '900' 
+  },
+  tokenStatus: {
+    color: COLORS.textSecondary,
+    fontSize: wp(2.8),
+    fontWeight: '500',
+    marginTop: hp(0.2),
+  },
+
+  // Stats Row
+  statsRow: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    marginTop: hp(1),
+    marginBottom: hp(2),
+  },
   statBox: { 
-    width: '47%', backgroundColor: 'rgba(255,255,255,0.05)', 
-    padding: 15, borderRadius: 15, alignItems: 'center',
-    borderWidth: 1, borderColor: 'rgba(0, 234, 255, 0.1)'
+    width: '48%',
+    backgroundColor: COLORS.white,
+    padding: wp(3.5),
+    borderRadius: 16,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
-  statValue: { color: '#FFF', fontSize: 24, fontWeight: 'bold', marginVertical: 5 },
-  statLabel: { color: 'rgba(255,255,255,0.5)', fontSize: 12 },
+  statValue: { 
+    color: COLORS.text, 
+    fontSize: wp(6), 
+    fontWeight: 'bold', 
+    marginVertical: hp(0.3) 
+  },
+  statLabel: { 
+    color: COLORS.textSecondary, 
+    fontSize: wp(3) 
+  },
 
-  timelineSection: { marginTop: 40 },
-  sectionTitle: { color: '#00EAFF', fontSize: 16, fontWeight: 'bold', marginBottom: 20 },
+  // Timeline Section
+  timelineSection: { 
+    marginTop: hp(2) 
+  },
+  sectionTitle: { 
+    color: COLORS.text, 
+    fontSize: wp(4.5), 
+    fontWeight: 'bold', 
+    marginBottom: hp(1.5) 
+  },
   
-  timelineItem: { flexDirection: 'row', height: 70 },
-  timelineLeft: { alignItems: 'center', width: 30 },
-  dot: { width: 10, height: 10, borderRadius: 5, backgroundColor: 'rgba(255,255,255,0.2)' },
-  activeDot: { backgroundColor: '#00EAFF', width: 14, height: 14, borderRadius: 7 },
-  line: { width: 2, flex: 1, backgroundColor: 'rgba(255,255,255,0.1)' },
+  timelineItem: { 
+    flexDirection: 'row', 
+    height: hp(8) 
+  },
+  timelineLeft: { 
+    alignItems: 'center', 
+    width: wp(8) 
+  },
+  dot: { 
+    width: wp(2.5), 
+    height: wp(2.5), 
+    borderRadius: wp(1.25), 
+    backgroundColor: COLORS.border 
+  },
+  activeDot: { 
+    backgroundColor: COLORS.primary, 
+    width: wp(3.5), 
+    height: wp(3.5), 
+    borderRadius: wp(1.75),
+    ...SHADOWS.small,
+  },
+  line: { 
+    width: 2, 
+    flex: 1, 
+    backgroundColor: COLORS.border 
+  },
   
   timelineCard: { 
-    flex: 1, marginLeft: 15, backgroundColor: 'rgba(255,255,255,0.03)', 
-    borderRadius: 12, paddingHorizontal: 15, justifyContent: 'center', height: 55 
+    flex: 1, 
+    marginLeft: wp(3.5), 
+    backgroundColor: COLORS.white,
+    borderRadius: 12, 
+    paddingHorizontal: wp(3.5), 
+    justifyContent: 'center', 
+    height: hp(6.5),
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    position: 'relative',
   },
-  activeCard: { backgroundColor: 'rgba(0, 234, 255, 0.1)', borderWidth: 1, borderColor: 'rgba(0, 234, 255, 0.3)' },
-  timelineToken: { color: '#FFF', fontWeight: 'bold', fontSize: 16 },
-  timelineStatus: { color: 'rgba(255,255,255,0.5)', fontSize: 12 },
-  activeText: { color: '#00EAFF' },
+  activeCard: { 
+    borderColor: COLORS.primary,
+    borderWidth: 2,
+  },
+  timelineToken: { 
+    color: COLORS.text, 
+    fontWeight: 'bold', 
+    fontSize: wp(4) 
+  },
+  timelineStatus: { 
+    color: COLORS.textSecondary, 
+    fontSize: wp(2.8),
+    marginTop: hp(0.1),
+  },
+  activeText: { 
+    color: COLORS.primary 
+  },
+
+  liveBadge: {
+    position: 'absolute',
+    top: hp(0.5),
+    right: wp(2),
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: COLORS.danger + '20',
+    paddingHorizontal: wp(1.5),
+    paddingVertical: hp(0.2),
+    borderRadius: 8,
+  },
+  liveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: COLORS.danger,
+  },
+  liveText: {
+    color: COLORS.danger,
+    fontSize: wp(2),
+    fontWeight: '700',
+  },
 
   yourTurnMarker: { 
-    backgroundColor: '#00EAFF', padding: 10, borderRadius: 10, 
-    alignSelf: 'center', marginTop: 10, width: '100%', alignItems: 'center' 
+    marginTop: hp(1.5),
+    borderRadius: 12,
+    overflow: 'hidden',
+    ...SHADOWS.medium,
   },
-  yourTurnText: { color: '#000', fontWeight: '900', letterSpacing: 1 }
+  yourTurnGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: hp(1.2),
+    gap: 10,
+  },
+  yourTurnText: { 
+    color: COLORS.white, 
+    fontWeight: '900', 
+    letterSpacing: 1,
+    fontSize: wp(3.5),
+  },
+
+  // Footer
+  footer: {
+    marginTop: hp(3),
+    paddingVertical: hp(1.5),
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  footerText: {
+    color: COLORS.primary,
+    fontSize: wp(3.2),
+    fontWeight: '700',
+  },
+  footerSub: {
+    color: COLORS.textSecondary,
+    fontSize: wp(2.5),
+    marginTop: hp(0.2),
+  },
 });
 
 export default QueueTrackerScreen;

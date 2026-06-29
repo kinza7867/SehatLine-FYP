@@ -2,34 +2,50 @@ import React, { useState, useRef, useEffect } from 'react';
 import { 
   View, Text, TextInput, TouchableOpacity, StyleSheet, 
   Image, ActivityIndicator, Platform, Dimensions,
-  KeyboardAvoidingView, Modal, StatusBar, ImageBackground,
+  KeyboardAvoidingView, StatusBar,
   ScrollView, TouchableWithoutFeedback, Keyboard, Animated
 } from 'react-native';
-import Ionicons from 'react-native-vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { COLORS, SIZES, SHADOWS, FONTS } from '../../theme';
 
 const { width, height } = Dimensions.get('window');
 
 // Custom Toast Notification Component
 const ToastNotification = ({ visible, message, type, onHide }) => {
   const translateY = useRef(new Animated.Value(-100)).current;
+  const opacity = useRef(new Animated.Value(0)).current;
   
   useEffect(() => {
     if (visible) {
-      Animated.spring(translateY, {
-        toValue: 0,
-        useNativeDriver: true,
-        speed: 12,
-        bounciness: 8,
-      }).start();
-      
-      setTimeout(() => {
-        Animated.timing(translateY, {
-          toValue: -100,
+      Animated.parallel([
+        Animated.spring(translateY, {
+          toValue: 0,
+          useNativeDriver: true,
+          speed: 12,
+          bounciness: 8,
+        }),
+        Animated.timing(opacity, {
+          toValue: 1,
           duration: 300,
           useNativeDriver: true,
-        }).start(() => onHide());
+        })
+      ]).start();
+      
+      setTimeout(() => {
+        Animated.parallel([
+          Animated.timing(translateY, {
+            toValue: -100,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+          Animated.timing(opacity, {
+            toValue: 0,
+            duration: 300,
+            useNativeDriver: true,
+          })
+        ]).start(() => onHide());
       }, 3000);
     }
   }, [visible]);
@@ -38,31 +54,31 @@ const ToastNotification = ({ visible, message, type, onHide }) => {
     switch(type) {
       case 'success':
         return {
-          backgroundColor: 'rgba(0, 255, 136, 0.95)',
+          backgroundColor: COLORS.success,
           icon: 'checkmark-circle',
-          textColor: '#004D26',
-          borderColor: '#00FF88',
+          textColor: COLORS.white,
+          borderColor: COLORS.success,
         };
       case 'error':
         return {
-          backgroundColor: 'rgba(255, 77, 77, 0.95)',
+          backgroundColor: COLORS.danger,
           icon: 'close-circle',
-          textColor: '#FFFFFF',
-          borderColor: '#FF4D4D',
+          textColor: COLORS.white,
+          borderColor: COLORS.danger,
         };
       case 'warning':
         return {
-          backgroundColor: 'rgba(255, 184, 0, 0.95)',
+          backgroundColor: COLORS.warning,
           icon: 'warning',
-          textColor: '#332200',
-          borderColor: '#FFB800',
+          textColor: COLORS.white,
+          borderColor: COLORS.warning,
         };
       default:
         return {
-          backgroundColor: 'rgba(4, 225, 245, 0.95)',
+          backgroundColor: COLORS.primary,
           icon: 'information-circle',
-          textColor: '#003344',
-          borderColor: '#04e1f5',
+          textColor: COLORS.white,
+          borderColor: COLORS.primary,
         };
     }
   };
@@ -76,6 +92,7 @@ const ToastNotification = ({ visible, message, type, onHide }) => {
       styles.toastContainer,
       {
         transform: [{ translateY }],
+        opacity: opacity,
         backgroundColor: toastStyle.backgroundColor,
         borderLeftColor: toastStyle.borderColor,
       }
@@ -89,197 +106,351 @@ const ToastNotification = ({ visible, message, type, onHide }) => {
 };
 
 const LoginScreen = ({ navigation }) => {
-  const [email, setEmail] = useState('');
+  const [emailOrPhone, setEmailOrPhone] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [showRoleModal, setShowRoleModal] = useState(false);
-  const [selectedRole, setSelectedRole] = useState('patient');
   const [errors, setErrors] = useState({});
   const [toast, setToast] = useState({ visible: false, message: '', type: '' });
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   
   const passwordInputRef = useRef(null);
+
+  // 🔥 FIX: Reset form when screen comes into focus (after logout)
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      // Reset all fields
+      setEmailOrPhone('');
+      setPassword('');
+      setShowPassword(false);
+      setErrors({});
+      setToast({ visible: false, message: '', type: '' });
+    });
+
+    return unsubscribe;
+  }, [navigation]);
+
+  // Detect role from email
+  const detectRole = (email) => {
+    if (!email) return 'patient';
+    
+    const emailLower = email.toLowerCase();
+    
+    // Admin detection
+    if (emailLower.includes('admin') || 
+        emailLower.includes('administrator') ||
+        emailLower.includes('manager')) {
+      return 'admin';
+    }
+    
+    // Doctor detection
+    if (emailLower.includes('doctor') || 
+        emailLower.includes('dr.') ||
+        emailLower.includes('physician')) {
+      return 'doctor';
+    }
+    
+    return 'patient';
+  };
 
   const roleConfig = {
     patient: {
       name: 'Patient',
       icon: 'person-outline',
-      color: '#04e1f5',
-      bgColor: 'rgba(4, 225, 245, 0.1)',
+      color: COLORS.primary,
+      bgColor: COLORS.primary + '15',
       navigateTo: 'PatientPortal',
-      gradientColors: ['#04e1f5', '#0284c7'],
+      gradientColors: [COLORS.primary, COLORS.secondary],
+      requiresSignup: true,
     },
     doctor: {
       name: 'Doctor',
       icon: 'medkit-outline',
-      color: '#FFB800',
-      bgColor: 'rgba(255, 184, 0, 0.1)',
+      color: COLORS.warning,
+      bgColor: COLORS.warning + '15',
       navigateTo: 'ManageDoctorsScreen',
-      gradientColors: ['#FFB800', '#FF9500'],
+      gradientColors: [COLORS.warning, '#F59E0B'],
+      requiresSignup: false,
     },
     admin: {
       name: 'Admin',
       icon: 'shield-checkmark-outline',
-      color: '#A855F7',
-      bgColor: 'rgba(168, 85, 247, 0.1)',
+      color: COLORS.appointment,
+      bgColor: COLORS.appointment + '15',
       navigateTo: 'AdminDashboardScreen',
-      gradientColors: ['#A855F7', '#7C3AED'],
+      gradientColors: [COLORS.appointment, '#7C3AED'],
+      requiresSignup: false,
     }
   };
 
-  const currentRole = roleConfig[selectedRole];
-
-  // Show Toast Notification
   const showToast = (message, type) => {
     setToast({ visible: true, message, type });
   };
 
-  // Strong Password Validation
-  const validateEmail = (email) => {
+  const validateEmailOrPhone = (value) => {
+    if (!value) return 'Email or Phone is required';
+    
+    // Check if it's an email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!email) return 'Email is required';
-    if (!emailRegex.test(email)) return 'Enter a valid email (e.g., name@example.com)';
-    return '';
+    if (emailRegex.test(value)) return '';
+    
+    // Check if it's a phone number (basic validation)
+    const phoneRegex = /^[0-9+\-\s()]{7,15}$/;
+    if (phoneRegex.test(value)) return '';
+    
+    return 'Enter a valid email or phone number';
   };
 
   const validatePassword = (password) => {
     if (!password) return 'Password is required';
-    if (password.length < 8) return 'Password must be at least 8 characters';
-    
-    const hasUpperCase = /[A-Z]/.test(password);
-    const hasLowerCase = /[a-z]/.test(password);
-    const hasNumbers = /\d/.test(password);
-    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-    
-    if (!hasUpperCase) return 'Password must contain at least one uppercase letter';
-    if (!hasLowerCase) return 'Password must contain at least one lowercase letter';
-    if (!hasNumbers) return 'Password must contain at least one number';
-    if (!hasSpecialChar) return 'Password must contain at least one special character (!@#$%^&*)';
-    
     return '';
   };
 
-  const getPasswordStrength = () => {
-    if (!password) return null;
-    
-    let strength = 0;
-    if (password.length >= 8) strength++;
-    if (/[A-Z]/.test(password)) strength++;
-    if (/[a-z]/.test(password)) strength++;
-    if (/\d/.test(password)) strength++;
-    if (/[!@#$%^&*(),.?":{}|<>]/.test(password)) strength++;
-    
-    if (strength <= 2) return { text: 'Weak', color: '#FF4D4D' };
-    if (strength <= 3) return { text: 'Medium', color: '#FFB800' };
-    if (strength <= 4) return { text: 'Strong', color: '#04e1f5' };
-    return { text: 'Very Strong', color: '#00FF88' };
+  // Check if user account exists in AsyncStorage
+  const checkUserAccount = async (emailOrPhone) => {
+    try {
+      const userDataString = await AsyncStorage.getItem('userData');
+      if (userDataString) {
+        const userData = JSON.parse(userDataString);
+        if (userData.email && userData.email.toLowerCase() === emailOrPhone.toLowerCase()) {
+          return true;
+        }
+        if (userData.phone && userData.phone === emailOrPhone) {
+          return true;
+        }
+      }
+      
+      const registeredUsersString = await AsyncStorage.getItem('registeredUsers');
+      if (registeredUsersString) {
+        const registeredUsers = JSON.parse(registeredUsersString);
+        return registeredUsers.some(user => 
+          user.email.toLowerCase() === emailOrPhone.toLowerCase() ||
+          user.phone === emailOrPhone
+        );
+      }
+      
+      return false;
+    } catch (error) {
+      return false;
+    }
   };
 
-  const handleLogin = () => {
-  const emailError = validateEmail(email);
-  const passwordError = validatePassword(password);
-  
-  setErrors({ email: emailError, password: passwordError });
-  
-  if (!emailError && !passwordError) {
-    setLoading(true);
-    setTimeout(async () => {
-      setLoading(false);
+  // Get user data by email or phone
+  const getUserData = async (emailOrPhone) => {
+    try {
+      // First check registered users
+      const registeredUsersString = await AsyncStorage.getItem('registeredUsers');
+      if (registeredUsersString) {
+        const registeredUsers = JSON.parse(registeredUsersString);
+        const user = registeredUsers.find(u => 
+          u.email.toLowerCase() === emailOrPhone.toLowerCase() ||
+          u.phone === emailOrPhone
+        );
+        if (user) return user;
+      }
       
-      // Extract name from email (before @) or you can add a name field in your form
-      const userName = email.split('@')[0]; // This takes "john" from "john@example.com"
-      
-      // Save user data to storage for profile screen
-      await saveUserData(userName, email, '', selectedRole);
-      
-      showToast(`Welcome ${currentRole.name}! Login Successful`, 'success');
-      setTimeout(() => {
-        // Pass user data to next screen
-        navigation.replace(currentRole.navigateTo, {
-          userData: {
-            name: userName,
-            email: email,
-            phone: '',
-            role: selectedRole,
-            joinDate: new Date().toLocaleDateString(),
-          }
-        });
-      }, 1500);
-    }, 1500);
-  } else {
-    if (emailError) showToast(emailError, 'error');
-    else if (passwordError) showToast(passwordError, 'error');
-  }
-};
-
-  const handleFingerprintLogin = () => {
-  showToast(`Authenticating as ${currentRole.name}...`, 'info');
-  setTimeout(async () => {
-    setLoading(true);
-    setTimeout(async () => {
-      setLoading(false);
-      
-      // For fingerprint, use a demo name or get from somewhere
-      const demoName = `${currentRole.name}User`;
-      const demoEmail = `${currentRole.name}@example.com`;
-      
-      await saveUserData(demoName, demoEmail, '', selectedRole);
-      
-      showToast(`Welcome ${currentRole.name}! Biometric Login Successful`, 'success');
-      setTimeout(() => {
-        navigation.replace(currentRole.navigateTo, {
-          userData: {
-            name: demoName,
-            email: demoEmail,
-            phone: '',
-            role: selectedRole,
-            joinDate: new Date().toLocaleDateString(),
-          }
-        });
-      }, 1500);
-    }, 1500);
-  }, 500);
-};
-
-  // Save user data to storage for profile screen
-    const saveUserData = async (name, email, phone, role) => {
-      try {
-        const userData = {
-          name: name,
-          email: email,
-          phone: phone,
-          role: role,
+      // If not found, check if it's a doctor or admin (pre-defined)
+      const emailLower = emailOrPhone.toLowerCase();
+      if (emailLower.includes('doctor') || emailLower.includes('dr.')) {
+        return {
+          name: emailOrPhone.split('@')[0] || 'Doctor',
+          email: emailOrPhone,
+          phone: '',
+          role: 'doctor',
           joinDate: new Date().toLocaleDateString(),
         };
-        await AsyncStorage.setItem('userData', JSON.stringify(userData));
-        console.log('User data saved:', userData);
-      } catch (error) {
-        console.log('Error saving user data:', error);
       }
-    };
-
-  const handleRoleSelect = (role) => {
-    setSelectedRole(role);
-    setShowRoleModal(false);
-    setEmail('');
-    setPassword('');
-    setErrors({});
-    showToast(`Switched to ${roleConfig[role].name} mode`, 'info');
+      if (emailLower.includes('admin') || emailLower.includes('administrator') || emailLower.includes('manager')) {
+        return {
+          name: 'Administrator',
+          email: emailOrPhone,
+          phone: '',
+          role: 'admin',
+          joinDate: new Date().toLocaleDateString(),
+        };
+      }
+      
+      return null;
+    } catch (error) {
+      return null;
+    }
   };
 
-  const passwordStrength = getPasswordStrength();
+  // Save user to registered users list
+  const saveUserToRegistered = async (userData) => {
+    try {
+      let registeredUsers = [];
+      const existing = await AsyncStorage.getItem('registeredUsers');
+      if (existing) {
+        registeredUsers = JSON.parse(existing);
+      }
+      
+      const exists = registeredUsers.some(u => u.email.toLowerCase() === userData.email.toLowerCase());
+      if (!exists) {
+        registeredUsers.push(userData);
+        await AsyncStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
+      }
+    } catch (error) {
+      // Silent fail
+    }
+  };
+
+  const handleLogin = async () => {
+    const emailOrPhoneError = validateEmailOrPhone(emailOrPhone);
+    const passwordError = validatePassword(password);
+    
+    setErrors({ emailOrPhone: emailOrPhoneError, password: passwordError });
+    
+    if (!emailOrPhoneError && !passwordError) {
+      setLoading(true);
+      
+      const isEmail = emailOrPhone.includes('@');
+      const loginValue = isEmail ? emailOrPhone : emailOrPhone;
+      
+      // Find user in registered users or detect role
+      let user = await getUserData(loginValue);
+      
+      if (!user) {
+        setLoading(false);
+        showToast('No account found. Please sign up first.', 'warning');
+        setTimeout(() => {
+          navigation.navigate('Signup');
+        }, 1500);
+        return;
+      }
+      
+      // If user has no role, detect it from email
+      if (!user.role) {
+        user.role = detectRole(user.email);
+      }
+      
+      const detectedRole = user.role || detectRole(user.email);
+      const currentRole = roleConfig[detectedRole] || roleConfig.patient;
+      
+      // For patients, check if they have signed up
+      if (detectedRole === 'patient' && currentRole.requiresSignup) {
+        const accountExists = await checkUserAccount(loginValue);
+        if (!accountExists) {
+          setLoading(false);
+          showToast('No patient account found. Please sign up first.', 'warning');
+          setTimeout(() => {
+            navigation.navigate('Signup');
+          }, 1500);
+          return;
+        }
+      }
+      
+      setTimeout(async () => {
+        setLoading(false);
+        const userData = {
+          name: user.name || user.email.split('@')[0],
+          email: user.email,
+          phone: user.phone || '',
+          role: detectedRole,
+          joinDate: user.joinDate || new Date().toLocaleDateString(),
+        };
+        
+        await saveUserData(userData.name, userData.email, userData.phone, detectedRole);
+        
+        // Save to registered users if patient
+        if (detectedRole === 'patient') {
+          await saveUserToRegistered(userData);
+        }
+        
+        showToast(`Welcome ${currentRole.name}! Login Successful`, 'success');
+        setTimeout(() => {
+          navigation.replace(currentRole.navigateTo, {
+            userData: userData,
+          });
+        }, 1500);
+      }, 1500);
+    } else {
+      if (emailOrPhoneError) showToast(emailOrPhoneError, 'error');
+      else if (passwordError) showToast(passwordError, 'error');
+    }
+  };
+
+  const handleFingerprintLogin = async () => {
+    const defaultRole = 'patient';
+    const currentRole = roleConfig[defaultRole];
+    
+    showToast(`Authenticating as ${currentRole.name}...`, 'info');
+    setTimeout(async () => {
+      setLoading(true);
+      setTimeout(async () => {
+        setLoading(false);
+        const demoName = `${currentRole.name}User`;
+        const demoEmail = `${currentRole.name}@example.com`;
+        
+        const accountExists = await checkUserAccount(demoEmail);
+        if (!accountExists) {
+          showToast('No account found. Please sign up first.', 'warning');
+          setTimeout(() => {
+            navigation.navigate('Signup');
+          }, 1500);
+          return;
+        }
+        
+        await saveUserData(demoName, demoEmail, '', defaultRole);
+        showToast(`Welcome ${currentRole.name}! Biometric Login Successful`, 'success');
+        setTimeout(() => {
+          navigation.replace(currentRole.navigateTo, {
+            userData: {
+              name: demoName,
+              email: demoEmail,
+              phone: '',
+              role: defaultRole,
+              joinDate: new Date().toLocaleDateString(),
+            }
+          });
+        }, 1500);
+      }, 1500);
+    }, 500);
+  };
+
+  const saveUserData = async (name, email, phone, role) => {
+    try {
+      const userData = {
+        name: name,
+        email: email,
+        phone: phone,
+        role: role,
+        joinDate: new Date().toLocaleDateString(),
+      };
+      await AsyncStorage.setItem('userData', JSON.stringify(userData));
+    } catch (error) {
+      // Silent fail
+    }
+  };
+
+  // Keyboard listeners
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      () => setIsKeyboardVisible(true)
+    );
+    const keyboardDidHideListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => setIsKeyboardVisible(false)
+    );
+
+    return () => {
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
+    };
+  }, []);
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <View style={styles.container}>
-        <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+        <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
         
-        <ImageBackground
-          source={{ uri: 'https://i.pinimg.com/736x/3d/01/5f/3d015f0c3c861532da0215caa8207a15.jpg' }}
-          style={styles.backgroundImage}
-          resizeMode="cover"
+        <LinearGradient
+          colors={[COLORS.primary, COLORS.background, COLORS.background]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+          style={styles.gradientBackground}
         >
-          
           {/* Toast Notification */}
           <ToastNotification 
             visible={toast.visible}
@@ -294,32 +465,31 @@ const LoginScreen = ({ navigation }) => {
             keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
           >
             <ScrollView 
-              contentContainerStyle={styles.scrollContainer}
+              contentContainerStyle={[
+                styles.scrollContainer,
+                isKeyboardVisible && styles.scrollContainerKeyboard
+              ]}
               showsVerticalScrollIndicator={false}
               keyboardShouldPersistTaps="handled"
+              bounces={false}
             >
               
-              {/* Role Selector Button - Top Right */}
-              <View style={styles.topBar}>
-                <TouchableOpacity 
-                  style={[styles.roleSelector, { borderColor: currentRole.color }]} 
-                  onPress={() => setShowRoleModal(true)}
-                >
-                  <View style={[styles.roleSelectorBadge, { backgroundColor: currentRole.bgColor }]}>
-                    <Ionicons name={currentRole.icon} size={14} color={currentRole.color} />
-                  </View>
-                  <Text style={[styles.roleSelectorText, { color: currentRole.color }]}>
-                    {currentRole.name}
-                  </Text>
-                  <Ionicons name="chevron-down" size={16} color={currentRole.color} />
-                </TouchableOpacity>
-              </View>
-
-              {/* Logo Section - Circular Logo */}
+              {/* Logo Section with Backlight */}
               <View style={styles.logoSection}>
-                <View style={[styles.logoCircle, { borderColor: currentRole.color }]}>
+                {/* Glowing Backlight */}
+                <View style={styles.logoBacklight}>
+                  <LinearGradient
+                    colors={[COLORS.primary + '30', COLORS.primary + '10', 'transparent']}
+                    style={styles.backlightGradient}
+                    start={{ x: 0.5, y: 0 }}
+                    end={{ x: 0.5, y: 1 }}
+                  />
+                </View>
+                
+                <View style={[styles.logoCircle, { borderColor: COLORS.primary }]}>
                   <Image source={require('../../../assets/logo.png')} style={styles.logoImage} />
                 </View>
+                
                 <Text style={styles.appName}>
                   SEHAT<Text style={styles.appNameWhite}>LINE</Text>
                 </Text>
@@ -328,37 +498,37 @@ const LoginScreen = ({ navigation }) => {
 
               {/* Login Form */}
               <View style={styles.formContainer}>
-                <View style={[styles.formCard, { borderColor: `${currentRole.color}30` }]}>
+                <View style={[styles.formCard, { borderColor: COLORS.primary + '20' }]}>
                   
-                  {/* Email Input */}
+                  {/* Email/Phone Input */}
                   <View style={styles.inputGroup}>
-                    <View style={[styles.inputWrapper, errors.email && styles.inputError, { borderColor: `${currentRole.color}30` }]}>
-                      <Ionicons name="mail-outline" size={20} color={currentRole.color} />
+                    <View style={[styles.inputWrapper, errors.emailOrPhone && styles.inputError, { borderColor: COLORS.primary + '30' }]}>
+                      <Ionicons name="mail-outline" size={20} color={COLORS.primary} />
                       <TextInput
                         style={styles.input}
-                        placeholder="Email Address"
-                        placeholderTextColor="#a5a3a3"
-                        value={email}
-                        onChangeText={(text) => { setEmail(text); errors.email && setErrors({...errors, email: ''}); }}
-                        keyboardType="email-address"
+                        placeholder="Email or Phone Number"
+                        placeholderTextColor={COLORS.textLight}
+                        value={emailOrPhone}
+                        onChangeText={(text) => { setEmailOrPhone(text); errors.emailOrPhone && setErrors({...errors, emailOrPhone: ''}); }}
+                        keyboardType="default"
                         autoCapitalize="none"
                         returnKeyType="next"
                         onSubmitEditing={() => passwordInputRef.current?.focus()}
                         blurOnSubmit={false}
                       />
                     </View>
-                    {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
+                    {errors.emailOrPhone && <Text style={styles.errorText}>{errors.emailOrPhone}</Text>}
                   </View>
 
                   {/* Password Input */}
                   <View style={styles.inputGroup}>
-                    <View style={[styles.inputWrapper, errors.password && styles.inputError, { borderColor: `${currentRole.color}30` }]}>
-                      <Ionicons name="lock-closed-outline" size={20} color={currentRole.color} />
+                    <View style={[styles.inputWrapper, errors.password && styles.inputError, { borderColor: COLORS.primary + '30' }]}>
+                      <Ionicons name="lock-closed-outline" size={20} color={COLORS.primary} />
                       <TextInput
                         ref={passwordInputRef}
                         style={styles.input}
                         placeholder="Password"
-                        placeholderTextColor="#a5a3a3"
+                        placeholderTextColor={COLORS.textLight}
                         value={password}
                         onChangeText={(text) => { setPassword(text); errors.password && setErrors({...errors, password: ''}); }}
                         secureTextEntry={!showPassword}
@@ -366,30 +536,9 @@ const LoginScreen = ({ navigation }) => {
                         onSubmitEditing={handleLogin}
                       />
                       <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                        <Ionicons name={showPassword ? "eye-off" : "eye"} size={20} color="#a5a3a3" />
+                        <Ionicons name={showPassword ? "eye-off" : "eye"} size={20} color={COLORS.textLight} />
                       </TouchableOpacity>
                     </View>
-                    
-                    {/* Password Strength Indicator - Only the bar and strength text */}
-                    {password.length > 0 && !errors.password && (
-                      <View style={styles.strengthContainer}>
-                        <View style={styles.strengthBar}>
-                          <View style={[
-                            styles.strengthFill, 
-                            { 
-                              width: `${(passwordStrength?.text === 'Weak' ? 25 : 
-                                       passwordStrength?.text === 'Medium' ? 50 : 
-                                       passwordStrength?.text === 'Strong' ? 75 : 100)}%`,
-                              backgroundColor: passwordStrength?.color 
-                            }
-                          ]} />
-                        </View>
-                        <Text style={[styles.strengthText, { color: passwordStrength?.color }]}>
-                          {passwordStrength?.text} Password
-                        </Text>
-                      </View>
-                    )}
-                    
                     {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
                   </View>
 
@@ -398,13 +547,13 @@ const LoginScreen = ({ navigation }) => {
                     style={styles.forgotLink} 
                     onPress={() => navigation.navigate('ForgotPassword')}
                   >
-                    <Text style={[styles.forgotText, { color: currentRole.color }]}>Forgot Password?</Text>
+                    <Text style={[styles.forgotText, { color: COLORS.primary }]}>Forgot Password?</Text>
                   </TouchableOpacity>
 
                   {/* Login Button */}
                   <TouchableOpacity style={styles.loginButton} onPress={handleLogin} disabled={loading}>
-                    <LinearGradient colors={currentRole.gradientColors} style={styles.loginGradient}>
-                      {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.loginText}>LOGIN</Text>}
+                    <LinearGradient colors={[COLORS.primary, COLORS.secondary]} style={styles.loginGradient}>
+                      {loading ? <ActivityIndicator color={COLORS.white} /> : <Text style={styles.loginText}>LOGIN</Text>}
                     </LinearGradient>
                   </TouchableOpacity>
 
@@ -412,7 +561,7 @@ const LoginScreen = ({ navigation }) => {
                   <View style={styles.signupContainer}>
                     <Text style={styles.signupText}>Don't have an account? </Text>
                     <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
-                      <Text style={[styles.signupLink, { color: currentRole.color }]}>Sign Up</Text>
+                      <Text style={[styles.signupLink, { color: COLORS.primary }]}>Sign Up</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -420,64 +569,24 @@ const LoginScreen = ({ navigation }) => {
 
               {/* Fingerprint - Outside Container */}
               <TouchableOpacity style={styles.fingerprintContainer} onPress={handleFingerprintLogin} activeOpacity={0.7}>
-                <View style={[styles.fingerprintCircle, { borderColor: `${currentRole.color}50` }]}>
-                  <Ionicons name="finger-print" size={32} color={currentRole.color} />
+                <View style={[styles.fingerprintCircle, { borderColor: COLORS.primary + '40' }]}>
+                  <LinearGradient
+                    colors={[COLORS.primary, COLORS.secondary]}
+                    style={styles.fingerprintGradient}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                  >
+                    <Ionicons name="finger-print" size={30} color={COLORS.white} />
+                  </LinearGradient>
                 </View>
-                <Text style={[styles.fingerprintText, { color: currentRole.color }]}>Use Fingerprint</Text>
+                <Text style={[styles.fingerprintText, { color: COLORS.primary }]}>Use Fingerprint</Text>
               </TouchableOpacity>
+
+              <Text style={styles.versionText}>Version 2.0.0</Text>
 
             </ScrollView>
           </KeyboardAvoidingView>
-
-          {/* Role Selection Modal */}
-          <Modal visible={showRoleModal} transparent animationType="fade">
-            <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowRoleModal(false)}>
-              <View style={styles.modalContainer}>
-                <View style={styles.modalCard}>
-                  <View style={styles.modalHeader}>
-                    <Text style={styles.modalTitle}>Select Role</Text>
-                    <TouchableOpacity onPress={() => setShowRoleModal(false)}>
-                      <Ionicons name="close" size={24} color="#888" />
-                    </TouchableOpacity>
-                  </View>
-                  
-                  <TouchableOpacity 
-                    style={[styles.modalRoleItem, selectedRole === 'patient' && styles.modalRoleSelected]} 
-                    onPress={() => handleRoleSelect('patient')}
-                  >
-                    <View style={[styles.modalRoleIcon, { backgroundColor: roleConfig.patient.bgColor }]}>
-                      <Ionicons name="person-outline" size={22} color={roleConfig.patient.color} />
-                    </View>
-                    <Text style={styles.modalRoleName}>Patient</Text>
-                    {selectedRole === 'patient' && <Ionicons name="checkmark" size={20} color={roleConfig.patient.color} />}
-                  </TouchableOpacity>
-
-                  <TouchableOpacity 
-                    style={[styles.modalRoleItem, selectedRole === 'doctor' && styles.modalRoleSelected]} 
-                    onPress={() => handleRoleSelect('doctor')}
-                  >
-                    <View style={[styles.modalRoleIcon, { backgroundColor: roleConfig.doctor.bgColor }]}>
-                      <Ionicons name="medkit-outline" size={22} color={roleConfig.doctor.color} />
-                    </View>
-                    <Text style={styles.modalRoleName}>Doctor</Text>
-                    {selectedRole === 'doctor' && <Ionicons name="checkmark" size={20} color={roleConfig.doctor.color} />}
-                  </TouchableOpacity>
-
-                  <TouchableOpacity 
-                    style={[styles.modalRoleItem, selectedRole === 'admin' && styles.modalRoleSelected]} 
-                    onPress={() => handleRoleSelect('admin')}
-                  >
-                    <View style={[styles.modalRoleIcon, { backgroundColor: roleConfig.admin.bgColor }]}>
-                      <Ionicons name="shield-checkmark-outline" size={22} color={roleConfig.admin.color} />
-                    </View>
-                    <Text style={styles.modalRoleName}>Admin</Text>
-                    {selectedRole === 'admin' && <Ionicons name="checkmark" size={20} color={roleConfig.admin.color} />}
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </TouchableOpacity>
-          </Modal>
-        </ImageBackground>
+        </LinearGradient>
       </View>
     </TouchableWithoutFeedback>
   );
@@ -487,30 +596,34 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  backgroundImage: {
+  gradientBackground: {
     flex: 1,
   },
   scrollContainer: {
     flexGrow: 1,
-    paddingBottom: Platform.OS === 'ios' ? 40 : 20,
+    justifyContent: 'center',
+    paddingHorizontal: SIZES.xl,
+    paddingTop: Platform.OS === 'ios' ? 40 : 20,
+    paddingBottom: Platform.OS === 'ios' ? 30 : 20,
+  },
+  scrollContainerKeyboard: {
+    justifyContent: 'flex-start',
+    paddingTop: Platform.OS === 'ios' ? 20 : 10,
   },
 
-  // Toast Notification Styles
+  // Toast Notification
   toastContainer: {
     position: 'absolute',
     top: Platform.OS === 'ios' ? 50 : 30,
     left: 20,
     right: 20,
     zIndex: 1000,
-    borderRadius: 12,
+    borderRadius: 14,
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
     borderLeftWidth: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
+    ...SHADOWS.medium,
+    minHeight: 52,
   },
   toastContent: {
     flexDirection: 'row',
@@ -521,262 +634,199 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     fontWeight: '500',
+    lineHeight: 20,
   },
 
-  // Top Bar
-  topBar: {
-    alignItems: 'flex-end',
-    paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'ios' ? 55 : 25,
-  },
-  roleSelector: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(3, 4, 56, 0.99)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    borderWidth: 1,
-    gap: 6,
-  },
-  roleSelectorBadge: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  roleSelectorText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-
-  // Logo Section - Perfect Circle
+  // Logo Section with Backlight
   logoSection: {
     alignItems: 'center',
-    marginTop: 20,
-    marginBottom: 20,
+    marginBottom: height * 0.04,
+    position: 'relative',
   },
-  logoCircle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+  logoBacklight: {
+    position: 'absolute',
+    top: -20,
+    width: 200,
+    height: 150,
+    borderRadius: 100,
+    overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
-    shadowColor: '#04e1f5',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 8,
+  },
+  backlightGradient: {
+    width: '100%',
+    height: '100%',
+    opacity: 0.6,
+  },
+  logoCircle: {
+    width: width * 0.22,
+    height: width * 0.22,
+    borderRadius: width * 0.11,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2.5,
+    backgroundColor: COLORS.white,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 15,
+    elevation: 10,
+    marginBottom: 12,
+    zIndex: 1,
   },
   logoImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: width * 0.16,
+    height: width * 0.16,
+    borderRadius: width * 0.08,
     resizeMode: 'contain',
   },
   appName: {
-    fontSize: 32,
+    fontSize: width * 0.095,
     fontWeight: '900',
-    color: '#04e1f5',
-    letterSpacing: 2,
-    textShadowColor: 'rgba(0, 0, 0, 0.45)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 8,
-    marginTop: 12,
+    color: COLORS.primary,
+    letterSpacing: 1.5,
+    marginBottom: 2,
+    zIndex: 1,
   },
   appNameWhite: {
-    color: '#FFFFFF',
+    color: COLORS.text,
   },
   tagline: {
-    fontSize: 11,
-    color: '#f8fafa',
-    letterSpacing: 1,
-    marginTop: 4,
+    fontSize: width * 0.032,
+    color: COLORS.textSecondary,
+    letterSpacing: 0.5,
+    zIndex: 1,
   },
 
   // Form Container
   formContainer: {
-    paddingHorizontal: 20,
+    width: '100%',
+    maxWidth: 420,
+    alignSelf: 'center',
   },
   formCard: {
-    backgroundColor: 'rgba(2, 4, 77, 0.75)',
+    backgroundColor: COLORS.white,
     borderRadius: 20,
-    padding: 20,
-    borderWidth: 1,
+    padding: SIZES.xl,
+    borderWidth: 1.5,
+    ...SHADOWS.medium,
   },
 
   // Input Styles
   inputGroup: {
-    marginBottom: 12,
+    marginBottom: SIZES.md,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(245, 242, 242, 0.19)',
+    backgroundColor: COLORS.backgroundSecondary,
     borderRadius: 12,
-    paddingHorizontal: 15,
-    height: 50,
-    borderWidth: 1,
+    paddingHorizontal: SIZES.md,
+    height: 52,
+    borderWidth: 1.5,
     marginBottom: 4,
   },
   inputError: {
-    borderColor: '#FF4D4D',
+    borderColor: COLORS.danger,
+    borderWidth: 1.5,
   },
   input: {
     flex: 1,
-    color: '#ffffff',
+    color: COLORS.text,
     marginLeft: 12,
-    fontSize: 14,
-    paddingVertical: Platform.OS === 'ios' ? 12 : 8,
+    fontSize: SIZES.body,
+    paddingVertical: Platform.OS === 'ios' ? 14 : 8,
+    height: '100%',
   },
   errorText: {
-    color: '#FF4D4D',
-    fontSize: 11,
+    color: COLORS.danger,
+    fontSize: 12,
     marginTop: 4,
     marginLeft: 8,
-  },
-
-  // Password Strength
-  strengthContainer: {
-    marginTop: 8,
-    marginBottom: 8,
-  },
-  strengthBar: {
-    height: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
-    borderRadius: 2,
-    overflow: 'hidden',
-    marginBottom: 6,
-  },
-  strengthFill: {
-    height: '100%',
-    borderRadius: 2,
-  },
-  strengthText: {
-    fontSize: 10,
-    fontWeight: '600',
   },
 
   // Forgot Password
   forgotLink: {
     alignSelf: 'flex-end',
-    marginBottom: 20,
-    marginTop: 4,
+    marginBottom: SIZES.xl,
+    marginTop: 2,
   },
   forgotText: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: SIZES.small,
+    fontWeight: '600',
   },
 
   // Login Button
   loginButton: {
     borderRadius: 12,
     overflow: 'hidden',
-    marginBottom: 16,
+    marginBottom: SIZES.lg,
+    ...SHADOWS.button,
   },
   loginGradient: {
-    height: 50,
+    height: 52,
     justifyContent: 'center',
     alignItems: 'center',
   },
   loginText: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: 'bold',
-    letterSpacing: 1,
+    color: COLORS.white,
+    fontSize: SIZES.h4,
+    fontWeight: '700',
+    letterSpacing: 1.5,
   },
 
   // Sign Up
   signupContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
+    alignItems: 'center',
   },
   signupText: {
-    color: '#888',
-    fontSize: 13,
+    color: COLORS.textSecondary,
+    fontSize: SIZES.body,
   },
   signupLink: {
-    fontSize: 13,
-    fontWeight: 'bold',
+    fontSize: SIZES.body,
+    fontWeight: '700',
   },
 
-  // Fingerprint - Outside Container
+  // Fingerprint
   fingerprintContainer: {
     alignItems: 'center',
-    marginTop: 20,
-    marginBottom: 20,
+    marginTop: height * 0.035,
+    marginBottom: height * 0.015,
   },
   fingerprintCircle: {
-    width: 55,
-    height: 55,
-    borderRadius: 27.5,
-    borderWidth: 1.5,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(10, 21, 32, 0.5)',
-    marginBottom: 8,
+    backgroundColor: COLORS.white,
+    ...SHADOWS.small,
+    overflow: 'hidden',
+  },
+  fingerprintGradient: {
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   fingerprintText: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: SIZES.small,
+    fontWeight: '600',
+    marginTop: 8,
+    letterSpacing: 0.3,
   },
 
-  // Modal Styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.95)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContainer: {
-    width: width * 0.8,
-  },
-  modalCard: {
-    backgroundColor: '#022141',
-    borderRadius: 20,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(4, 225, 245, 0.48)',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  modalTitle: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  modalRoleItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    marginBottom: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.21)',
-  },
-  modalRoleSelected: {
-    borderWidth: 1,
-    borderColor: '#04e1f5',
-  },
-  modalRoleIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  modalRoleName: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '500',
-    flex: 1,
+  // Version
+  versionText: {
+    textAlign: 'center',
+    color: COLORS.textLight,
+    fontSize: 11,
+    marginTop: 8,
+    letterSpacing: 0.5,
   },
 });
 

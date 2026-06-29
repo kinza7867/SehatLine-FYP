@@ -2,12 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, FlatList, StyleSheet, TouchableOpacity,
   Alert, Switch, Modal, ScrollView, Animated, Dimensions,
-  ImageBackground, StatusBar, SafeAreaView, Platform,
+  StatusBar, SafeAreaView, Platform,
   Vibration, RefreshControl, TextInput
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
+import { COLORS, SIZES, SHADOWS } from '../../theme';
 
 const { width, height } = Dimensions.get('window');
 
@@ -45,100 +46,72 @@ const NotificationsScreen = ({ navigation }) => {
       actionText: 'Book Now', actionLink: 'BookAppointmentScreen'
     },
     { 
-      id: '5', title: 'Location Alert', 
-      message: 'Dr. Ahmed Khan is on the way to your location for home care service. ETA: 15 minutes.',
-      time: '30 min ago', type: 'location', read: false, timestamp: new Date().getTime() - 30*60000,
-      actionText: 'Track Location', actionLink: 'LiveTrackingScreen'
+      id: '5', title: 'Queue Update', 
+      message: 'Your position in Cardiology OPD queue has been updated. Current token: A-12.',
+      time: '30 min ago', type: 'queue', read: false, timestamp: new Date().getTime() - 30*60000,
+      actionText: 'View Queue', actionLink: 'LiveTokenQueueScreen'
     },
     { 
-      id: '6', title: 'Emergency Alert', 
-      message: 'Emergency services have been dispatched to your location. Stay calm. Help is on the way.',
-      time: '1 hour ago', type: 'emergency', read: false, timestamp: new Date().getTime() - 60*60000,
-      actionText: 'View Status', actionLink: 'EmergencyStatusScreen'
+      id: '6', title: 'Lab Report Ready', 
+      message: 'Your blood test results are now available. Please check your reports section.',
+      time: '1 hour ago', type: 'lab', read: false, timestamp: new Date().getTime() - 60*60000,
+      actionText: 'View Report', actionLink: 'ReportsListScreen'
     },
   ]);
 
   const [settings, setSettings] = useState({
-    emergencySounds: true,
-    emergencyVibration: true,
-    smartWatchAlerts: true,
-    locationTracking: true,
     soundEnabled: true,
     priorityAlerts: true,
     muteMode: false,
     previewMessages: true,
-    groupNotifications: true
+    groupNotifications: true,
+    queueUpdates: true,
+    appointmentReminders: true,
+    labReports: true,
+    medicineReminders: true,
   });
 
   const [showSettings, setShowSettings] = useState(false);
-  const [showEmergency, setShowEmergency] = useState(false);
-  const [liveLocation, setLiveLocation] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [expandedId, setExpandedId] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('all');
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
-  const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     Animated.parallel([
       Animated.timing(fadeAnim, { toValue: 1, duration: 800, useNativeDriver: true }),
       Animated.spring(scaleAnim, { toValue: 1, friction: 8, useNativeDriver: true })
     ]).start();
-    
-    // Pulsing animation for emergency button
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, { toValue: 1.1, duration: 1000, useNativeDriver: true }),
-        Animated.timing(pulseAnim, { toValue: 1, duration: 1000, useNativeDriver: true })
-      ])
-    ).start();
 
     simulateRealTimeNotifications();
-    simulateLocationTracking();
   }, []);
 
   const simulateRealTimeNotifications = () => {
     const interval = setInterval(() => {
-      const types = ['priority', 'reminder', 'location', 'tip'];
+      const types = ['queue', 'reminder', 'lab', 'tip'];
       const randomType = types[Math.floor(Math.random() * types.length)];
       const newNotification = {
         id: Date.now().toString(),
-        title: randomType === 'priority' ? 'New Priority Token' : 
+        title: randomType === 'queue' ? 'Queue Update' : 
                randomType === 'reminder' ? 'Health Reminder' :
-               randomType === 'location' ? 'Location Update' : 'Health Tip',
-        message: randomType === 'priority' ? 'Your priority token P-092 has been generated. Please proceed to the counter.' :
+               randomType === 'lab' ? 'Lab Report Ready' : 'Health Tip',
+        message: randomType === 'queue' ? 'Your queue position has been updated. Current token: A-15.' :
                   randomType === 'reminder' ? 'Don\'t forget to complete your daily health check-in.' :
-                  randomType === 'location' ? 'Your current location is being monitored for safety.' :
+                  randomType === 'lab' ? 'Your lab results are now available in the reports section.' :
                   'Stay hydrated! Drink 8 glasses of water daily for better health.',
         time: 'Just now',
         type: randomType,
         read: false,
         timestamp: new Date().getTime(),
-        actionText: randomType === 'priority' ? 'View Token' : 'Dismiss',
-        actionLink: randomType === 'priority' ? 'LiveTokenQueueScreen' : null
+        actionText: randomType === 'queue' ? 'View Queue' : 
+                    randomType === 'lab' ? 'View Report' : 'Dismiss',
+        actionLink: randomType === 'queue' ? 'LiveTokenQueueScreen' : 
+                    randomType === 'lab' ? 'ReportsListScreen' : null
       };
       setNotifications(prev => [newNotification, ...prev]);
-      
-      if (settings.emergencyVibration) {
-        Vibration.vibrate(300);
-      }
     }, 45000);
-    return () => clearInterval(interval);
-  };
-
-  const simulateLocationTracking = () => {
-    const interval = setInterval(() => {
-      if (settings.locationTracking) {
-        setLiveLocation({
-          lat: 33.6844 + (Math.random() - 0.5) * 0.005,
-          lng: 73.0479 + (Math.random() - 0.5) * 0.005,
-          timestamp: new Date().toLocaleTimeString(),
-          accuracy: 'High'
-        });
-      }
-    }, 15000);
     return () => clearInterval(interval);
   };
 
@@ -197,30 +170,6 @@ const NotificationsScreen = ({ navigation }) => {
     );
   };
 
-  const triggerEmergency = () => {
-    setShowEmergency(true);
-    if (settings.emergencyVibration) {
-      Vibration.vibrate([1000, 500, 1000, 500, 2000, 1000]);
-    }
-    
-    const emergencyNotif = {
-      id: Date.now().toString(),
-      title: 'EMERGENCY ALERT TRIGGERED',
-      message: 'Emergency services have been notified. Your live location is being shared with responders.',
-      time: 'Just now',
-      type: 'emergency',
-      read: false,
-      timestamp: new Date().getTime(),
-      actionText: 'View Status',
-      actionLink: 'EmergencyStatusScreen'
-    };
-    setNotifications(prev => [emergencyNotif, ...prev]);
-    
-    setTimeout(() => {
-      setShowEmergency(false);
-    }, 6000);
-  };
-
   const filteredNotifications = notifications.filter(notif => {
     const matchesSearch = notif.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           notif.message.toLowerCase().includes(searchQuery.toLowerCase());
@@ -233,29 +182,28 @@ const NotificationsScreen = ({ navigation }) => {
       case 'priority': return 'alert-circle';
       case 'reminder': return 'notifications';
       case 'appointment': return 'calendar';
-      case 'location': return 'location';
-      case 'emergency': return 'alert-circle';
+      case 'queue': return 'timer';
+      case 'lab': return 'flask';
       default: return 'bulb';
     }
   };
 
   const getColor = (type) => {
     switch(type) {
-      case 'priority': return '#EF4444';
-      case 'reminder': return '#F59E0B';
-      case 'appointment': return '#04e1f5';
-      case 'location': return '#3B82F6';
-      case 'emergency': return '#DC2626';
-      default: return '#10B981';
+      case 'priority': return COLORS.danger;
+      case 'reminder': return COLORS.warning;
+      case 'appointment': return COLORS.appointment;
+      case 'queue': return COLORS.primary;
+      case 'lab': return COLORS.pharmacy;
+      default: return COLORS.success;
     }
   };
 
   const getBackgroundGradient = (type, read) => {
-    if (read) return ['rgba(0, 0, 0, 0.4)', 'rgba(0, 0, 0, 0.35)'];
+    if (read) return [COLORS.backgroundSecondary, COLORS.background];
     switch(type) {
-      case 'emergency': return ['#DC262620', '#EF444410'];
-      case 'priority': return ['#EF444415', '#F59E0B10'];
-      default: return ['rgba(4, 225, 245, 0.1)', 'rgba(4, 225, 245, 0.05)'];
+      case 'priority': return [COLORS.primary + '15', COLORS.primary + '08'];
+      default: return [COLORS.primary + '10', COLORS.backgroundSecondary];
     }
   };
 
@@ -265,7 +213,8 @@ const NotificationsScreen = ({ navigation }) => {
     { id: 'priority', label: 'Priority', icon: 'alert-circle' },
     { id: 'reminder', label: 'Reminders', icon: 'notifications' },
     { id: 'appointment', label: 'Appointments', icon: 'calendar' },
-    { id: 'emergency', label: 'Emergency', icon: 'alert-circle' }
+    { id: 'queue', label: 'Queue', icon: 'timer' },
+    { id: 'lab', label: 'Lab', icon: 'flask' }
   ];
 
   const renderNotification = ({ item, index }) => {
@@ -293,15 +242,15 @@ const NotificationsScreen = ({ navigation }) => {
         >
           <LinearGradient
             colors={getBackgroundGradient(item.type, item.read)}
-            style={[styles.notificationCard, !item.read && styles.unreadBorder]}
+            style={[styles.notificationCard, styles.cardShadow, !item.read && styles.unreadBorder]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
           >
             {/* Left Section - Icon */}
             <View style={styles.iconSection}>
               <LinearGradient
-                colors={[colors + '30', colors + '10']}
-                style={[styles.iconCircle, { borderColor: colors + '50' }]}
+                colors={[colors + '20', colors + '08']}
+                style={[styles.iconCircle, { borderColor: colors + '40' }]}
               >
                 <Ionicons name={getIcon(item.type)} size={responsiveSize(iconSize)} color={colors} />
               </LinearGradient>
@@ -314,7 +263,7 @@ const NotificationsScreen = ({ navigation }) => {
                 <Text style={styles.notificationTitle} numberOfLines={isExpanded ? undefined : 1}>
                   {item.title}
                 </Text>
-                <View style={[styles.typeBadge, { backgroundColor: colors + '20' }]}>
+                <View style={[styles.typeBadge, { backgroundColor: colors + '15' }]}>
                   <Text style={[styles.typeBadgeText, { color: colors }]}>
                     {item.type.toUpperCase()}
                   </Text>
@@ -331,13 +280,13 @@ const NotificationsScreen = ({ navigation }) => {
               
               <View style={styles.metaRow}>
                 <View style={styles.timeContainer}>
-                  <Ionicons name="time-outline" size={responsiveSize(12)} color="#94A3B8" />
+                  <Ionicons name="time-outline" size={responsiveSize(12)} color={COLORS.textLight} />
                   <Text style={styles.timeText}>{item.time}</Text>
                 </View>
                 
                 {item.actionText && (
                   <TouchableOpacity 
-                    style={[styles.actionChip, { borderColor: colors + '50' }]}
+                    style={[styles.actionChip, { borderColor: colors + '40' }]}
                     onPress={() => {
                       if (item.actionLink) {
                         navigation.navigate(item.actionLink);
@@ -356,15 +305,15 @@ const NotificationsScreen = ({ navigation }) => {
                 <Animated.View style={styles.expandedContent}>
                   <View style={styles.divider} />
                   <View style={styles.detailRow}>
-                    <Ionicons name="information-circle" size={responsiveSize(14)} color="#64748B" />
+                    <Ionicons name="information-circle" size={responsiveSize(14)} color={COLORS.textSecondary} />
                     <Text style={styles.detailText}>
                       Received: {new Date(item.timestamp).toLocaleString()}
                     </Text>
                   </View>
                   <View style={styles.detailRow}>
-                    <Ionicons name="notifications" size={responsiveSize(14)} color="#64748B" />
+                    <Ionicons name="notifications" size={responsiveSize(14)} color={COLORS.textSecondary} />
                     <Text style={styles.detailText}>
-                      Priority Level: {item.type === 'emergency' ? 'High' : item.type === 'priority' ? 'Medium' : 'Normal'}
+                      Priority Level: {item.type === 'priority' ? 'High' : item.type === 'appointment' ? 'Medium' : 'Normal'}
                     </Text>
                   </View>
                 </Animated.View>
@@ -376,7 +325,7 @@ const NotificationsScreen = ({ navigation }) => {
               <Ionicons 
                 name={isExpanded ? "chevron-up" : "chevron-down"} 
                 size={responsiveSize(20)} 
-                color="#64748B" 
+                color={COLORS.textSecondary} 
               />
             </View>
           </LinearGradient>
@@ -397,7 +346,7 @@ const NotificationsScreen = ({ navigation }) => {
             <Ionicons 
               name={option.icon} 
               size={responsiveSize(16)} 
-              color={filterType === option.id ? '#fff' : '#04e1f5'} 
+              color={filterType === option.id ? COLORS.white : COLORS.primary} 
             />
             <Text style={[styles.filterText, filterType === option.id && styles.filterTextActive]}>
               {option.label}
@@ -410,358 +359,391 @@ const NotificationsScreen = ({ navigation }) => {
 
   const SettingsModal = () => (
     <Modal visible={showSettings} transparent animationType="slide">
-      <View style={styles.modalOverlay}>
-        <View style={[styles.modalContainer, { width: isTablet ? width * 0.6 : width * 0.9 }]}>
-          <LinearGradient colors={['#001D3D', '#000814']} style={styles.modalHeader}>
+      <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowSettings(false)}>
+        <TouchableOpacity activeOpacity={1} onPress={() => {}} style={[styles.modalContainer, { width: isTablet ? width * 0.6 : width * 0.92 }]}>
+          <LinearGradient colors={[COLORS.primary, COLORS.secondary]} style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Notification Settings</Text>
             <TouchableOpacity onPress={() => setShowSettings(false)} style={styles.closeBtn}>
-              <Ionicons name="close" size={responsiveSize(28)} color="#fff" />
+              <Ionicons name="close" size={responsiveSize(28)} color={COLORS.white} />
             </TouchableOpacity>
           </LinearGradient>
           
           <ScrollView style={styles.settingsList} showsVerticalScrollIndicator={false}>
             <View style={styles.settingSection}>
-              <Text style={styles.settingSectionTitle}>Emergency Alerts</Text>
+              <Text style={styles.settingSectionTitle}>General Settings</Text>
+              
               <View style={styles.settingItem}>
                 <View style={styles.settingInfo}>
-                  <Ionicons name="megaphone" size={responsiveSize(24)} color="#EF4444" />
-                  <Text style={styles.settingLabel}>Emergency Alert Sounds</Text>
+                  <Ionicons name="musical-notes" size={responsiveSize(24)} color={COLORS.primary} />
+                  <Text style={styles.settingLabel}>Notification Sounds</Text>
                 </View>
                 <Switch 
-                  value={settings.emergencySounds} 
-                  onValueChange={(val) => setSettings({...settings, emergencySounds: val})}
-                  trackColor={{ false: '#374151', true: '#EF4444' }}
+                  value={settings.soundEnabled} 
+                  onValueChange={(val) => setSettings({...settings, soundEnabled: val})}
+                  trackColor={{ false: COLORS.border, true: COLORS.primary }}
+                  thumbColor={settings.soundEnabled ? COLORS.white : COLORS.textLight}
                 />
               </View>
               
               <View style={styles.settingItem}>
                 <View style={styles.settingInfo}>
-                  <Ionicons name="vibrate" size={responsiveSize(24)} color="#F59E0B" />
-                  <Text style={styles.settingLabel}>Emergency Vibration</Text>
+                  <Ionicons name="star" size={responsiveSize(24)} color={COLORS.warning} />
+                  <Text style={styles.settingLabel}>Priority Only Mode</Text>
                 </View>
                 <Switch 
-                  value={settings.emergencyVibration} 
-                  onValueChange={(val) => setSettings({...settings, emergencyVibration: val})}
-                  trackColor={{ false: '#374151', true: '#F59E0B' }}
+                  value={settings.priorityAlerts} 
+                  onValueChange={(val) => setSettings({...settings, priorityAlerts: val})}
+                  trackColor={{ false: COLORS.border, true: COLORS.primary }}
+                  thumbColor={settings.priorityAlerts ? COLORS.white : COLORS.textLight}
+                />
+              </View>
+              
+              <View style={styles.settingItem}>
+                <View style={styles.settingInfo}>
+                  <Ionicons name="eye" size={responsiveSize(24)} color={COLORS.info} />
+                  <Text style={styles.settingLabel}>Show Message Previews</Text>
+                </View>
+                <Switch 
+                  value={settings.previewMessages} 
+                  onValueChange={(val) => setSettings({...settings, previewMessages: val})}
+                  trackColor={{ false: COLORS.border, true: COLORS.primary }}
+                  thumbColor={settings.previewMessages ? COLORS.white : COLORS.textLight}
                 />
               </View>
             </View>
 
             <View style={styles.settingSection}>
-              <Text style={styles.settingSectionTitle}>General Settings</Text>
+              <Text style={styles.settingSectionTitle}>Notification Types</Text>
+              
               <View style={styles.settingItem}>
                 <View style={styles.settingInfo}>
-                  <Ionicons name="watch" size={responsiveSize(24)} color="#10B981" />
-                  <Text style={styles.settingLabel}>Smartwatch Alerts</Text>
+                  <Ionicons name="timer" size={responsiveSize(24)} color={COLORS.primary} />
+                  <Text style={styles.settingLabel}>Queue Updates</Text>
                 </View>
-                <Switch value={settings.smartWatchAlerts} onValueChange={(val) => setSettings({...settings, smartWatchAlerts: val})} />
+                <Switch 
+                  value={settings.queueUpdates} 
+                  onValueChange={(val) => setSettings({...settings, queueUpdates: val})}
+                  trackColor={{ false: COLORS.border, true: COLORS.primary }}
+                  thumbColor={settings.queueUpdates ? COLORS.white : COLORS.textLight}
+                />
               </View>
               
               <View style={styles.settingItem}>
                 <View style={styles.settingInfo}>
-                  <Ionicons name="location" size={responsiveSize(24)} color="#3B82F6" />
-                  <Text style={styles.settingLabel}>Real-time Location Tracking</Text>
+                  <Ionicons name="calendar" size={responsiveSize(24)} color={COLORS.appointment} />
+                  <Text style={styles.settingLabel}>Appointment Reminders</Text>
                 </View>
-                <Switch value={settings.locationTracking} onValueChange={(val) => setSettings({...settings, locationTracking: val})} />
+                <Switch 
+                  value={settings.appointmentReminders} 
+                  onValueChange={(val) => setSettings({...settings, appointmentReminders: val})}
+                  trackColor={{ false: COLORS.border, true: COLORS.primary }}
+                  thumbColor={settings.appointmentReminders ? COLORS.white : COLORS.textLight}
+                />
               </View>
               
               <View style={styles.settingItem}>
                 <View style={styles.settingInfo}>
-                  <Ionicons name="musical-notes" size={responsiveSize(24)} color="#8B5CF6" />
-                  <Text style={styles.settingLabel}>Notification Sounds</Text>
+                  <Ionicons name="flask" size={responsiveSize(24)} color={COLORS.pharmacy} />
+                  <Text style={styles.settingLabel}>Lab Reports</Text>
                 </View>
-                <Switch value={settings.soundEnabled} onValueChange={(val) => setSettings({...settings, soundEnabled: val})} />
+                <Switch 
+                  value={settings.labReports} 
+                  onValueChange={(val) => setSettings({...settings, labReports: val})}
+                  trackColor={{ false: COLORS.border, true: COLORS.primary }}
+                  thumbColor={settings.labReports ? COLORS.white : COLORS.textLight}
+                />
               </View>
               
               <View style={styles.settingItem}>
                 <View style={styles.settingInfo}>
-                  <Ionicons name="star" size={responsiveSize(24)} color="#F59E0B" />
-                  <Text style={styles.settingLabel}>Priority Only Mode</Text>
+                  <Ionicons name="notifications" size={responsiveSize(24)} color={COLORS.warning} />
+                  <Text style={styles.settingLabel}>Medicine Reminders</Text>
                 </View>
-                <Switch value={settings.priorityAlerts} onValueChange={(val) => setSettings({...settings, priorityAlerts: val})} />
-              </View>
-              
-              <View style={styles.settingItem}>
-                <View style={styles.settingInfo}>
-                  <Ionicons name="eye" size={responsiveSize(24)} color="#06B6D4" />
-                  <Text style={styles.settingLabel}>Show Message Previews</Text>
-                </View>
-                <Switch value={settings.previewMessages} onValueChange={(val) => setSettings({...settings, previewMessages: val})} />
+                <Switch 
+                  value={settings.medicineReminders} 
+                  onValueChange={(val) => setSettings({...settings, medicineReminders: val})}
+                  trackColor={{ false: COLORS.border, true: COLORS.primary }}
+                  thumbColor={settings.medicineReminders ? COLORS.white : COLORS.textLight}
+                />
               </View>
             </View>
           </ScrollView>
-        </View>
-      </View>
-    </Modal>
-  );
-
-  const EmergencyModal = () => (
-    <Modal visible={showEmergency} transparent animationType="fade">
-      <View style={styles.emergencyOverlay}>
-        <Animated.View style={[styles.emergencyContainer, { transform: [{ scale: scaleAnim }], width: isTablet ? width * 0.5 : width * 0.85 }]}>
-          <LinearGradient colors={['#DC2626', '#EF4444']} style={styles.emergencyHeader}>
-            <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
-              <Ionicons name="alert-circle" size={responsiveSize(60)} color="#fff" />
-            </Animated.View>
-            <Text style={styles.emergencyTitle}>EMERGENCY ALERT</Text>
-            <Text style={styles.emergencySubtitle}>Help is on the way</Text>
-          </LinearGradient>
-          
-          <View style={styles.emergencyBody}>
-            <View style={styles.emergencyStatusCard}>
-              <Ionicons name="checkmark-circle" size={responsiveSize(24)} color="#10B981" />
-              <View>
-                <Text style={styles.emergencyStatusText}>Emergency Services Notified</Text>
-                <Text style={styles.emergencyStatusSub}>Response time: 5-7 minutes</Text>
-              </View>
-            </View>
-            
-            <Text style={styles.emergencySectionTitle}>Contacts Being Notified:</Text>
-            <View style={styles.emergencyContacts}>
-              <View style={styles.emergencyContactChip}>
-                <Ionicons name="medkit" size={responsiveSize(16)} color="#fff" />
-                <Text style={styles.emergencyContactText}>Ambulance Service</Text>
-              </View>
-              <View style={styles.emergencyContactChip}>
-                <Ionicons name="business" size={responsiveSize(16)} color="#fff" />
-                <Text style={styles.emergencyContactText}>CDA Hospital</Text>
-              </View>
-              <View style={styles.emergencyContactChip}>
-                <Ionicons name="person" size={responsiveSize(16)} color="#fff" />
-                <Text style={styles.emergencyContactText}>Emergency Contact</Text>
-              </View>
-            </View>
-            
-            {liveLocation && (
-              <View style={styles.locationBox}>
-                <Ionicons name="location" size={responsiveSize(20)} color="#10B981" />
-                <View style={styles.locationTextContainer}>
-                  <Text style={styles.locationLabel}>Your Live Location</Text>
-                  <Text style={styles.locationValue}>
-                    {liveLocation.lat.toFixed(6)}, {liveLocation.lng.toFixed(6)}
-                  </Text>
-                  <Text style={styles.locationAccuracy}>Accuracy: {liveLocation.accuracy}</Text>
-                </View>
-              </View>
-            )}
-            
-            <TouchableOpacity style={styles.cancelEmergencyBtn} onPress={() => setShowEmergency(false)}>
-              <Text style={styles.cancelEmergencyText}>Cancel Alert (If Mistaken)</Text>
-            </TouchableOpacity>
-          </View>
-        </Animated.View>
-      </View>
+        </TouchableOpacity>
+      </TouchableOpacity>
     </Modal>
   );
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+      <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
       
-      <ImageBackground
-        source={{ uri: 'https://i.pinimg.com/736x/3d/01/5f/3d015f0c3c861532da0215caa8207a15.jpg' }}
-        style={styles.backgroundImage}
-        resizeMode="cover"
-      >
-        <View style={styles.overlay}>
-          <SafeAreaView style={styles.safeArea}>
-            {/* Header */}
-            <LinearGradient
-              colors={['rgba(0, 29, 61, 0.95)', 'rgba(0, 8, 20, 0.85)']}
-              style={styles.headerGradient}
-            >
-              <View style={styles.topHeader}>
-                <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.goBack()}>
-                  <Ionicons name="chevron-back" size={responsiveSize(24)} color="#04e1f5" />
-                </TouchableOpacity>
-                
-                <View style={styles.headerCenter}>
-                  <Text style={styles.headerTitle}>Notifications</Text>
-                  {unreadCount > 0 && (
-                    <View style={styles.unreadBadge}>
-                      <Text style={styles.unreadBadgeText}>{unreadCount}</Text>
-                    </View>
-                  )}
-                </View>
-                
-                <TouchableOpacity style={styles.iconBtn} onPress={() => setShowSettings(true)}>
-                  <Ionicons name="settings-outline" size={responsiveSize(22)} color="#04e1f5" />
-                </TouchableOpacity>
-              </View>
-              
-              {/* Stats Bar */}
-              <View style={styles.statsBar}>
-                <View style={styles.statItem}>
-                  <Ionicons name="mail-unread" size={responsiveSize(16)} color="#EF4444" />
-                  <Text style={styles.statValue}>{unreadCount}</Text>
-                  <Text style={styles.statLabel}>Unread</Text>
-                </View>
-                <View style={styles.statDivider} />
-                <View style={styles.statItem}>
-                  <Ionicons name="notifications" size={responsiveSize(16)} color="#10B981" />
-                  <Text style={styles.statValue}>{notifications.length}</Text>
-                  <Text style={styles.statLabel}>Total</Text>
-                </View>
-                <View style={styles.statDivider} />
-                <View style={styles.statItem}>
-                  <Ionicons name="location" size={responsiveSize(16)} color="#3B82F6" />
-                  <Text style={styles.statValue}>{liveLocation ? 'Live' : 'Off'}</Text>
-                  <Text style={styles.statLabel}>Tracking</Text>
-                </View>
-              </View>
-            </LinearGradient>
+      <LinearGradient
+        colors={[COLORS.primary, COLORS.background, COLORS.background]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={styles.gradientBackground}
+      />
 
-            {/* Search Bar */}
-            <View style={styles.searchContainer}>
-              <Ionicons name="search" size={responsiveSize(20)} color="#64748B" />
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Search notifications..."
-                placeholderTextColor="#94A3B8"
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-              />
-              {searchQuery.length > 0 && (
-                <TouchableOpacity onPress={() => setSearchQuery('')}>
-                  <Ionicons name="close-circle" size={responsiveSize(18)} color="#64748B" />
-                </TouchableOpacity>
+      <SafeAreaView style={styles.safeArea}>
+        {/* Header */}
+        <View style={styles.headerContainer}>
+          <View style={styles.topHeader}>
+            <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+              <Ionicons name="arrow-back" size={responsiveSize(24)} color={COLORS.white} />
+            </TouchableOpacity>
+            
+            <View style={styles.headerCenter}>
+              <Text style={styles.headerTitle}>Notifications</Text>
+              {unreadCount > 0 && (
+                <View style={styles.unreadBadge}>
+                  <Text style={styles.unreadBadgeText}>{unreadCount}</Text>
+                </View>
               )}
             </View>
-
-            {/* Filter Bar */}
-            <FilterBar />
-
-            {/* Action Buttons */}
-            <View style={styles.actionBar}>
-              <TouchableOpacity style={styles.actionButton} onPress={markAllAsRead}>
-                <Ionicons name="checkmark-done" size={responsiveSize(18)} color="#04e1f5" />
-                <Text style={styles.actionButtonText}>Mark Read</Text>
-              </TouchableOpacity>
-              
-              <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
-                <TouchableOpacity style={[styles.actionButton, styles.emergencyActionBtn]} onPress={triggerEmergency}>
-                  <Ionicons name="alert-circle" size={responsiveSize(18)} color="#fff" />
-                  <Text style={[styles.actionButtonText, { color: '#fff' }]}>SOS Emergency</Text>
-                </TouchableOpacity>
-              </Animated.View>
-              
-              <TouchableOpacity style={styles.actionButton} onPress={clearAllNotifications}>
-                <Ionicons name="trash" size={responsiveSize(18)} color="#EF4444" />
-                <Text style={[styles.actionButtonText, { color: '#EF4444' }]}>Clear All</Text>
-              </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.settingsBtn} onPress={() => setShowSettings(true)}>
+              <Ionicons name="settings-outline" size={responsiveSize(22)} color={COLORS.white} />
+            </TouchableOpacity>
+          </View>
+          
+          {/* Stats Bar */}
+          <View style={styles.statsBar}>
+            <View style={styles.statItem}>
+              <Ionicons name="mail-unread" size={responsiveSize(16)} color={COLORS.danger} />
+              <Text style={styles.statValue}>{unreadCount}</Text>
+              <Text style={styles.statLabel}>Unread</Text>
             </View>
-
-            {/* Notifications List */}
-            <FlatList
-              data={filteredNotifications}
-              keyExtractor={item => item.id}
-              renderItem={renderNotification}
-              contentContainerStyle={styles.listContainer}
-              showsVerticalScrollIndicator={false}
-              refreshControl={
-                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#04e1f5" />
-              }
-              ListEmptyComponent={
-                <View style={styles.emptyContainer}>
-                  <Ionicons name="notifications-off" size={responsiveSize(70)} color="#4f5b6d" />
-                  <Text style={styles.emptyTitle}>No Notifications</Text>
-                  <Text style={styles.emptySubtitle}>You're all caught up!</Text>
-                  <Text style={styles.emptyHint}>Pull down to refresh or check back later</Text>
-                </View>
-              }
-            />
-          </SafeAreaView>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Ionicons name="notifications" size={responsiveSize(16)} color={COLORS.success} />
+              <Text style={styles.statValue}>{notifications.length}</Text>
+              <Text style={styles.statLabel}>Total</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Ionicons name="timer" size={responsiveSize(16)} color={COLORS.primary} />
+              <Text style={styles.statValue}>Live</Text>
+              <Text style={styles.statLabel}>Queue</Text>
+            </View>
+          </View>
         </View>
-      </ImageBackground>
+
+        {/* Search Bar */}
+        <View style={styles.searchContainer}>
+          <Ionicons name="search" size={responsiveSize(20)} color={COLORS.textSecondary} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search notifications..."
+            placeholderTextColor={COLORS.textLight}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <Ionicons name="close-circle" size={responsiveSize(18)} color={COLORS.textSecondary} />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Filter Bar */}
+        <FilterBar />
+
+        {/* Action Buttons */}
+        <View style={styles.actionBar}>
+          <TouchableOpacity style={[styles.actionButton, styles.cardShadow]} onPress={markAllAsRead}>
+            <Ionicons name="checkmark-done" size={responsiveSize(18)} color={COLORS.primary} />
+            <Text style={styles.actionButtonText}>Mark Read</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity style={[styles.actionButton, styles.cardShadow]} onPress={clearAllNotifications}>
+            <Ionicons name="trash" size={responsiveSize(18)} color={COLORS.danger} />
+            <Text style={[styles.actionButtonText, { color: COLORS.danger }]}>Clear All</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Notifications List */}
+        <FlatList
+          data={filteredNotifications}
+          keyExtractor={item => item.id}
+          renderItem={renderNotification}
+          contentContainerStyle={styles.listContainer}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} tintColor={COLORS.primary} />
+          }
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Ionicons name="notifications-off" size={responsiveSize(70)} color={COLORS.border} />
+              <Text style={styles.emptyTitle}>No Notifications</Text>
+              <Text style={styles.emptySubtitle}>You're all caught up!</Text>
+              <Text style={styles.emptyHint}>Pull down to refresh or check back later</Text>
+            </View>
+          }
+        />
+      </SafeAreaView>
 
       <SettingsModal />
-      <EmergencyModal />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  backgroundImage: { flex: 1 },
-  overlay: { flex: 1, backgroundColor: 'rgba(8, 20, 71, 0.48)'},
-  safeArea: { flex: 1 },
+  container: { 
+    flex: 1, 
+    backgroundColor: COLORS.background 
+  },
+  gradientBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '100%',
+  },
+  safeArea: { 
+    flex: 1 
+  },
 
-  headerGradient: {
-    paddingTop: Platform.OS === 'ios' ? 10 : StatusBar.currentHeight + 10,
-    paddingBottom: 16,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+  // Card Shadow
+  cardShadow: { ...SHADOWS.medium },
+
+  // Header
+  headerContainer: { 
+    paddingBottom: 12,
   },
   topHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
+    paddingTop: Platform.OS === 'ios' ? 10 : StatusBar.currentHeight + 10,
+    paddingBottom: 12,
   },
-  iconBtn: {
+  backBtn: {
     width: responsiveSize(40),
     height: responsiveSize(40),
     borderRadius: responsiveSize(12),
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    backgroundColor: 'rgba(255,255,255,0.15)',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(4, 225, 245, 0.3)',
+    borderColor: 'rgba(255,255,255,0.2)',
   },
-  headerCenter: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  headerTitle: { color: '#fff', fontSize: responsiveFont(18), fontWeight: '800' },
+  settingsBtn: {
+    width: responsiveSize(40),
+    height: responsiveSize(40),
+    borderRadius: responsiveSize(12),
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  headerCenter: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 8 
+  },
+  headerTitle: { 
+    color: COLORS.white, 
+    fontSize: responsiveFont(18), 
+    fontWeight: '800' 
+  },
   unreadBadge: {
-    backgroundColor: '#EF4444',
+    backgroundColor: COLORS.danger,
     borderRadius: responsiveSize(10),
     paddingHorizontal: 6,
     paddingVertical: 2,
   },
-  unreadBadgeText: { color: '#fff', fontSize: responsiveFont(10), fontWeight: 'bold' },
+  unreadBadgeText: { 
+    color: COLORS.white, 
+    fontSize: responsiveFont(10), 
+    fontWeight: 'bold' 
+  },
 
   statsBar: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    marginTop: 16,
-    marginHorizontal: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.43)',
+    marginHorizontal: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.29)',
     borderRadius: 20,
     paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
   },
-  statItem: { alignItems: 'center', flex: 1, flexDirection: 'row', justifyContent: 'center', gap: 6 },
-  statValue: { color: '#fff', fontSize: responsiveFont(14), fontWeight: 'bold' },
-  statLabel: { color: '#B2DFDB', fontSize: responsiveFont(11) },
-  statDivider: { width: 1, height: 20, backgroundColor: 'rgba(255,255,255,0.2)' },
+  statItem: { 
+    alignItems: 'center', 
+    flex: 1, 
+    flexDirection: 'row', 
+    justifyContent: 'center', 
+    gap: 6 
+  },
+  statValue: { 
+    color: COLORS.navy, 
+    fontSize: responsiveFont(14), 
+    fontWeight: 'bold' 
+  },
+  statLabel: { 
+    color: COLORS.navy, 
+    fontSize: responsiveFont(11),
+    opacity: 0.7,
+  },
+  statDivider: { 
+    width: 1, 
+    height: 20, 
+    backgroundColor: 'rgba(255,255,255,0.2)' 
+  },
 
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    backgroundColor: COLORS.white,
     margin: 16,
     marginBottom: 8,
     paddingHorizontal: 14,
     borderRadius: 25,
     borderWidth: 1,
-    borderColor: 'rgba(4, 225, 245, 0.3)',
+    borderColor: COLORS.border,
     gap: 10,
+    ...SHADOWS.small,
   },
-  searchInput: { flex: 1, color: '#fff', fontSize: responsiveFont(14), paddingVertical: 12 },
+  searchInput: { 
+    flex: 1, 
+    color: COLORS.text, 
+    fontSize: responsiveFont(14), 
+    paddingVertical: 12 
+  },
 
-  filterContainer: { paddingHorizontal: 16, marginBottom: 12 },
-  filterScroll: { gap: 10 },
+  filterContainer: { 
+    paddingHorizontal: 16, 
+    marginBottom: 12 
+  },
+  filterScroll: { 
+    gap: 10 
+  },
   filterChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    backgroundColor: COLORS.white,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
     gap: 6,
     borderWidth: 1,
-    borderColor: 'rgba(4, 225, 245, 0.3)',
+    borderColor: COLORS.border,
+    ...SHADOWS.small,
   },
-  filterChipActive: { backgroundColor: '#04e1f5', borderColor: '#04e1f5' },
-  filterText: { color: '#04e1f5', fontSize: responsiveFont(12), fontWeight: '600' },
-  filterTextActive: { color: '#fff' },
+  filterChipActive: { 
+    backgroundColor: COLORS.primary, 
+    borderColor: COLORS.primary 
+  },
+  filterText: { 
+    color: COLORS.primary, 
+    fontSize: responsiveFont(12), 
+    fontWeight: '600' 
+  },
+  filterTextActive: { 
+    color: COLORS.white 
+  },
 
   actionBar: {
     flexDirection: 'row',
@@ -775,29 +757,45 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    backgroundColor: COLORS.white,
     paddingVertical: 10,
     borderRadius: 25,
     gap: 8,
     borderWidth: 1,
-    borderColor: 'rgba(4, 225, 245, 0.3)',
+    borderColor: COLORS.border,
   },
-  emergencyActionBtn: { backgroundColor: '#DC2626', borderColor: '#EF4444' },
-  actionButtonText: { color: '#04e1f5', fontSize: responsiveFont(12), fontWeight: '600' },
+  actionButtonText: { 
+    color: COLORS.primary, 
+    fontSize: responsiveFont(12), 
+    fontWeight: '600' 
+  },
 
-  listContainer: { padding: 16, paddingBottom: 100, gap: 12 },
+  listContainer: { 
+    padding: 16, 
+    paddingBottom: 100, 
+    gap: 12 
+  },
   
-  notificationWrapper: { marginBottom: 0 },
+  notificationWrapper: { 
+    marginBottom: 0 
+  },
   notificationCard: { 
     borderRadius: 20, 
     padding: cardPadding,
     flexDirection: 'row',
     borderWidth: 1,
-    borderColor: 'rgba(4, 225, 245, 0.29)',
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.white,
   },
-  unreadBorder: { borderLeftWidth: 4, borderLeftColor: '#04e1f5' },
+  unreadBorder: { 
+    borderLeftWidth: 4, 
+    borderLeftColor: COLORS.primary 
+  },
 
-  iconSection: { position: 'relative', marginRight: 14 },
+  iconSection: { 
+    position: 'relative', 
+    marginRight: 14 
+  },
   iconCircle: {
     width: responsiveSize(50),
     height: responsiveSize(50),
@@ -814,65 +812,174 @@ const styles = StyleSheet.create({
     height: responsiveSize(12),
     borderRadius: responsiveSize(6),
     borderWidth: 2,
-    borderColor: '#fff',
+    borderColor: COLORS.white,
   },
 
-  contentSection: { flex: 1, gap: 6 },
-  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 },
-  notificationTitle: { color: '#fff', fontSize: responsiveFont(15), fontWeight: 'bold', flex: 1 },
-  typeBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 12 },
-  typeBadgeText: { fontSize: responsiveFont(9), fontWeight: 'bold' },
-  notificationMessage: { color: '#B2DFDB', fontSize: responsiveFont(13), lineHeight: responsiveSize(20) },
+  contentSection: { 
+    flex: 1, 
+    gap: 6 
+  },
+  titleRow: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'space-between', 
+    flexWrap: 'wrap', 
+    gap: 8 
+  },
+  notificationTitle: { 
+    color: COLORS.text, 
+    fontSize: responsiveFont(15), 
+    fontWeight: 'bold', 
+    flex: 1 
+  },
+  typeBadge: { 
+    paddingHorizontal: 8, 
+    paddingVertical: 3, 
+    borderRadius: 12 
+  },
+  typeBadgeText: { 
+    fontSize: responsiveFont(9), 
+    fontWeight: 'bold' 
+  },
+  notificationMessage: { 
+    color: COLORS.textSecondary, 
+    fontSize: responsiveFont(13), 
+    lineHeight: responsiveSize(20) 
+  },
   
-  metaRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, marginTop: 6 },
-  timeContainer: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  timeText: { color: '#e4e9f0', fontSize: responsiveFont(11) },
-  actionChip: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 15, borderWidth: 1, gap: 5 },
-  actionChipText: { fontSize: responsiveFont(11), fontWeight: '600' },
+  metaRow: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'space-between', 
+    flexWrap: 'wrap', 
+    gap: 10, 
+    marginTop: 6 
+  },
+  timeContainer: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 5 
+  },
+  timeText: { 
+    color: COLORS.textLight, 
+    fontSize: responsiveFont(11) 
+  },
+  actionChip: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    paddingHorizontal: 10, 
+    paddingVertical: 4, 
+    borderRadius: 15, 
+    borderWidth: 1, 
+    gap: 5 
+  },
+  actionChipText: { 
+    fontSize: responsiveFont(11), 
+    fontWeight: '600' 
+  },
 
-  expandSection: { justifyContent: 'center', paddingLeft: 8 },
-  expandedContent: { marginTop: 12, gap: 8 },
-  divider: { height: 1, backgroundColor: 'rgba(255, 255, 255, 0.99)', marginVertical: 4 },
-  detailRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  detailText: { color: '#cdd5df', fontSize: responsiveFont(11) },
+  expandSection: { 
+    justifyContent: 'center', 
+    paddingLeft: 8 
+  },
+  expandedContent: { 
+    marginTop: 12, 
+    gap: 8 
+  },
+  divider: { 
+    height: 1, 
+    backgroundColor: COLORS.border, 
+    marginVertical: 4 
+  },
+  detailRow: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 10 
+  },
+  detailText: { 
+    color: COLORS.textSecondary, 
+    fontSize: responsiveFont(11) 
+  },
 
-  emptyContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 60 },
-  emptyTitle: { color: '#fff', fontSize: responsiveFont(18), fontWeight: 'bold', marginTop: 16 },
-  emptySubtitle: { color: '#B2DFDB', fontSize: responsiveFont(14), marginTop: 8 },
-  emptyHint: { color: '#29394e', fontSize: responsiveFont(12), marginTop: 8 },
+  emptyContainer: { 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    paddingVertical: 60 
+  },
+  emptyTitle: { 
+    color: COLORS.text, 
+    fontSize: responsiveFont(18), 
+    fontWeight: 'bold', 
+    marginTop: 16 
+  },
+  emptySubtitle: { 
+    color: COLORS.textSecondary, 
+    fontSize: responsiveFont(14), 
+    marginTop: 8 
+  },
+  emptyHint: { 
+    color: COLORS.textLight, 
+    fontSize: responsiveFont(12), 
+    marginTop: 8 
+  },
 
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.95)', justifyContent: 'center', alignItems: 'center' },
-  modalContainer: { backgroundColor: '#193652', borderRadius: 24, overflow: 'hidden', maxHeight: height * 0.8 },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20 },
-  modalTitle: { color: '#fff', fontSize: responsiveFont(18), fontWeight: 'bold' },
-  closeBtn: { padding: 4 },
-  settingsList: { padding: 20 },
-  settingSection: { marginBottom: 24 },
-  settingSectionTitle: { color: '#04e1f5', fontSize: responsiveFont(14), fontWeight: 'bold', marginBottom: 12 },
-  settingItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, paddingVertical: 4 },
-  settingInfo: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  settingLabel: { color: '#fff', fontSize: responsiveFont(14), fontWeight: '500' },
-
-  emergencyOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.95)', justifyContent: 'center', alignItems: 'center' },
-  emergencyContainer: { backgroundColor: '#fff', borderRadius: 24, overflow: 'hidden' },
-  emergencyHeader: { alignItems: 'center', padding: 30, gap: 10 },
-  emergencyTitle: { color: '#fff', fontSize: responsiveFont(22), fontWeight: 'bold' },
-  emergencySubtitle: { color: '#FEE2E2', fontSize: responsiveFont(14) },
-  emergencyBody: { padding: 20, gap: 16 },
-  emergencyStatusCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#D1FAE5', padding: 14, borderRadius: 16, gap: 12 },
-  emergencyStatusText: { color: '#065F46', fontSize: responsiveFont(14), fontWeight: 'bold' },
-  emergencyStatusSub: { color: '#047857', fontSize: responsiveFont(12) },
-  emergencySectionTitle: { color: '#1F2937', fontSize: responsiveFont(14), fontWeight: '600' },
-  emergencyContacts: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  emergencyContactChip: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#DC2626', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, gap: 6 },
-  emergencyContactText: { color: '#fff', fontSize: responsiveFont(12), fontWeight: '600' },
-  locationBox: { flexDirection: 'row', backgroundColor: '#F0FDF4', padding: 14, borderRadius: 16, gap: 12 },
-  locationTextContainer: { flex: 1 },
-  locationLabel: { color: '#065F46', fontSize: responsiveFont(12), fontWeight: '600' },
-  locationValue: { color: '#047857', fontSize: responsiveFont(13), fontWeight: '500', marginTop: 2 },
-  locationAccuracy: { color: '#10B981', fontSize: responsiveFont(10), marginTop: 2 },
-  cancelEmergencyBtn: { alignItems: 'center', paddingVertical: 12, marginTop: 8 },
-  cancelEmergencyText: { color: '#6B7280', fontSize: responsiveFont(14) },
+  // Modal
+  modalOverlay: { 
+    flex: 1, 
+    backgroundColor: 'rgba(0,0,0,0.5)', 
+    justifyContent: 'center', 
+    alignItems: 'center' 
+  },
+  modalContainer: { 
+    backgroundColor: COLORS.white, 
+    borderRadius: 24, 
+    overflow: 'hidden', 
+    maxHeight: height * 0.8,
+    ...SHADOWS.large,
+  },
+  modalHeader: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    padding: 20 
+  },
+  modalTitle: { 
+    color: COLORS.white, 
+    fontSize: responsiveFont(18), 
+    fontWeight: 'bold' 
+  },
+  closeBtn: { 
+    padding: 4 
+  },
+  settingsList: { 
+    padding: 20 
+  },
+  settingSection: { 
+    marginBottom: 24 
+  },
+  settingSectionTitle: { 
+    color: COLORS.primary, 
+    fontSize: responsiveFont(14), 
+    fontWeight: 'bold', 
+    marginBottom: 12 
+  },
+  settingItem: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    marginBottom: 16, 
+    paddingVertical: 4 
+  },
+  settingInfo: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 12 
+  },
+  settingLabel: { 
+    color: COLORS.text, 
+    fontSize: responsiveFont(14), 
+    fontWeight: '500' 
+  },
 });
 
 export default NotificationsScreen;

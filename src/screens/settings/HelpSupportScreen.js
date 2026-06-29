@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert,
-  Dimensions, Platform, StatusBar, ImageBackground, SafeAreaView,
+  Dimensions, Platform, StatusBar, SafeAreaView,
   TextInput, Modal, Linking
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { COLORS, SIZES, SHADOWS } from '../../theme';
 
 const { width, height } = Dimensions.get('window');
 
@@ -139,11 +140,11 @@ const HelpSupportScreen = ({ navigation }) => {
   const ChatModal = () => (
     <Modal visible={showChatModal} transparent animationType="slide">
       <View style={styles.modalOverlay}>
-        <View style={styles.chatContainer}>
-          <LinearGradient colors={['#001D3D', '#000814']} style={styles.chatHeader}>
+        <View style={[styles.chatContainer, styles.cardShadow]}>
+          <LinearGradient colors={[COLORS.primary, COLORS.secondary]} style={styles.chatHeader}>
             <View style={styles.chatHeaderInfo}>
               <View style={styles.chatAvatar}>
-                <Ionicons name="chatbubble" size={wp(5)} color="#04e1f5" />
+                <Ionicons name="chatbubble-outline" size={wp(4.5)} color={COLORS.white} />
               </View>
               <View>
                 <Text style={styles.chatTitle}>Support Chat</Text>
@@ -151,7 +152,7 @@ const HelpSupportScreen = ({ navigation }) => {
               </View>
             </View>
             <TouchableOpacity onPress={() => setShowChatModal(false)}>
-              <Ionicons name="close" size={wp(6)} color="#fff" />
+              <Ionicons name="close" size={wp(5.5)} color={COLORS.white} />
             </TouchableOpacity>
           </LinearGradient>
           
@@ -172,14 +173,14 @@ const HelpSupportScreen = ({ navigation }) => {
             <TextInput
               style={styles.chatInput}
               placeholder="Type your message..."
-              placeholderTextColor="#64748B"
+              placeholderTextColor={COLORS.textSecondary}
               value={chatMessage}
               onChangeText={setChatMessage}
               multiline
             />
             <TouchableOpacity style={styles.sendButton} onPress={sendMessage}>
-              <LinearGradient colors={['#04e1f5', '#0284c7']} style={styles.sendGradient}>
-                <Ionicons name="send" size={wp(4.5)} color="#fff" />
+              <LinearGradient colors={[COLORS.primary, COLORS.secondary]} style={styles.sendGradient}>
+                <Ionicons name="send" size={wp(4)} color={COLORS.white} />
               </LinearGradient>
             </TouchableOpacity>
           </View>
@@ -192,192 +193,178 @@ const HelpSupportScreen = ({ navigation }) => {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
       
-      <ImageBackground
-        source={{ uri: 'https://i.pinimg.com/736x/3d/01/5f/3d015f0c3c861532da0215caa8207a15.jpg' }}
-        style={styles.backgroundImage}
-        resizeMode="cover"
-      >
-        <View style={styles.overlay}>
-          <SafeAreaView style={styles.safeArea}>
-            {/* Header */}
-            <LinearGradient
-              colors={['rgba(0, 29, 61, 0.95)', 'rgba(0, 8, 20, 0.85)']}
-              style={styles.headerGradient}
-            >
-              <View style={styles.topHeader}>
-                <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.goBack()}>
-                  <Ionicons name="chevron-back" size={wp(6)} color="#04e1f5" />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>Help & Support</Text>
-                <View style={{ width: wp(10) }} />
-              </View>
-            </LinearGradient>
+      <LinearGradient
+        colors={[COLORS.primary, COLORS.secondary, COLORS.background]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 0.25 }}
+        style={styles.gradientBackground}
+      />
 
-            <ScrollView 
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={styles.scrollContent}
-            >
-
-              {/* Hero Section */}
-              <LinearGradient
-                colors={['rgba(4, 225, 245, 0.15)', 'rgba(4, 225, 245, 0.05)']}
-                style={styles.heroSection}
-              >
-                <View style={styles.heroIcon}>
-                  <Ionicons name="headset" size={wp(12)} color="#04e1f5" />
-                </View>
-                <Text style={styles.heroTitle}>How can we help you?</Text>
-                <Text style={styles.heroSubtitle}>We're here to assist you 24/7</Text>
-              </LinearGradient>
-
-              {/* Quick Actions Grid */}
-              <View style={styles.quickActions}>
-                <TouchableOpacity style={styles.quickAction} onPress={() => openPhone('1122')}>
-                  <LinearGradient
-                    colors={['#DC2626', '#EF4444']}
-                    style={styles.quickActionGradient}
-                  >
-                    <Ionicons name="call" size={wp(6)} color="#fff" />
-                    <Text style={styles.quickActionTitle}>Emergency</Text>
-                    <Text style={styles.quickActionSub}>1122</Text>
-                  </LinearGradient>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.quickAction} onPress={() => setShowChatModal(true)}>
-                  <LinearGradient
-                    colors={['#04e1f5', '#0284c7']}
-                    style={styles.quickActionGradient}
-                  >
-                    <Ionicons name="chatbubble" size={wp(6)} color="#fff" />
-                    <Text style={styles.quickActionTitle}>Live Chat</Text>
-                    <Text style={styles.quickActionSub}>Chat with us</Text>
-                  </LinearGradient>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.quickAction} onPress={() => openEmail('support@sehatline.com')}>
-                  <LinearGradient
-                    colors={['#10B981', '#059669']}
-                    style={styles.quickActionGradient}
-                  >
-                    <Ionicons name="mail" size={wp(6)} color="#fff" />
-                    <Text style={styles.quickActionTitle}>Email</Text>
-                    <Text style={styles.quickActionSub}>support@sehatline.com</Text>
-                  </LinearGradient>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.quickAction} onPress={() => openPhone('051-111-123-456')}>
-                  <LinearGradient
-                    colors={['#8B5CF6', '#7C3AED']}
-                    style={styles.quickActionGradient}
-                  >
-                    <Ionicons name="call" size={wp(6)} color="#fff" />
-                    <Text style={styles.quickActionTitle}>Call Us</Text>
-                    <Text style={styles.quickActionSub}>051-111-123-456</Text>
-                  </LinearGradient>
-                </TouchableOpacity>
-              </View>
-
-              {/* Search Bar */}
-              <View style={styles.searchContainer}>
-                <Ionicons name="search" size={wp(5)} color="#04e1f5" />
-                <TextInput 
-                  style={styles.searchInput}
-                  placeholder="Search FAQs..."
-                  placeholderTextColor="#94A3B8"
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
-                />
-                {searchQuery.length > 0 && (
-                  <TouchableOpacity onPress={() => setSearchQuery('')}>
-                    <Ionicons name="close-circle" size={wp(4.5)} color="#64748B" />
-                  </TouchableOpacity>
-                )}
-              </View>
-
-              {/* Category Filter */}
-              <CategoryFilter />
-
-              {/* FAQ Section */}
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>📚 Frequently Asked Questions</Text>
-                <Text style={styles.sectionSubtitle}>{filteredFaqs.length} articles found</Text>
-                
-                {filteredFaqs.map((faq) => (
-                  <TouchableOpacity 
-                    key={faq.id}
-                    style={styles.faqCard}
-                    onPress={() => toggleFaq(faq.id)}
-                    activeOpacity={0.85}
-                  >
-                    <LinearGradient
-                      colors={['rgba(0, 0, 0, 0.45)', 'rgba(0, 0, 0, 0.35)']}
-                      style={styles.faqGradient}
-                    >
-                      <View style={styles.faqHeader}>
-                        <View style={styles.faqIcon}>
-                          <Ionicons name="help-circle" size={wp(5)} color="#04e1f5" />
-                        </View>
-                        <View style={styles.faqContent}>
-                          <Text style={styles.faqCategory}>{faq.category}</Text>
-                          <Text style={styles.faqQuestion}>{faq.question}</Text>
-                        </View>
-                        <Ionicons 
-                          name={expandedFaq === faq.id ? "chevron-up" : "chevron-down"} 
-                          size={wp(5)} 
-                          color="#64748B" 
-                        />
-                      </View>
-                      
-                      {expandedFaq === faq.id && (
-                        <View style={styles.faqAnswer}>
-                          <View style={styles.divider} />
-                          <Text style={styles.answerText}>{faq.answer}</Text>
-                          <TouchableOpacity style={styles.helpfulButton}>
-                            <Text style={styles.helpfulText}>Was this helpful?</Text>
-                            <Ionicons name="thumbs-up" size={wp(3.5)} color="#04e1f5" />
-                          </TouchableOpacity>
-                        </View>
-                      )}
-                    </LinearGradient>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              {/* Still Need Help */}
-              <LinearGradient
-                colors={['rgba(4, 225, 245, 0.1)', 'rgba(4, 225, 245, 0.05)']}
-                style={styles.needHelpCard}
-              >
-                <Ionicons name="chatbubbles" size={wp(10)} color="#04e1f5" />
-                <Text style={styles.needHelpTitle}>Still Need Help?</Text>
-                <Text style={styles.needHelpSub}>Our support team is available 24/7</Text>
-                <View style={styles.needHelpButtons}>
-                  <TouchableOpacity style={styles.needHelpBtn} onPress={() => setShowChatModal(true)}>
-                    <LinearGradient colors={['#04e1f5', '#0284c7']} style={styles.needHelpGradient}>
-                      <Ionicons name="chatbubble" size={wp(4)} color="#fff" />
-                      <Text style={styles.needHelpBtnText}>Live Chat</Text>
-                    </LinearGradient>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.needHelpBtn} onPress={() => openPhone('051-111-123-456')}>
-                    <LinearGradient colors={['#8B5CF6', '#7C3AED']} style={styles.needHelpGradient}>
-                      <Ionicons name="call" size={wp(4)} color="#fff" />
-                      <Text style={styles.needHelpBtnText}>Call Us</Text>
-                    </LinearGradient>
-                  </TouchableOpacity>
-                </View>
-              </LinearGradient>
-
-              {/* Footer */}
-              <View style={styles.footer}>
-                <Text style={styles.footerText}>SehatLine v2.0.0 | CDA Healthcare Portal</Text>
-                <Text style={styles.footerSub}>Support available 24/7</Text>
-              </View>
-
-              <View style={{ height: hp(5) }} />
-            </ScrollView>
-          </SafeAreaView>
+      <SafeAreaView style={styles.safeArea}>
+        {/* Header */}
+        <View style={styles.headerContainer}>
+          <View style={styles.topHeader}>
+            <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+              <Ionicons name="arrow-back" size={wp(5.5)} color={COLORS.white} />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Help & Support</Text>
+            <View style={{ width: wp(10) }} />
+          </View>
         </View>
-      </ImageBackground>
+
+        <ScrollView 
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+          {/* Hero Section */}
+          <View style={styles.heroSection}>
+            <View style={styles.heroIcon}>
+              <Ionicons name="headset-outline" size={wp(10)} color={COLORS.primary} />
+            </View>
+            <Text style={styles.heroTitle}>How can we help you?</Text>
+            <Text style={styles.heroSubtitle}>We're here to assist you 24/7</Text>
+          </View>
+
+          {/* Quick Actions Grid */}
+          <View style={styles.quickActions}>
+            <TouchableOpacity style={[styles.quickAction, styles.cardShadow]} onPress={() => openPhone('1122')}>
+              <LinearGradient
+                colors={[COLORS.danger, '#CC0000']}
+                style={styles.quickActionGradient}
+              >
+                <Ionicons name="call-outline" size={wp(5)} color={COLORS.white} />
+                <Text style={styles.quickActionTitle}>Emergency</Text>
+                <Text style={styles.quickActionSub}>1122</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.quickAction, styles.cardShadow]} onPress={() => setShowChatModal(true)}>
+              <LinearGradient
+                colors={[COLORS.primary, COLORS.secondary]}
+                style={styles.quickActionGradient}
+              >
+                <Ionicons name="chatbubble-outline" size={wp(5)} color={COLORS.white} />
+                <Text style={styles.quickActionTitle}>Live Chat</Text>
+                <Text style={styles.quickActionSub}>Chat with us</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.quickAction, styles.cardShadow]} onPress={() => openEmail('support@sehatline.com')}>
+              <LinearGradient
+                colors={[COLORS.success, '#059669']}
+                style={styles.quickActionGradient}
+              >
+                <Ionicons name="mail-outline" size={wp(5)} color={COLORS.white} />
+                <Text style={styles.quickActionTitle}>Email</Text>
+                <Text style={styles.quickActionSub}>support@sehatline.com</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.quickAction, styles.cardShadow]} onPress={() => openPhone('051-111-123-456')}>
+              <LinearGradient
+                colors={[COLORS.appointment, '#7C3AED']}
+                style={styles.quickActionGradient}
+              >
+                <Ionicons name="call-outline" size={wp(5)} color={COLORS.white} />
+                <Text style={styles.quickActionTitle}>Call Us</Text>
+                <Text style={styles.quickActionSub}>051-111-123-456</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+
+          {/* Search Bar */}
+          <View style={styles.searchContainer}>
+            <Ionicons name="search-outline" size={wp(4.5)} color={COLORS.textSecondary} />
+            <TextInput 
+              style={styles.searchInput}
+              placeholder="Search FAQs..."
+              placeholderTextColor={COLORS.textLight}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')}>
+                <Ionicons name="close-circle" size={wp(4)} color={COLORS.textSecondary} />
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {/* Category Filter */}
+          <CategoryFilter />
+
+          {/* FAQ Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Frequently Asked Questions</Text>
+            <Text style={styles.sectionSubtitle}>{filteredFaqs.length} articles found</Text>
+            
+            {filteredFaqs.map((faq) => (
+              <TouchableOpacity 
+                key={faq.id}
+                style={[styles.faqCard, styles.cardShadow]}
+                onPress={() => toggleFaq(faq.id)}
+                activeOpacity={0.85}
+              >
+                <View style={styles.faqContent}>
+                  <View style={styles.faqHeader}>
+                    <View style={styles.faqIcon}>
+                      <Ionicons name="help-circle-outline" size={wp(4.5)} color={COLORS.primary} />
+                    </View>
+                    <View style={styles.faqInfo}>
+                      <Text style={styles.faqCategory}>{faq.category}</Text>
+                      <Text style={styles.faqQuestion}>{faq.question}</Text>
+                    </View>
+                    <Ionicons 
+                      name={expandedFaq === faq.id ? "chevron-up" : "chevron-down"} 
+                      size={wp(4.5)} 
+                      color={COLORS.textSecondary} 
+                    />
+                  </View>
+                  
+                  {expandedFaq === faq.id && (
+                    <View style={styles.faqAnswer}>
+                      <View style={styles.divider} />
+                      <Text style={styles.answerText}>{faq.answer}</Text>
+                      <TouchableOpacity style={styles.helpfulButton}>
+                        <Text style={styles.helpfulText}>Was this helpful?</Text>
+                        <Ionicons name="thumbs-up-outline" size={wp(3)} color={COLORS.primary} />
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* Still Need Help */}
+          <View style={[styles.needHelpCard, styles.cardShadow]}>
+            <Ionicons name="chatbubbles-outline" size={wp(8)} color={COLORS.primary} />
+            <Text style={styles.needHelpTitle}>Still Need Help?</Text>
+            <Text style={styles.needHelpSub}>Our support team is available 24/7</Text>
+            <View style={styles.needHelpButtons}>
+              <TouchableOpacity style={styles.needHelpBtn} onPress={() => setShowChatModal(true)}>
+                <LinearGradient colors={[COLORS.primary, COLORS.secondary]} style={styles.needHelpGradient}>
+                  <Ionicons name="chatbubble-outline" size={wp(3.5)} color={COLORS.white} />
+                  <Text style={styles.needHelpBtnText}>Live Chat</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.needHelpBtn} onPress={() => openPhone('051-111-123-456')}>
+                <LinearGradient colors={[COLORS.appointment, '#7C3AED']} style={styles.needHelpGradient}>
+                  <Ionicons name="call-outline" size={wp(3.5)} color={COLORS.white} />
+                  <Text style={styles.needHelpBtnText}>Call Us</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Footer */}
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>SehatLine v2.0.0 | CDA Healthcare Portal</Text>
+            <Text style={styles.footerSub}>Support available 24/7</Text>
+          </View>
+
+          <View style={{ height: hp(5) }} />
+        </ScrollView>
+      </SafeAreaView>
 
       <ChatModal />
     </View>
@@ -385,36 +372,46 @@ const HelpSupportScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  backgroundImage: { flex: 1 },
-  overlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.36)' },
-  safeArea: { flex: 1 },
+  container: { 
+    flex: 1, 
+    backgroundColor: COLORS.background 
+  },
+  gradientBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '100%',
+  },
+  safeArea: { 
+    flex: 1 
+  },
 
-  headerGradient: {
-    paddingTop: Platform.OS === 'ios' ? hp(2) : StatusBar.currentHeight + hp(2),
-    paddingBottom: hp(2),
-    borderBottomLeftRadius: wp(6),
-    borderBottomRightRadius: wp(6),
+  cardShadow: { ...SHADOWS.medium },
+
+  // Header
+  headerContainer: {
+    paddingBottom: hp(1),
+    paddingHorizontal: wp(5),
+    paddingTop: Platform.OS === 'ios' ? hp(1) : StatusBar.currentHeight + hp(1),
   },
   topHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: wp(5),
-    paddingTop: hp(1),
   },
-  iconBtn: {
+  backBtn: {
     width: wp(10),
     height: wp(10),
     borderRadius: wp(3),
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    backgroundColor: 'rgba(255,255,255,0.15)',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(4, 225, 245, 0.3)',
+    borderColor: 'rgba(255,255,255,0.2)',
   },
   headerTitle: { 
-    color: '#fff', 
+    color: COLORS.white, 
     fontSize: wp(5), 
     fontWeight: 'bold',
   },
@@ -427,30 +424,32 @@ const styles = StyleSheet.create({
   heroSection: {
     marginTop: hp(2),
     marginBottom: hp(2),
-    padding: wp(5),
-    borderRadius: wp(5),
+    padding: wp(4),
+    borderRadius: wp(4),
     alignItems: 'center',
+    backgroundColor: COLORS.white,
     borderWidth: 1,
-    borderColor: 'rgba(4, 225, 245, 0.2)',
+    borderColor: COLORS.border,
+    ...SHADOWS.medium,
   },
   heroIcon: {
-    width: wp(16),
-    height: wp(16),
-    borderRadius: wp(8),
-    backgroundColor: 'rgba(4, 225, 245, 0.1)',
+    width: wp(14),
+    height: wp(14),
+    borderRadius: wp(7),
+    backgroundColor: COLORS.primary + '15',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: hp(1.5),
+    marginBottom: hp(1),
   },
   heroTitle: {
-    color: '#fff',
-    fontSize: wp(5),
+    color: COLORS.text,
+    fontSize: wp(4.5),
     fontWeight: 'bold',
-    marginBottom: hp(0.5),
+    marginBottom: hp(0.3),
   },
   heroSubtitle: {
-    color: '#B2DFDB',
-    fontSize: wp(3.2),
+    color: COLORS.textSecondary,
+    fontSize: wp(3),
   },
 
   quickActions: {
@@ -458,85 +457,88 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     gap: wp(2),
-    marginBottom: hp(2.5),
+    marginBottom: hp(2),
   },
   quickAction: {
     width: (wp(92) - wp(6)) / 2,
-    borderRadius: wp(4),
+    borderRadius: wp(3.5),
     overflow: 'hidden',
   },
   quickActionGradient: {
-    padding: wp(3.5),
+    padding: wp(3),
     alignItems: 'center',
-    gap: hp(0.5),
+    gap: hp(0.3),
   },
   quickActionTitle: {
-    color: '#fff',
-    fontSize: wp(3.5),
+    color: COLORS.white,
+    fontSize: wp(3.2),
     fontWeight: 'bold',
   },
   quickActionSub: {
-    color: 'rgba(255,255,255,0.8)',
-    fontSize: wp(2.5),
+    color: COLORS.white,
+    fontSize: wp(2.3),
+    opacity: 0.8,
   },
 
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    backgroundColor: COLORS.white,
     marginBottom: hp(1.5),
-    paddingHorizontal: wp(4),
-    borderRadius: wp(6),
+    paddingHorizontal: wp(3.5),
+    borderRadius: wp(3.5),
     borderWidth: 1,
-    borderColor: 'rgba(4, 225, 245, 0.3)',
-    gap: wp(2.5),
+    borderColor: COLORS.border,
+    gap: wp(2),
+    ...SHADOWS.small,
   },
   searchInput: { 
     flex: 1, 
-    color: '#fff', 
+    color: COLORS.text, 
     fontSize: wp(3.5), 
-    paddingVertical: hp(1.5),
+    paddingVertical: hp(1.2),
   },
 
   filterContainer: {
     marginBottom: hp(2),
   },
   filterScroll: {
-    paddingVertical: hp(0.5),
-    gap: wp(2.5),
+    paddingVertical: hp(0.3),
+    gap: wp(2),
   },
   filterChip: {
-    paddingHorizontal: wp(4),
-    paddingVertical: hp(1),
+    paddingHorizontal: wp(3.5),
+    paddingVertical: hp(0.8),
     borderRadius: wp(5),
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    backgroundColor: COLORS.white,
     borderWidth: 1,
-    borderColor: 'rgba(4, 225, 245, 0.3)',
+    borderColor: COLORS.border,
+    ...SHADOWS.small,
   },
   filterChipActive: {
-    backgroundColor: '#04e1f5',
-    borderColor: '#04e1f5',
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
   },
   filterText: {
-    color: '#04e1f5',
-    fontSize: wp(3),
-    fontWeight: '600',
+    color: COLORS.textSecondary,
+    fontSize: wp(2.8),
+    fontWeight: '500',
   },
   filterTextActive: {
-    color: '#fff',
+    color: COLORS.white,
   },
 
   section: {
     marginBottom: hp(2.5),
   },
   sectionTitle: {
-    color: '#fff',
+    color: COLORS.text,
     fontSize: wp(4.2),
     fontWeight: 'bold',
-    marginBottom: hp(0.5),
+    marginBottom: hp(0.3),
   },
   sectionSubtitle: {
-    color: '#d7dbe2',
+    color: COLORS.textSecondary,
     fontSize: wp(2.8),
     marginBottom: hp(1.5),
   },
@@ -545,51 +547,51 @@ const styles = StyleSheet.create({
     borderRadius: wp(3),
     overflow: 'hidden',
     marginBottom: hp(1),
-  },
-  faqGradient: {
-    padding: wp(3.5),
+    backgroundColor: COLORS.white,
     borderWidth: 1,
-    borderColor: 'rgba(4, 225, 245, 0.1)',
-    borderRadius: wp(3),
+    borderColor: COLORS.border,
+  },
+  faqContent: {
+    padding: wp(3),
   },
   faqHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: wp(2.5),
+    gap: wp(2),
   },
   faqIcon: {
-    width: wp(9),
-    height: wp(9),
-    borderRadius: wp(2.5),
-    backgroundColor: 'rgba(4, 225, 245, 0.1)',
+    width: wp(8),
+    height: wp(8),
+    borderRadius: wp(2),
+    backgroundColor: COLORS.primary + '15',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  faqContent: {
+  faqInfo: {
     flex: 1,
   },
   faqCategory: {
-    color: '#04e1f5',
-    fontSize: wp(2.3),
+    color: COLORS.primary,
+    fontSize: wp(2.2),
     fontWeight: '600',
   },
   faqQuestion: {
-    color: '#fff',
-    fontSize: wp(3.5),
+    color: COLORS.text,
+    fontSize: wp(3.2),
     fontWeight: '600',
-    marginTop: hp(0.2),
+    marginTop: hp(0.1),
   },
   faqAnswer: {
-    marginTop: hp(1.5),
+    marginTop: hp(1),
   },
   divider: {
     height: 1,
-    backgroundColor: 'rgba(4, 225, 245, 0.1)',
-    marginBottom: hp(1),
+    backgroundColor: COLORS.border,
+    marginBottom: hp(0.8),
   },
   answerText: {
-    color: '#B2DFDB',
-    fontSize: wp(3.2),
+    color: COLORS.textSecondary,
+    fontSize: wp(3),
     lineHeight: wp(4.5),
   },
   helpfulButton: {
@@ -597,54 +599,55 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     alignSelf: 'flex-end',
     gap: wp(1),
-    marginTop: hp(1),
+    marginTop: hp(0.8),
     paddingHorizontal: wp(2),
-    paddingVertical: hp(0.5),
-    backgroundColor: 'rgba(4, 225, 245, 0.1)',
+    paddingVertical: hp(0.3),
+    backgroundColor: COLORS.primary + '10',
     borderRadius: wp(2),
   },
   helpfulText: {
-    color: '#04e1f5',
-    fontSize: wp(2.5),
+    color: COLORS.primary,
+    fontSize: wp(2.3),
   },
 
   needHelpCard: {
     borderRadius: wp(4),
-    padding: wp(5),
+    padding: wp(4),
     alignItems: 'center',
-    gap: hp(1),
+    gap: hp(0.8),
     marginBottom: hp(2),
+    backgroundColor: COLORS.white,
     borderWidth: 1,
-    borderColor: 'rgba(4, 225, 245, 0.2)',
+    borderColor: COLORS.border,
   },
   needHelpTitle: {
-    color: '#fff',
-    fontSize: wp(4.5),
+    color: COLORS.text,
+    fontSize: wp(4.2),
     fontWeight: 'bold',
   },
   needHelpSub: {
-    color: '#94A3B8',
-    fontSize: wp(3),
+    color: COLORS.textSecondary,
+    fontSize: wp(2.8),
   },
   needHelpButtons: {
     flexDirection: 'row',
-    gap: wp(3),
-    marginTop: hp(1),
+    gap: wp(2.5),
+    marginTop: hp(0.5),
   },
   needHelpBtn: {
-    borderRadius: wp(3),
+    borderRadius: wp(2.5),
     overflow: 'hidden',
   },
   needHelpGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: wp(4),
-    paddingVertical: hp(1),
+    paddingHorizontal: wp(3.5),
+    paddingVertical: hp(0.8),
     gap: wp(1.5),
   },
   needHelpBtnText: {
-    color: '#fff',
-    fontSize: wp(3),
+    color: COLORS.white,
+    fontSize: wp(2.8),
     fontWeight: '600',
   },
 
@@ -653,64 +656,65 @@ const styles = StyleSheet.create({
     marginTop: hp(2),
   },
   footerText: {
-    color: '#64748B',
+    color: COLORS.textSecondary,
     fontSize: wp(2.8),
   },
   footerSub: {
-    color: '#4B5563',
+    color: COLORS.textLight,
     fontSize: wp(2.5),
-    marginTop: hp(0.5),
+    marginTop: hp(0.3),
   },
 
   // Chat Modal Styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.95)',
+    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'flex-end',
   },
   chatContainer: {
-    backgroundColor: '#0A1520',
+    backgroundColor: COLORS.white,
     borderTopLeftRadius: wp(5),
     borderTopRightRadius: wp(5),
     height: hp(70),
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   chatHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: wp(4),
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(4, 225, 245, 0.2)',
+    padding: wp(3.5),
   },
   chatHeaderInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: wp(3),
+    gap: wp(2.5),
   },
   chatAvatar: {
-    width: wp(10),
-    height: wp(10),
-    borderRadius: wp(3),
-    backgroundColor: 'rgba(4, 225, 245, 0.1)',
+    width: wp(9),
+    height: wp(9),
+    borderRadius: wp(2.5),
+    backgroundColor: COLORS.primary + '15',
     justifyContent: 'center',
     alignItems: 'center',
   },
   chatTitle: {
-    color: '#fff',
-    fontSize: wp(4),
+    color: COLORS.white,
+    fontSize: wp(3.8),
     fontWeight: 'bold',
   },
   chatStatus: {
-    color: '#10B981',
-    fontSize: wp(2.5),
+    color: COLORS.success,
+    fontSize: wp(2.3),
   },
   chatMessages: {
     flex: 1,
+    backgroundColor: COLORS.backgroundSecondary,
   },
   chatMessagesContent: {
     padding: wp(3),
-    gap: hp(1),
+    gap: hp(0.8),
   },
   messageRow: {
     flexDirection: 'row',
@@ -723,55 +727,56 @@ const styles = StyleSheet.create({
   },
   messageBubble: {
     maxWidth: '80%',
-    padding: wp(3),
-    borderRadius: wp(4),
+    padding: wp(2.5),
+    borderRadius: wp(3.5),
   },
   userBubble: {
-    backgroundColor: '#04e1f5',
+    backgroundColor: COLORS.primary,
   },
   botBubble: {
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    backgroundColor: COLORS.white,
     borderWidth: 1,
-    borderColor: 'rgba(4, 225, 245, 0.3)',
+    borderColor: COLORS.border,
   },
   messageText: {
-    fontSize: wp(3.2),
+    fontSize: wp(3),
   },
   userMessageText: {
-    color: '#fff',
+    color: COLORS.white,
   },
   botMessageText: {
-    color: '#B2DFDB',
+    color: COLORS.text,
   },
   messageTime: {
     fontSize: wp(2),
-    color: '#64748B',
-    marginTop: hp(0.3),
+    color: COLORS.textLight,
+    marginTop: hp(0.2),
     alignSelf: 'flex-end',
   },
   chatInputContainer: {
     flexDirection: 'row',
-    padding: wp(3),
+    padding: wp(2.5),
     borderTopWidth: 1,
-    borderTopColor: 'rgba(4, 225, 245, 0.2)',
+    borderTopColor: COLORS.border,
     gap: wp(2),
+    backgroundColor: COLORS.white,
   },
   chatInput: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
-    borderRadius: wp(5),
+    backgroundColor: COLORS.backgroundSecondary,
+    borderRadius: wp(4),
     paddingHorizontal: wp(3),
-    paddingVertical: hp(1.2),
-    color: '#fff',
-    fontSize: wp(3.2),
+    paddingVertical: hp(0.8),
+    color: COLORS.text,
+    fontSize: wp(3),
   },
   sendButton: {
-    borderRadius: wp(5),
+    borderRadius: wp(4),
     overflow: 'hidden',
   },
   sendGradient: {
-    width: wp(10),
-    height: wp(10),
+    width: wp(9),
+    height: wp(9),
     justifyContent: 'center',
     alignItems: 'center',
   },

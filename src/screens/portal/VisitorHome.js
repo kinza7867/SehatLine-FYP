@@ -1,22 +1,59 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { 
-  View, Text, StyleSheet, ScrollView, TouchableOpacity, 
+import {
+  View, Text, StyleSheet, ScrollView, TouchableOpacity,
   SafeAreaView, Dimensions, Image, Modal, TextInput,
-  ImageBackground, Animated, Alert, Share, Platform, StatusBar
+  Animated, Alert, Platform, StatusBar, Linking
 } from 'react-native';
-import Ionicons from 'react-native-vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import { COLORS, SIZES, SHADOWS } from '../../theme';
 
 const { width, height } = Dimensions.get('window');
+
+// Hospital Information - Only relevant departments
+const HOSPITAL_INFO = {
+  name: "CDA Hospital Islamabad",
+  address: "Sector G-10/4, Islamabad, Pakistan",
+  phone: "+92-51-1234567",
+  emergency: "1021",
+  email: "info@cdahospital.gov.pk",
+  established: "1976",
+  beds: "850+",
+  doctors: "200+",
+  departments: ["Cardiology", "Pharmacy", "Laboratory"],
+  visitingHours: "Monday - Saturday: 9:00 AM - 5:00 PM",
+  emergencyServices: "24/7 Emergency & Trauma Center",
+  description: "CDA Hospital is a premier government healthcare facility in Islamabad, providing quality medical services since 1976.",
+};
 
 const VisitorHomeScreen = ({ navigation }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showSymptomModal, setShowSymptomModal] = useState(false);
+  const [selectedSymptom, setSelectedSymptom] = useState(null);
+  const [symptomResult, setSymptomResult] = useState('');
   const scrollY = useRef(new Animated.Value(0)).current;
 
+  const symptoms = [
+    { id: 1, name: 'Fever', icon: 'thermometer-outline', color: '#FF6B6B' },
+    { id: 2, name: 'Headache', icon: 'body-outline', color: '#FFB800' },
+    { id: 3, name: 'Chest Pain', icon: 'heart-outline', color: '#FF4D4D' },
+    { id: 4, name: 'Breathing Issue', icon: 'lungs-outline', color: '#4ECDC4' },
+    { id: 5, name: 'Cough', icon: 'medical-outline', color: '#A29BFE' },
+    { id: 6, name: 'Fatigue', icon: 'battery-dead-outline', color: '#F59E0B' },
+  ];
+
+  const symptomAdvice = {
+    'Fever': '🤒 Rest and stay hydrated. Take paracetamol if needed. Consult doctor if fever exceeds 102°F.',
+    'Headache': '🤕 Rest in a quiet dark room. Apply cold compress. Consult doctor if severe or persistent.',
+    'Chest Pain': '⚠️ This could be serious. Please call 1021 immediately or visit the emergency room.',
+    'Breathing Issue': '🫁 Sit upright and try to breathe slowly. Seek immediate medical attention.',
+    'Cough': '💊 Stay hydrated and rest. Use honey for throat. Consult doctor if persists over 3 days.',
+    'Fatigue': '😴 Get adequate rest and nutrition. If persistent, consult doctor for blood work.',
+  };
+
   useEffect(() => {
-    StatusBar.setBarStyle('light-content');
+    StatusBar.setBarStyle('dark-content');
     if (Platform.OS === 'android') {
       StatusBar.setBackgroundColor('transparent');
       StatusBar.setTranslucent(true);
@@ -28,14 +65,8 @@ const VisitorHomeScreen = ({ navigation }) => {
       try {
         navigation.navigate(screenName, params);
       } catch (error) {
-        Alert.alert(
-          'Coming Soon',
-          `This feature will be available in the next update.`,
-          [{ text: 'OK', style: 'cancel' }]
-        );
+        Alert.alert('Coming Soon', 'This feature will be available in the next update.');
       }
-    } else {
-      Alert.alert('Info', 'Navigation will be available soon!');
     }
   };
 
@@ -47,289 +78,357 @@ const VisitorHomeScreen = ({ navigation }) => {
     }
   };
 
+  const handleSymptomCheck = (symptom) => {
+    setSelectedSymptom(symptom);
+    setSymptomResult(symptomAdvice[symptom] || 'Consult doctor for proper diagnosis.');
+    setShowSymptomModal(true);
+  };
+
   const handleEmergency = () => {
     Alert.alert(
-      '🚨 Emergency Services',
-      'Select emergency service:',
+      '🚨 Emergency',
+      'Quick access to emergency services:',
       [
-        { text: '🚑 Call Ambulance', onPress: () => navigateTo('AmbulanceTrackingScreen') },
-        { text: '🆘 SOS Alert', onPress: () => navigateTo('SOS') },
-        { text: '🏥 Nearest Hospital', onPress: () => navigateTo('HospitalDirectoryScreen') },
+        { text: '🚑 Call 1021', onPress: () => Linking.openURL('tel:1021') },
+        { text: '📍 Nearest Hospital', onPress: () => {
+            const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(HOSPITAL_INFO.address)}`;
+            Linking.openURL(url);
+          }
+        },
         { text: 'Cancel', style: 'cancel' }
-      ],
-      { cancelable: true }
+      ]
     );
   };
 
-  const headerOpacity = scrollY.interpolate({
-    inputRange: [0, 100],
-    outputRange: [0, 1],
-    extrapolate: 'clamp'
-  });
+  const handleGetToken = () => {
+    navigateTo('PatientPortal');
+  };
+
+  const handleViewQueue = () => {
+    navigateTo('LiveTokenQueueScreen');
+  };
+
+  const handleAppointment = () => {
+    navigateTo('BookAppointmentScreen');
+  };
+
+  const handleCallHospital = () => {
+    Linking.openURL(`tel:${HOSPITAL_INFO.phone}`);
+  };
+
+  const handleDirections = () => {
+    const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(HOSPITAL_INFO.address)}`;
+    Linking.openURL(url);
+  };
 
   return (
-        <ImageBackground
-        source={{ uri: 'https://cdn.vectorstock.com/i/1000v/95/51/dark-blue-light-beam-background-vector-27699551.jpg' }}
-        style={styles.backgroundImage}
-        resizeMode="cover"
-        >
-
-      <SafeAreaView style={styles.safeArea}>
-        {/* Header with Back Button - Fixed spacing */}
-        <View style={styles.header}>
-          <TouchableOpacity 
-            style={styles.backButton} 
-            onPress={() => navigation.goBack()}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <Ionicons name="arrow-back" size={24} color="#04e1f5" />
-          </TouchableOpacity>
-          
-          <View style={styles.logoContainer}>
-            <Image 
-              source={require('../../../assets/logo.png')} 
-              style={styles.headerLogo}
-              resizeMode="contain"
-            />
-            <Text style={styles.headerText}>
-              SEHAT<Text style={{ color: '#FFF' }}>LINE</Text>
-            </Text>
-          </View>
-          
-          <TouchableOpacity 
-            style={styles.infoButton} 
-            onPress={() => setModalVisible(true)}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <Ionicons name="information-circle-outline" size={24} color="#04e1f5" />
-          </TouchableOpacity>
-        </View>
-
-        <ScrollView 
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
-        >
-          {/* Hero Welcome Section */}
-          <View style={styles.heroSection}>
-            <Text style={styles.greeting}>Welcome to SehatLine</Text>
-            <Text style={styles.headline}>
-              Government Hospital{'\n'}
-              <Text style={styles.cyanText}>Digital Services</Text>
-            </Text>
-            
-            {/* Search Bar */}
-            <View style={styles.searchContainer}>
-              <Ionicons name="search-outline" size={20} color="#888" style={styles.searchIcon} />
-              <TextInput 
-                placeholder="Search doctors, departments, services..." 
-                placeholderTextColor="#666"
-                style={styles.searchInput}
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                onSubmitEditing={handleSearch}
-                returnKeyType="search"
-              />
-              <TouchableOpacity onPress={handleSearch} style={styles.searchBtn}>
-                <LinearGradient colors={['#04e1f5', '#0284c7']} style={styles.searchGradient}>
-                  <Ionicons name="arrow-forward" size={20} color="#000" />
-                </LinearGradient>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Emergency SOS Banner */}
-          <TouchableOpacity onPress={handleEmergency} style={styles.emergencyButton}>
-            <LinearGradient colors={['#FF4D4D', '#CC0000']} style={styles.emergencyGradient}>
-              <Ionicons name="alert-circle" size={28} color="#FFF" />
-              <Text style={styles.emergencyText}>EMERGENCY SOS</Text>
-              <Ionicons name="chevron-forward" size={24} color="#FFF" />
-            </LinearGradient>
-          </TouchableOpacity>
-
-          {/* Category Pills */}
-          <View style={styles.pillContainer}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pillScrollContent}>
-              <CategoryPill icon="business" label="Hospitals" onPress={() => navigateTo('HospitalDirectoryScreen')} />
-              <CategoryPill icon="medkit" label="Pharmacy" onPress={() => navigateTo('MedicineListScreen')} />
-              <CategoryPill icon="flask" label="Lab Tests" onPress={() => navigateTo('LabTestsPriceScreen')} />
-              <CategoryPill icon="people" label="Doctors" onPress={() => navigateTo('DoctorListScreen')} />
-              <CategoryPill icon="calendar" label="Appointments" onPress={() => navigateTo('BookAppointmentScreen')} />
-              <CategoryPill icon="document-text" label="Reports" onPress={() => navigateTo('ReportsListScreen')} />
-            </ScrollView>
-          </View>
-
-          {/* Featured Banner - Digital OPD Pass */}
-          <View style={styles.featuredSection}>
-            <TouchableOpacity activeOpacity={0.9} onPress={() => navigateTo('PatientPortal')}>
-              <LinearGradient colors={['#04e1f5', '#0284c7']} style={styles.featureCard} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-                <View style={styles.featureTextContainer}>
-                  <View style={styles.featTag}>
-                    <Text style={styles.featTagText}>NEW FEATURE</Text>
-                  </View>
-                  <Text style={styles.featTitle}>Digital OPD Pass</Text>
-                  <Text style={styles.featDesc}>Skip long queues with AI-generated tokens for hospital visits.</Text>
-                  <View style={styles.featBtn}>
-                    <Text style={styles.featBtnText}>Get Started</Text>
-                    <Ionicons name="arrow-forward" size={14} color="#04e1f5" />
-                  </View>
-                </View>
-                <Ionicons name="qr-code" size={100} color="rgba(255,255,255,0.15)" style={styles.bgIcon} />
-              </LinearGradient>
+    <View style={styles.container}>
+      <LinearGradient
+        colors={[COLORS.primary, COLORS.background, COLORS.background]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={styles.gradientBackground}
+      >
+        <SafeAreaView style={styles.safeArea}>
+          {/* Header - Only Logo with Outline */}
+          <View style={styles.header}>
+            <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+              <Ionicons name="arrow-back" size={24} color={COLORS.white} />
             </TouchableOpacity>
-          </View>
 
-          {/* Hospital Information Section */}
-          <View style={styles.infoSection}>
-            <Text style={styles.sectionTitle}>Hospital Information</Text>
-            
-            <View style={styles.infoCards}>
-              <InfoCard 
-                icon="time-outline"
-                title="Visiting Hours"
-                content="Monday - Saturday: 9:00 AM - 5:00 PM"
-                onPress={() => navigateTo('HospitalTimingsScreen')}
-              />
-              <InfoCard 
-                icon="location-outline"
-                title="Hospital Directory"
-                content="Find departments, wards & clinics"
-                onPress={() => navigateTo('HospitalDirectoryScreen')}
-              />
-              <InfoCard 
-                icon="call-outline"
-                title="Contact & Helpline"
-                content="Emergency: 1021 | Support: 042-1234567"
-                onPress={() => navigateTo('ContactScreen')}
-              />
-              <InfoCard 
-                icon="navigate-outline"
-                title="AR Navigation"
-                content="Navigate inside hospital with AR"
-                onPress={() => navigateTo('ARNavigation')}
-              />
-            </View>
-          </View>
-
-          {/* Announcements */}
-          <View style={styles.announcementSection}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Announcements</Text>
-              <TouchableOpacity onPress={() => navigateTo('Announcements')}>
-                <Text style={styles.viewAll}>View All</Text>
-              </TouchableOpacity>
-            </View>
-            
-            <TouchableOpacity style={styles.announcementCard} onPress={() => navigateTo('Announcements')}>
-              <View style={styles.announcementBadge}>
-                <Text style={styles.announcementBadgeText}>NEW</Text>
+            <View style={styles.logoWrapper}>
+              <View style={styles.logoOutline}>
+                <Image source={require('../../../assets/logo.png')} style={styles.headerLogo} resizeMode="contain" />
               </View>
-              <Text style={styles.announcementTitle}>Free Medical Camp</Text>
-              <Text style={styles.announcementDesc}>Free checkup camp on 15th December at OPD Block</Text>
-              <Text style={styles.announcementDate}>Dec 10, 2024</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity style={styles.announcementCard} onPress={() => navigateTo('Announcements')}>
-              <Text style={styles.announcementTitle}>OPD Schedule Update</Text>
-              <Text style={styles.announcementDesc}>Winter schedule now active. OPD timings: 9AM - 4PM</Text>
-              <Text style={styles.announcementDate}>Dec 5, 2024</Text>
+            </View>
+
+            <TouchableOpacity style={styles.infoButton} onPress={() => setModalVisible(true)}>
+              <Ionicons name="information-circle-outline" size={24} color={COLORS.white} />
             </TouchableOpacity>
           </View>
 
-          {/* Health Tips */}
-          <View style={styles.tipsSection}>
-            <LinearGradient colors={['rgba(4,225,245,0.1)', 'rgba(2,132,199,0.1)']} style={styles.tipsCard}>
-              <View style={styles.tipsHeader}>
-                <Ionicons name="bulb-outline" size={24} color="#04e1f5" />
-                <Text style={styles.tipsTitle}>Health Tips</Text>
-              </View>
-              <Text style={styles.tipsText}>
-                🏥 Bring your CNIC and previous medical records for faster registration at the hospital.
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+            {/* Hero Section */}
+            <View style={styles.heroSection}>
+              <Text style={styles.greeting}>Welcome to SehatLine</Text>
+              <Text style={styles.headline}>
+                <Text style={styles.cyanText}>Smart Healthcare Services</Text>
+                {'\n'}
+                <Text style={styles.hospitalName}>{HOSPITAL_INFO.name}</Text>
               </Text>
-              <TouchableOpacity onPress={() => navigateTo('AIHealthTipsScreen')}>
-                <Text style={styles.tipsButtonText}>More Tips →</Text>
-              </TouchableOpacity>
-            </LinearGradient>
-          </View>
 
-          {/* Stats Section */}
-          <View style={styles.miniStats}>
-            <StatMini num="150+" label="Hospitals" />
-            <StatMini num="500+" label="Doctors" />
-            <StatMini num="50k+" label="Patients" />
-            <StatMini num="24/7" label="Support" />
-          </View>
-
-          {/* Footer */}
-          <View style={styles.footer}>
-            <TouchableOpacity onPress={() => navigateTo('AboutHospitalScreen')}>
-              <Text style={styles.footerLink}>About Hospital</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => navigateTo('PoliciesScreen')}>
-              <Text style={styles.footerLink}>Privacy Policy</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => navigateTo('PoliciesScreen')}>
-              <Text style={styles.footerLink}>Terms of Service</Text>
-            </TouchableOpacity>
-            <Text style={styles.copyright}>© 2024 SehatLine | Government Hospital Services</Text>
-          </View>
-        </ScrollView>
-      </SafeAreaView>
-
-      {/* Info Modal */}
-      <Modal transparent visible={modalVisible} animationType="slide">
-        <View style={styles.modalOverlay}>
-          <BlurView intensity={Platform.OS === 'ios' ? 30 : 50} tint="dark" style={styles.modalBlur}>
-            <View style={styles.modalContent}>
-              <View style={styles.modalIndicator} />
-              
-              <View style={styles.modalHeader}>
-                <Image source={require('../../../assets/logo.png')} style={styles.modalLogo} />
-                <Text style={styles.modalTitle}>SehatLine Portal</Text>
+              <View style={styles.locationBadge}>
+                <Ionicons name="location-outline" size={15} color={COLORS.danger} />
+                <Text style={styles.locationText}>1.2 km away • Islamabad</Text>
               </View>
-              
-              <ScrollView showsVerticalScrollIndicator={false} style={styles.modalScroll}>
-                <InfoRow icon="globe-outline" title="Government Hospital Services" text="Digital healthcare services for all citizens of Pakistan." />
-                <InfoRow icon="hardware-chip-outline" title="AI-Powered Assistance" text="Smart symptom checking and health recommendations." />
-                <InfoRow icon="lock-closed-outline" title="Secure & Private" text="Your health data is encrypted and protected." />
-                <InfoRow icon="medkit-outline" title="Free Services" text="Basic healthcare information available for everyone." />
-              </ScrollView>
-              
-              <View style={styles.modalButtons}>
-                <TouchableOpacity style={styles.closeBtn} onPress={() => setModalVisible(false)}>
-                  <LinearGradient colors={['#04e1f5', '#0284c7']} style={styles.closeBtnGradient}>
-                    <Text style={styles.closeBtnText}>Start Exploring</Text>
+
+              <View style={[styles.searchContainer, styles.cardShadow]}>
+                <Ionicons name="search-outline" size={20} color={COLORS.textSecondary} style={styles.searchIcon} />
+                <TextInput
+                  placeholder="Search doctors, departments, services..."
+                  placeholderTextColor={COLORS.textLight}
+                  style={styles.searchInput}
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  onSubmitEditing={handleSearch}
+                  returnKeyType="search"
+                />
+                <TouchableOpacity onPress={handleSearch} style={styles.searchBtn}>
+                  <LinearGradient colors={[COLORS.primary, COLORS.secondary]} style={styles.searchGradient}>
+                    <Ionicons name="arrow-forward" size={20} color={COLORS.white} />
                   </LinearGradient>
                 </TouchableOpacity>
               </View>
             </View>
-          </BlurView>
-        </View>
-      </Modal>
-      </ImageBackground>
+
+            {/* Main Action Cards - Queue System Integrated */}
+            <View style={styles.actionCardsRow}>
+              <TouchableOpacity style={[styles.actionCard, styles.actionCardPrimary, styles.cardShadow]} onPress={handleGetToken}>
+                <LinearGradient colors={[COLORS.primary, COLORS.secondary]} style={styles.actionCardGradient}>
+                  <View style={styles.actionCardIcon}>
+                    <Ionicons name="ticket-outline" size={28} color={COLORS.white} />
+                  </View>
+                  <Text style={styles.actionCardTitle}>Get Token</Text>
+                  <Text style={styles.actionCardDesc}>Skip the queue</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={[styles.actionCard, styles.actionCardWhite, styles.cardShadow]} onPress={handleViewQueue}>
+                <View style={styles.actionCardWhiteContent}>
+                  <View style={[styles.actionCardIconWhite, { backgroundColor: COLORS.primary + '15' }]}>
+                    <Ionicons name="list-outline" size={28} color={COLORS.primary} />
+                  </View>
+                  <Text style={styles.actionCardTitleWhite}>Queue Status</Text>
+                  <Text style={styles.actionCardDescWhite}>Check your position</Text>
+                  <View style={styles.liveBadge}>
+                    <View style={styles.liveDot} />
+                    <Text style={styles.liveBadgeText}>Live</Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.actionCardsRow}>
+              <TouchableOpacity style={[styles.actionCard, styles.actionCardWhite, styles.cardShadow]} onPress={handleAppointment}>
+                <View style={styles.actionCardWhiteContent}>
+                  <View style={[styles.actionCardIconWhite, { backgroundColor: COLORS.appointment + '15' }]}>
+                    <Ionicons name="calendar-outline" size={28} color={COLORS.appointment} />
+                  </View>
+                  <Text style={styles.actionCardTitleWhite}>Book Appointment</Text>
+                  <Text style={styles.actionCardDescWhite}>With specialist</Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={[styles.actionCard, styles.actionCardWhite, styles.cardShadow]} onPress={() => navigateTo('DoctorListScreen')}>
+                <View style={styles.actionCardWhiteContent}>
+                  <View style={[styles.actionCardIconWhite, { backgroundColor: COLORS.ai + '15' }]}>
+                    <Ionicons name="people-outline" size={28} color={COLORS.ai} />
+                  </View>
+                  <Text style={styles.actionCardTitleWhite}>Find Doctors</Text>
+                  <Text style={styles.actionCardDescWhite}>Search & book</Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+
+            {/* Departments - Only relevant ones with outline */}
+            <View style={styles.infoSection}>
+              <Text style={styles.sectionTitle}>Our Services</Text>
+              <View style={styles.serviceCards}>
+                <TouchableOpacity style={[styles.serviceCard, styles.cardShadow]} onPress={() => navigateTo('DoctorListScreen')}>
+                  <View style={[styles.serviceIcon, { backgroundColor: COLORS.primary + '15' }]}>
+                    <Ionicons name="heart-outline" size={28} color={COLORS.primary} />
+                  </View>
+                  <Text style={styles.serviceName}>Cardiology</Text>
+                  <Text style={styles.serviceDesc}>Heart care specialists</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={[styles.serviceCard, styles.cardShadow]} onPress={() => navigateTo('MedicineListScreen')}>
+                  <View style={[styles.serviceIcon, { backgroundColor: COLORS.pharmacy + '15' }]}>
+                    <Ionicons name="medkit-outline" size={28} color={COLORS.pharmacy} />
+                  </View>
+                  <Text style={styles.serviceName}>Pharmacy</Text>
+                  <Text style={styles.serviceDesc}>Medication & supplies</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={[styles.serviceCard, styles.cardShadow]} onPress={() => navigateTo('LabTestsPriceScreen')}>
+                  <View style={[styles.serviceIcon, { backgroundColor: COLORS.appointment + '15' }]}>
+                    <Ionicons name="flask-outline" size={28} color={COLORS.appointment} />
+                  </View>
+                  <Text style={styles.serviceName}>Laboratory</Text>
+                  <Text style={styles.serviceDesc}>Diagnostic tests</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Symptom Checker */}
+            <View style={styles.symptomSection}>
+              <View style={styles.symptomHeader}>
+                <Text style={styles.sectionTitle}>Symptom Checker</Text>
+                <Text style={styles.symptomSubtitle}>Select your symptom for quick advice</Text>
+              </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.symptomScroll}>
+                {symptoms.map((symptom) => (
+                  <TouchableOpacity
+                    key={symptom.id}
+                    style={[styles.symptomChip, styles.cardShadow, { borderColor: symptom.color }]}
+                    onPress={() => handleSymptomCheck(symptom.name)}
+                  >
+                    <Ionicons name={symptom.icon} size={20} color={symptom.color} />
+                    <Text style={[styles.symptomChipText, { color: symptom.color }]}>{symptom.name}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+
+            {/* Emergency - Subtle with outline */}
+            <TouchableOpacity style={[styles.emergencyRow, styles.cardShadow]} onPress={handleEmergency}>
+              <LinearGradient colors={[COLORS.danger, '#CC0000']} style={styles.emergencyGradient}>
+                <Ionicons name="alert-circle" size={20} color={COLORS.white} />
+                <Text style={styles.emergencyText}>Emergency</Text>
+                <Text style={styles.emergencyNumber}>1021</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+
+            {/* Quick Info Row */}
+            <View style={[styles.quickInfoRow, styles.cardShadow]}>
+              <TouchableOpacity style={styles.quickInfoItem} onPress={handleCallHospital}>
+                <Ionicons name="call-outline" size={20} color={COLORS.primary} />
+                <Text style={styles.quickInfoText}>Call</Text>
+              </TouchableOpacity>
+              <View style={styles.quickInfoDivider} />
+              <TouchableOpacity style={styles.quickInfoItem} onPress={handleDirections}>
+                <Ionicons name="navigate-outline" size={20} color={COLORS.primary} />
+                <Text style={styles.quickInfoText}>Directions</Text>
+              </TouchableOpacity>
+              <View style={styles.quickInfoDivider} />
+              <TouchableOpacity style={styles.quickInfoItem} onPress={() => setModalVisible(true)}>
+                <Ionicons name="information-outline" size={20} color={COLORS.primary} />
+                <Text style={styles.quickInfoText}>About</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Stats */}
+            <View style={[styles.statsRow, styles.cardShadow]}>
+              <StatMini num={HOSPITAL_INFO.beds} label="Beds" />
+              <StatMini num={HOSPITAL_INFO.doctors} label="Doctors" />
+              <StatMini num="50k+" label="Patients" />
+              <StatMini num="24/7" label="Support" />
+            </View>
+
+            {/* Footer */}
+            <View style={styles.footer}>
+              <Text style={styles.footerHospital}>{HOSPITAL_INFO.name}</Text>
+              <Text style={styles.footerAddress}>{HOSPITAL_INFO.address}</Text>
+              <Text style={styles.footerPhone}>📞 {HOSPITAL_INFO.phone}</Text>
+              <View style={styles.footerLinks}>
+                <TouchableOpacity onPress={() => navigateTo('AboutHospitalScreen')}>
+                  <Text style={styles.footerLink}>About</Text>
+                </TouchableOpacity>
+                <Text style={styles.footerDot}>•</Text>
+                <TouchableOpacity onPress={() => navigateTo('PoliciesScreen')}>
+                  <Text style={styles.footerLink}>Privacy</Text>
+                </TouchableOpacity>
+                <Text style={styles.footerDot}>•</Text>
+                <TouchableOpacity onPress={() => navigateTo('PoliciesScreen')}>
+                  <Text style={styles.footerLink}>Terms</Text>
+                </TouchableOpacity>
+              </View>
+              <Text style={styles.copyright}>© 2024 SehatLine • Smart Queue System</Text>
+            </View>
+          </ScrollView>
+        </SafeAreaView>
+
+        {/* Symptom Result Modal */}
+        <Modal visible={showSymptomModal} transparent animationType="fade">
+          <View style={styles.modalOverlay}>
+            <View style={[styles.symptomModalContent, styles.cardShadow]}>
+              <View style={styles.symptomModalHeader}>
+                <View style={[styles.symptomModalIcon, { backgroundColor: COLORS.primary + '15' }]}>
+                  <Ionicons name="medical-outline" size={32} color={COLORS.primary} />
+                </View>
+                <Text style={styles.symptomModalTitle}>Symptom Advice</Text>
+                <TouchableOpacity onPress={() => setShowSymptomModal(false)} style={styles.symptomModalClose}>
+                  <Ionicons name="close" size={24} color={COLORS.textSecondary} />
+                </TouchableOpacity>
+              </View>
+              <View style={styles.symptomModalBody}>
+                <Text style={styles.symptomModalLabel}>Selected Symptom</Text>
+                <Text style={styles.symptomModalSymptom}>{selectedSymptom}</Text>
+                <View style={styles.symptomModalDivider} />
+                <Text style={styles.symptomModalLabel}>Recommendation</Text>
+                <Text style={styles.symptomModalText}>{symptomResult}</Text>
+              </View>
+              <View style={styles.symptomModalActions}>
+                <TouchableOpacity style={styles.symptomModalBtn} onPress={() => setShowSymptomModal(false)}>
+                  <Text style={styles.symptomModalBtnText}>Got it</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.symptomModalBtn, styles.symptomModalBtnPrimary]} onPress={() => {
+                  setShowSymptomModal(false);
+                  navigateTo('BookAppointmentScreen');
+                }}>
+                  <Text style={styles.symptomModalBtnTextPrimary}>Book Appointment</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Hospital Info Modal */}
+        <Modal transparent visible={modalVisible} animationType="slide">
+          <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setModalVisible(false)}>
+            <TouchableOpacity activeOpacity={1} onPress={() => {}} style={[styles.modalContent, styles.cardShadow]}>
+              <View style={styles.modalIndicator} />
+              <View style={styles.modalHeader}>
+                <Image source={require('../../../assets/logo.png')} style={styles.modalLogo} />
+                <Text style={styles.modalTitle}>{HOSPITAL_INFO.name}</Text>
+              </View>
+
+              <ScrollView showsVerticalScrollIndicator={false} style={styles.modalScroll}>
+                <View style={styles.modalInfoSection}>
+                  <Text style={styles.modalInfoText}>{HOSPITAL_INFO.description}</Text>
+                </View>
+                <View style={styles.modalInfoRow}>
+                  <Ionicons name="business-outline" size={20} color={COLORS.primary} />
+                  <Text style={styles.modalInfoLabel}>Established: {HOSPITAL_INFO.established}</Text>
+                </View>
+                <View style={styles.modalInfoRow}>
+                  <Ionicons name="location-outline" size={20} color={COLORS.primary} />
+                  <Text style={styles.modalInfoLabel}>{HOSPITAL_INFO.address}</Text>
+                </View>
+                <View style={styles.modalInfoRow}>
+                  <Ionicons name="call-outline" size={20} color={COLORS.primary} />
+                  <Text style={styles.modalInfoLabel}>Emergency: {HOSPITAL_INFO.emergency}</Text>
+                </View>
+                <View style={styles.modalInfoRow}>
+                  <Ionicons name="time-outline" size={20} color={COLORS.primary} />
+                  <Text style={styles.modalInfoLabel}>Visiting Hours: {HOSPITAL_INFO.visitingHours}</Text>
+                </View>
+                <View style={styles.modalDepartments}>
+                  <Text style={styles.modalDeptTitle}>Departments</Text>
+                  <View style={styles.modalDeptList}>
+                    {HOSPITAL_INFO.departments.map((dept, index) => (
+                      <View key={index} style={styles.modalDeptTag}>
+                        <Text style={styles.modalDeptText}>{dept}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              </ScrollView>
+
+              <TouchableOpacity style={[styles.closeBtn, styles.cardShadow]} onPress={() => setModalVisible(false)}>
+                <LinearGradient colors={[COLORS.primary, COLORS.secondary]} style={styles.closeBtnGradient}>
+                  <Text style={styles.closeBtnText}>Close</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </Modal>
+      </LinearGradient>
+    </View>
   );
 };
 
 // Sub-Components
-const CategoryPill = ({ icon, label, onPress }) => (
-  <TouchableOpacity style={styles.pill} onPress={onPress}>
-    <Ionicons name={icon} size={18} color="#04e1f5" />
-    <Text style={styles.pillText}>{label}</Text>
-  </TouchableOpacity>
-);
-
-const InfoCard = ({ icon, title, content, onPress }) => (
-  <TouchableOpacity style={styles.infoCard} onPress={onPress}>
-    <View style={styles.infoCardIcon}>
-      <Ionicons name={icon} size={24} color="#04e1f5" />
-    </View>
-    <View style={styles.infoCardContent}>
-      <Text style={styles.infoCardTitle}>{title}</Text>
-      <Text style={styles.infoCardText} numberOfLines={1}>{content}</Text>
-    </View>
-    <Ionicons name="chevron-forward" size={20} color="#666" />
-  </TouchableOpacity>
-);
-
 const StatMini = ({ num, label }) => (
   <View style={styles.miniStatItem}>
     <Text style={styles.miniStatNum}>{num}</Text>
@@ -337,584 +436,298 @@ const StatMini = ({ num, label }) => (
   </View>
 );
 
-const InfoRow = ({ icon, title, text }) => (
-  <View style={styles.infoRow}>
-    <View style={styles.infoIconCircle}>
-      <Ionicons name={icon} size={20} color="#04e1f5" />
-    </View>
-    <View style={{ flex: 1, marginLeft: 15 }}>
-      <Text style={styles.infoRowTitle}>{title}</Text>
-      <Text style={styles.infoRowDesc}>{text}</Text>
-    </View>
-  </View>
-);
-
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-  },
-  
-  backgroundImage: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    width: '100%',
-    height: '100%',
-  },
-  
-  safeArea: {
-    flex: 1,
-    backgroundColor: 'transparent',
-  },
-  
+  container: { flex: 1, backgroundColor: COLORS.background },
+  gradientBackground: { flex: 1 },
+  safeArea: { flex: 1 },
+
+  // Header - Logo only with outline
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: SIZES.xl,
     paddingTop: Platform.OS === 'ios' ? 10 : StatusBar.currentHeight + 10,
-    paddingBottom: 15,
-    backgroundColor: 'transparent',
+    paddingBottom: SIZES.md,
   },
-  
   backButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(4,225,245,0.15)',
+    width: 40, height: 40,
+    justifyContent: 'center', alignItems: 'center',
     borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    ...SHADOWS.medium,
   },
-  
-  logoContainer: { 
-    flexDirection: 'row', 
+  logoWrapper: {
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 25,
+    justifyContent: 'center',
   },
-  
-  headerLogo: { 
-    width: 30, 
-    height: 30, 
-    marginRight: 8,
-    borderRadius: 15,
-  },
-  
-  headerText: { 
-    color: '#04e1f5', 
-    fontWeight: '900', 
-    fontSize: 18, 
-    letterSpacing: 1 
-  },
-  
-  infoButton: { 
-    width: 40, 
-    height: 40, 
-    justifyContent: 'center', 
+  logoOutline: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 2,
+    borderColor: COLORS.navy,
+    backgroundColor: 'rgba(255,255,255,0.1)',
     alignItems: 'center',
-    backgroundColor: 'rgba(4,225,245,0.15)',
+    justifyContent: 'center',
+    ...SHADOWS.medium,
+  },
+  headerLogo: { width: 40, height: 40, borderRadius: 20 },
+  infoButton: {
+    width: 40, height: 40,
+    justifyContent: 'center', alignItems: 'center',
     borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    ...SHADOWS.medium,
   },
-  
-  scrollContent: {
-    paddingBottom: Platform.OS === 'ios' ? 100 : 80,
-  },
-  
-  heroSection: { 
-    paddingHorizontal: 20, 
-    marginTop: 10, 
-    marginBottom: 20 
-  },
-  
-  greeting: { 
-    color: '#AAA', 
-    fontSize: 14, 
-    fontWeight: '500' 
-  },
-  
-  headline: { 
-    color: '#FFF', 
-    fontSize: 32, 
-    fontWeight: 'bold', 
-    marginTop: 5, 
-    lineHeight: 40 
-  },
-  
-  cyanText: { 
-    color: '#04e1f5' 
-  },
-  
-  searchContainer: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    backgroundColor: 'rgba(255,255,255,0.1)', 
-    borderRadius: 15, 
-    marginTop: 20, 
-    height: 55, 
-    borderWidth: 1, 
-    borderColor: 'rgba(255,255,255,0.15)',
-    overflow: 'hidden',
-  },
-  
-  searchIcon: {
-    marginLeft: 15,
-  },
-  
-  searchInput: { 
-    flex: 1, 
-    color: '#FFF', 
-    paddingHorizontal: 12, 
-    fontSize: 14 
-  },
-  
-  searchBtn: {
-    width: 45,
-    height: 45,
-    marginRight: 5,
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  
-  searchGradient: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  
-  emergencyButton: {
-    marginHorizontal: 20,
-    marginBottom: 20,
-    borderRadius: 15,
-    overflow: 'hidden',
-    elevation: 5,
-    shadowColor: '#FF4D4D',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-  },
-  
-  emergencyGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    gap: 12,
-  },
-  
-  emergencyText: {
-    color: '#FFF',
-    fontSize: 18,
-    fontWeight: 'bold',
-    letterSpacing: 1,
-  },
-  
-  pillContainer: { 
-    backgroundColor: 'transparent', 
-    paddingVertical: 10,
-    marginBottom: 10,
-  },
-  
-  pillScrollContent: {
-    paddingHorizontal: 20,
-    gap: 10,
-  },
-  
-  pill: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    backgroundColor: 'rgba(0, 29, 61, 0.9)', 
-    paddingHorizontal: 18, 
-    paddingVertical: 10, 
-    borderRadius: 25, 
-    borderWidth: 1, 
-    borderColor: 'rgba(4,225,245,0.3)' 
-  },
-  
-  pillText: { 
-    color: '#FFF', 
-    fontSize: 13, 
-    fontWeight: '600', 
-    marginLeft: 8 
-  },
-  
-  featuredSection: { 
-    paddingHorizontal: 20, 
-    marginTop: 10,
-    marginBottom: 20,
-  },
-  
-  featureCard: { 
-    borderRadius: 25, 
-    padding: 25, 
-    position: 'relative', 
-    overflow: 'hidden',
-  },
-  
-  featureTextContainer: { 
-    width: '70%' 
-  },
-  
-  featTag: {
-    backgroundColor: 'rgba(255,255,255,0.3)',
+
+  scrollContent: { paddingBottom: Platform.OS === 'ios' ? 100 : 80 },
+
+  // Hero Section
+  heroSection: { paddingHorizontal: SIZES.xl, marginTop: 10, marginBottom: SIZES.md },
+  greeting: { color: COLORS.navy, fontSize: SIZES.body, fontWeight: '500', opacity: 0.9 },
+  headline: { marginTop: 5 },
+  hospitalName: { color: COLORS.white, fontSize: 13, fontWeight: 'bold' },
+  cyanText: { color: COLORS.white, fontSize: 24, fontWeight: '600' },
+
+  locationBadge: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: 'rgba(73, 71, 71, 0.38)',
+    paddingHorizontal: 12, paddingVertical: 4,
+    borderRadius: 12, marginTop: 8,
     alignSelf: 'flex-start',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
+    ...SHADOWS.small,
   },
-  
-  featTagText: {
-    color: '#000',
-    fontSize: 10,
-    fontWeight: 'bold',
+  locationText: { fontSize: SIZES.small, color: COLORS.white, fontWeight: '500', marginLeft: 6 },
+
+  searchContainer: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: COLORS.white,
+    borderRadius: 15, marginTop: SIZES.md,
+    height: 52,
+    overflow: 'hidden',
+    ...SHADOWS.medium,
   },
-  
-  featTitle: { 
-    color: '#000', 
-    fontSize: 24, 
-    fontWeight: '900', 
-    marginTop: 12 
-  },
-  
-  featDesc: { 
-    color: '#000', 
-    fontSize: 13, 
-    marginTop: 8, 
-    opacity: 0.8,
-    lineHeight: 18,
-  },
-  
-  featBtn: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    backgroundColor: '#000', 
-    alignSelf: 'flex-start', 
-    marginTop: 15, 
-    paddingHorizontal: 16, 
-    paddingVertical: 10, 
-    borderRadius: 20 
-  },
-  
-  featBtnText: { 
-    color: '#04e1f5', 
-    fontSize: 12, 
-    fontWeight: 'bold', 
-    marginRight: 6 
-  },
-  
-  bgIcon: { 
-    position: 'absolute', 
-    right: 20, 
-    bottom: 20,
-    opacity: 0.3,
-  },
-  
-  infoSection: {
-    paddingHorizontal: 20,
-    marginBottom: 20,
-  },
-  
-  sectionTitle: {
-    color: '#FFF',
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 15,
-  },
-  
-  infoCards: {
-    gap: 12,
-  },
-  
-  infoCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    padding: 15,
-    borderRadius: 15,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
-  
-  infoCardIcon: {
-    width: 45,
-    height: 45,
-    borderRadius: 12,
-    backgroundColor: 'rgba(4,225,245,0.15)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 15,
-  },
-  
-  infoCardContent: {
-    flex: 1,
-  },
-  
-  infoCardTitle: {
-    color: '#04e1f5',
-    fontSize: 14,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  
-  infoCardText: {
-    color: '#CCC',
-    fontSize: 11,
-  },
-  
-  announcementSection: {
-    paddingHorizontal: 20,
-    marginBottom: 20,
-  },
-  
-  sectionHeader: {
+  searchIcon: { marginLeft: 15 },
+  searchInput: { flex: 1, color: COLORS.text, paddingHorizontal: SIZES.md, fontSize: SIZES.body },
+  searchBtn: { width: 42, height: 42, marginRight: 5, borderRadius: 12, overflow: 'hidden' },
+  searchGradient: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+
+  // Action Cards
+  actionCardsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 15,
+    paddingHorizontal: SIZES.xl,
+    marginBottom: SIZES.md,
   },
-  
-  viewAll: {
-    color: '#04e1f5',
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  
-  announcementCard: {
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    padding: 15,
-    borderRadius: 15,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
-  
-  announcementBadge: {
-    backgroundColor: '#04e1f5',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
-    alignSelf: 'flex-start',
-    marginBottom: 8,
-  },
-  
-  announcementBadgeText: {
-    color: '#000',
-    fontSize: 8,
-    fontWeight: 'bold',
-  },
-  
-  announcementTitle: {
-    color: '#FFF',
-    fontSize: 15,
-    fontWeight: 'bold',
-    marginBottom: 6,
-  },
-  
-  announcementDesc: {
-    color: '#CCC',
-    fontSize: 12,
-    marginBottom: 8,
-    lineHeight: 16,
-  },
-  
-  announcementDate: {
-    color: '#888',
-    fontSize: 10,
-  },
-  
-  tipsSection: {
-    paddingHorizontal: 20,
-    marginBottom: 20,
-  },
-  
-  tipsCard: {
-    padding: 20,
-    borderRadius: 15,
-    borderWidth: 1,
-    borderColor: 'rgba(4,225,245,0.3)',
-  },
-  
-  tipsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-    gap: 8,
-  },
-  
-  tipsTitle: {
-    color: '#04e1f5',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  
-  tipsText: {
-    color: '#FFF',
-    fontSize: 13,
-    lineHeight: 20,
-    marginBottom: 12,
-  },
-  
-  tipsButtonText: {
-    color: '#04e1f5',
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  
-  miniStats: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-around', 
-    marginVertical: 20, 
-    paddingHorizontal: 20,
-    flexWrap: 'wrap',
-    gap: 20,
-  },
-  
-  miniStatItem: { 
-    alignItems: 'center',
-    minWidth: 70,
-  },
-  
-  miniStatNum: { 
-    color: '#04e1f5', 
-    fontSize: 20, 
-    fontWeight: 'bold' 
-  },
-  
-  miniStatLabel: { 
-    color: '#888', 
-    fontSize: 10, 
-    marginTop: 4,
-    fontWeight: '500',
-  },
-  
-  footer: {
-    paddingHorizontal: 20,
-    paddingVertical: 30,
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.1)',
-    marginTop: 10,
-  },
-  
-  footerLink: {
-    color: '#AAA',
-    fontSize: 12,
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  
-  copyright: {
-    color: '#666',
-    fontSize: 10,
-    marginTop: 10,
-    textAlign: 'center',
-  },
-  
-  modalOverlay: { 
-    flex: 1, 
-    justifyContent: 'flex-end' 
-  },
-  
-  modalBlur: { 
-    flex: 1, 
-    justifyContent: 'flex-end' 
-  },
-  
-  modalContent: { 
-    backgroundColor: '#000', 
-    borderTopLeftRadius: 30, 
-    borderTopRightRadius: 30, 
-    padding: 25, 
-    borderWidth: 1, 
-    borderColor: 'rgba(4,225,245,0.2)',
-    maxHeight: height * 0.9,
-  },
-  
-  modalScroll: {
-    maxHeight: height * 0.5,
-  },
-  
-  modalIndicator: { 
-    width: 40, 
-    height: 5, 
-    backgroundColor: '#333', 
-    alignSelf: 'center', 
-    borderRadius: 10, 
-    marginBottom: 20 
-  },
-  
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 25,
-    gap: 12,
-  },
-  
-  modalLogo: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-  },
-  
-  modalTitle: { 
-    color: '#FFF', 
-    fontSize: 22, 
-    fontWeight: 'bold', 
-    textAlign: 'center' 
-  },
-  
-  infoRow: { 
-    flexDirection: 'row', 
-    marginBottom: 20,
-    alignItems: 'flex-start',
-  },
-  
-  infoIconCircle: { 
-    width: 40, 
-    height: 40, 
-    borderRadius: 20, 
-    backgroundColor: 'rgba(4,225,245,0.1)', 
-    justifyContent: 'center', 
-    alignItems: 'center' 
-  },
-  
-  infoRowTitle: { 
-    color: '#FFF', 
-    fontSize: 15, 
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  
-  infoRowDesc: { 
-    color: '#AAA', 
-    fontSize: 12, 
-    lineHeight: 16,
-  },
-  
-  modalButtons: {
-    gap: 12,
-    marginTop: 20,
-  },
-  
-  closeBtn: { 
-    borderRadius: 15, 
+  actionCard: {
+    width: width / 2 - 28,
+    borderRadius: 16,
     overflow: 'hidden',
   },
-  
-  closeBtnGradient: {
-    paddingVertical: 16,
+  actionCardPrimary: { ...SHADOWS.medium },
+  actionCardGradient: {
+    padding: 16,
     alignItems: 'center',
+    minHeight: 100,
+    justifyContent: 'center',
   },
-  
-  closeBtnText: { 
-    color: '#000', 
-    fontWeight: 'bold', 
-    fontSize: 15 
+  actionCardIcon: {
+    width: 48, height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center', alignItems: 'center',
+    marginBottom: 8,
   },
+  actionCardTitle: { color: COLORS.white, fontSize: SIZES.h4, fontWeight: 'bold' },
+  actionCardDesc: { color: COLORS.white, fontSize: SIZES.small, opacity: 0.8 },
+
+  actionCardWhite: {
+    backgroundColor: COLORS.white,
+    padding: 16,
+    alignItems: 'center',
+    minHeight: 100,
+    justifyContent: 'center',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    ...SHADOWS.medium,
+  },
+  actionCardWhiteContent: { alignItems: 'center' },
+  actionCardIconWhite: {
+    width: 48, height: 48,
+    borderRadius: 24,
+    justifyContent: 'center', alignItems: 'center',
+    marginBottom: 8,
+  },
+  actionCardTitleWhite: { color: COLORS.text, fontSize: SIZES.h4, fontWeight: 'bold' },
+  actionCardDescWhite: { color: COLORS.textSecondary, fontSize: SIZES.small },
+
+  liveBadge: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: COLORS.success + '15',
+    paddingHorizontal: 8, paddingVertical: 2,
+    borderRadius: 8, marginTop: 4,
+  },
+  liveDot: {
+    width: 6, height: 6,
+    borderRadius: 3,
+    backgroundColor: COLORS.success,
+    marginRight: 4,
+  },
+  liveBadgeText: { color: COLORS.success, fontSize: 8, fontWeight: 'bold' },
+
+  // Services (Only 3)
+  infoSection: { paddingHorizontal: SIZES.xl, marginBottom: SIZES.xl },
+  sectionTitle: { color: COLORS.text, fontSize: SIZES.h3, fontWeight: 'bold', marginBottom: SIZES.md },
+  serviceCards: { flexDirection: 'row', justifyContent: 'space-between' },
+  serviceCard: {
+    width: width / 3 - 24,
+    backgroundColor: COLORS.white,
+    padding: SIZES.md,
+    borderRadius: 16,
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: COLORS.border,
+    ...SHADOWS.medium,
+  },
+  serviceIcon: { width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
+  serviceName: { color: COLORS.text, fontSize: SIZES.small, fontWeight: 'bold' },
+  serviceDesc: { color: COLORS.textSecondary, fontSize: SIZES.xSmall, textAlign: 'center', marginTop: 2 },
+
+  // Symptom Checker
+  symptomSection: { paddingHorizontal: SIZES.xl, marginBottom: SIZES.xl },
+  symptomHeader: { marginBottom: SIZES.md },
+  symptomSubtitle: { color: COLORS.textSecondary, fontSize: SIZES.small, marginTop: 2 },
+  symptomScroll: { paddingVertical: 4 },
+  symptomChip: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: COLORS.white,
+    paddingHorizontal: 14, paddingVertical: 8,
+    borderRadius: 20, marginRight: 10,
+    borderWidth: 1.5,
+    ...SHADOWS.medium,
+  },
+  symptomChipText: { fontSize: SIZES.small, fontWeight: '500', marginLeft: 6 },
+
+  // Emergency Row
+  emergencyRow: { marginHorizontal: SIZES.xl, marginBottom: SIZES.md, borderRadius: 12, overflow: 'hidden', ...SHADOWS.medium },
+  emergencyGradient: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    paddingVertical: 10, gap: 12,
+  },
+  emergencyText: { color: COLORS.white, fontSize: SIZES.body, fontWeight: '600' },
+  emergencyNumber: { color: COLORS.white, fontSize: SIZES.body, fontWeight: 'bold', backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 10, paddingVertical: 2, borderRadius: 8 },
+
+  // Quick Info
+  quickInfoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    backgroundColor: COLORS.white,
+    marginHorizontal: SIZES.xl,
+    paddingVertical: SIZES.sm,
+    borderRadius: 15,
+    marginBottom: SIZES.xl,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    ...SHADOWS.medium,
+  },
+  quickInfoItem: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8 },
+  quickInfoDivider: { width: 1, height: 20, backgroundColor: COLORS.border },
+  quickInfoText: { fontSize: SIZES.small, color: COLORS.text, fontWeight: '500' },
+
+  // Stats
+  statsRow: {
+    flexDirection: 'row', justifyContent: 'space-around',
+    marginHorizontal: SIZES.xl,
+    paddingVertical: SIZES.lg,
+    backgroundColor: COLORS.white,
+    borderRadius: 15,
+    marginBottom: SIZES.xl,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    ...SHADOWS.medium,
+  },
+  miniStatItem: { alignItems: 'center', minWidth: 65 },
+  miniStatNum: { color: COLORS.primary, fontSize: SIZES.h3, fontWeight: 'bold' },
+  miniStatLabel: { color: COLORS.textSecondary, fontSize: SIZES.xSmall, marginTop: 4, fontWeight: '500' },
+
+  // Card Shadow Utility
+  cardShadow: { ...SHADOWS.medium },
+
+  // Footer
+  footer: {
+    paddingHorizontal: SIZES.xl,
+    paddingVertical: 24,
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  footerHospital: { fontSize: SIZES.h5, fontWeight: 'bold', color: COLORS.text, marginBottom: 4 },
+  footerAddress: { fontSize: SIZES.small, color: COLORS.textSecondary, marginBottom: 4 },
+  footerPhone: { fontSize: SIZES.small, color: COLORS.textSecondary, marginBottom: 12 },
+  footerLinks: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
+  footerLink: { color: COLORS.primary, fontSize: SIZES.small, fontWeight: '500' },
+  footerDot: { color: COLORS.textLight, fontSize: SIZES.body },
+  copyright: { color: COLORS.textLight, fontSize: SIZES.xSmall, textAlign: 'center' },
+
+  // Symptom Modal
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
+  symptomModalContent: {
+    backgroundColor: COLORS.white,
+    borderRadius: 24,
+    padding: 24,
+    width: width * 0.9,
+    ...SHADOWS.large,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  symptomModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  symptomModalIcon: { width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center', marginRight: 12 },
+  symptomModalTitle: { flex: 1, fontSize: SIZES.h4, fontWeight: 'bold', color: COLORS.text },
+  symptomModalClose: { padding: 4 },
+  symptomModalBody: { marginBottom: 16 },
+  symptomModalLabel: { fontSize: SIZES.small, color: COLORS.textSecondary, marginBottom: 4 },
+  symptomModalSymptom: { fontSize: SIZES.h4, fontWeight: 'bold', color: COLORS.text, marginBottom: 8 },
+  symptomModalDivider: { height: 1, backgroundColor: COLORS.border, marginVertical: 8 },
+  symptomModalText: { fontSize: SIZES.body, color: COLORS.textSecondary, lineHeight: 22 },
+  symptomModalActions: { flexDirection: 'row', gap: 12, marginTop: 8 },
+  symptomModalBtn: { flex: 1, paddingVertical: 12, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border, alignItems: 'center' },
+  symptomModalBtnText: { color: COLORS.text, fontWeight: '600' },
+  symptomModalBtnPrimary: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  symptomModalBtnTextPrimary: { color: COLORS.white, fontWeight: '600' },
+
+  // Hospital Info Modal
+  modalContent: {
+    backgroundColor: COLORS.white,
+    borderTopLeftRadius: 30, borderTopRightRadius: 30,
+    padding: 25,
+    maxHeight: height * 0.9,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    ...SHADOWS.large,
+  },
+  modalScroll: { maxHeight: height * 0.5 },
+  modalIndicator: { width: 40, height: 5, backgroundColor: COLORS.border, alignSelf: 'center', borderRadius: 10, marginBottom: 20 },
+  modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 20, gap: 12 },
+  modalLogo: { width: 40, height: 40, borderRadius: 20 },
+  modalTitle: { color: COLORS.text, fontSize: SIZES.h3, fontWeight: 'bold', textAlign: 'center' },
+  modalInfoSection: { marginBottom: 16 },
+  modalInfoText: { fontSize: SIZES.body, color: COLORS.textSecondary, lineHeight: 20, textAlign: 'center' },
+  modalInfoRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: COLORS.border },
+  modalInfoLabel: { fontSize: SIZES.body, color: COLORS.text, flex: 1 },
+  modalDepartments: { marginTop: 12 },
+  modalDeptTitle: { fontSize: SIZES.body, fontWeight: 'bold', color: COLORS.text, marginBottom: 8 },
+  modalDeptList: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  modalDeptTag: { backgroundColor: COLORS.primary + '10', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, borderWidth: 1, borderColor: COLORS.primary + '30' },
+  modalDeptText: { fontSize: SIZES.xSmall, color: COLORS.primary, fontWeight: '500' },
+  closeBtn: { borderRadius: 15, overflow: 'hidden', marginTop: SIZES.xl, ...SHADOWS.button },
+  closeBtnGradient: { paddingVertical: 16, alignItems: 'center' },
+  closeBtnText: { color: COLORS.white, fontWeight: 'bold', fontSize: SIZES.h5 },
 });
 
 export default VisitorHomeScreen;

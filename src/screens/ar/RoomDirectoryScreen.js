@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, TextInput, FlatList, SafeAreaView,
-  TouchableOpacity, Dimensions, Platform, StatusBar, ImageBackground,
-  ScrollView
+  TouchableOpacity, Dimensions, Platform, StatusBar,
+  ScrollView, Alert
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { COLORS, SIZES, SHADOWS } from '../../theme';
 
 const { width, height } = Dimensions.get('window');
 
@@ -52,7 +53,7 @@ const RoomDirectoryScreen = ({ navigation }) => {
     { id: '20', name: 'Operation Theatre', floor: '3rd Floor', room: '305-OT', icon: 'medical-outline', description: 'Surgical Suites' },
     { id: '21', name: 'Recovery Room', floor: '3rd Floor', room: '310-RR', icon: 'bed-outline', description: 'Post-operative Care' },
     { id: '22', name: 'Administration Office', floor: '3rd Floor', room: '315-AD', icon: 'business-outline', description: 'Hospital Management' },
-    { id: '23', name: 'Doctors Lounge', floor: '3rd Floor', room: '320-DL', icon: 'people-outline', description: 'Staff休息室' },
+    { id: '23', name: 'Doctors Lounge', floor: '3rd Floor', room: '320-DL', icon: 'people-outline', description: 'Staff Lounge' },
   ];
 
   const filteredRooms = rooms.filter(room => {
@@ -67,11 +68,11 @@ const RoomDirectoryScreen = ({ navigation }) => {
     const colors = {
       'Basement': '#6B7280',
       'Ground Floor': '#10B981',
-      '1st Floor': '#04e1f5',
-      '2nd Floor': '#8B5CF6',
-      '3rd Floor': '#F59E0B',
+      '1st Floor': COLORS.primary,
+      '2nd Floor': COLORS.appointment,
+      '3rd Floor': COLORS.warning,
     };
-    return colors[floor] || '#04e1f5';
+    return colors[floor] || COLORS.primary;
   };
 
   const FloorFilter = () => (
@@ -97,16 +98,13 @@ const RoomDirectoryScreen = ({ navigation }) => {
 
   const renderRoomItem = ({ item }) => (
     <TouchableOpacity 
-      style={styles.roomCard}
+      style={[styles.roomCard, styles.cardShadow]}
       activeOpacity={0.85}
-      onPress={() => navigation.navigate('ARNavigation', { room: item.room, department: item.name })}
+      onPress={() => Alert.alert('Navigation', `Navigate to ${item.name} - ${item.room}`)}
     >
-      <LinearGradient
-        colors={['rgba(0, 0, 0, 0.55)', 'rgba(0, 0, 0, 0.45)']}
-        style={styles.cardGradient}
-      >
+      <View style={styles.cardContent}>
         <View style={[styles.floorIcon, { backgroundColor: getFloorColor(item.floor) + '15' }]}>
-          <Ionicons name={item.icon} size={wp(6)} color={getFloorColor(item.floor)} />
+          <Ionicons name={item.icon} size={wp(5.5)} color={getFloorColor(item.floor)} />
         </View>
         
         <View style={styles.roomDetails}>
@@ -114,20 +112,20 @@ const RoomDirectoryScreen = ({ navigation }) => {
           <Text style={styles.roomDescription} numberOfLines={1}>{item.description}</Text>
           <View style={styles.roomMeta}>
             <View style={styles.metaBadge}>
-              <Ionicons name="location-outline" size={wp(3)} color="#04e1f5" />
+              <Ionicons name="location-outline" size={wp(2.5)} color={COLORS.textSecondary} />
               <Text style={styles.metaText}>Room: {item.room}</Text>
             </View>
-            <View style={[styles.floorBadge, { backgroundColor: getFloorColor(item.floor) + '20' }]}>
-              <Ionicons name="layers-outline" size={wp(2.5)} color={getFloorColor(item.floor)} />
+            <View style={[styles.floorBadge, { backgroundColor: getFloorColor(item.floor) + '15' }]}>
+              <Ionicons name="layers-outline" size={wp(2)} color={getFloorColor(item.floor)} />
               <Text style={[styles.floorText, { color: getFloorColor(item.floor) }]}>{item.floor}</Text>
             </View>
           </View>
         </View>
         
         <View style={styles.navIcon}>
-          <Ionicons name="navigate-circle" size={wp(8)} color="#04e1f5" />
+          <Ionicons name="chevron-forward" size={wp(4.5)} color={COLORS.primary} />
         </View>
-      </LinearGradient>
+      </View>
     </TouchableOpacity>
   );
 
@@ -135,164 +133,175 @@ const RoomDirectoryScreen = ({ navigation }) => {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
       
-      <ImageBackground
-        source={{ uri: 'https://i.pinimg.com/736x/3d/01/5f/3d015f0c3c861532da0215caa8207a15.jpg' }}
-        style={styles.backgroundImage}
-        resizeMode="cover"
-      >
-        <View style={styles.overlay}>
-          <SafeAreaView style={styles.safeArea}>
-            <ScrollView 
-              style={styles.mainScroll}
-              contentContainerStyle={styles.scrollContent}
-              showsVerticalScrollIndicator={false}
-            >
-              {/* Header */}
-              <LinearGradient
-                colors={['rgba(0, 29, 61, 0.95)', 'rgba(0, 8, 20, 0.85)']}
-                style={styles.headerGradient}
-              >
-                <View style={styles.topHeader}>
-                  <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.goBack()}>
-                    <Ionicons name="chevron-back" size={wp(6)} color="#04e1f5" />
-                  </TouchableOpacity>
-                  <Text style={styles.headerTitle}>Room Directory</Text>
-                  <View style={{ width: wp(10) }} />
-                </View>
+      <LinearGradient
+        colors={[COLORS.primary, COLORS.secondary, COLORS.background]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 0.25 }}
+        style={styles.gradientBackground}
+      />
 
-                {/* Search Bar */}
-                <View style={styles.searchContainer}>
-                  <Ionicons name="search" size={wp(5)} color="#04e1f5" />
-                  <TextInput 
-                    style={styles.searchInput}
-                    placeholder="Search by room name, number or service..."
-                    placeholderTextColor="#94A3B8"
-                    value={searchQuery}
-                    onChangeText={setSearchQuery}
-                  />
-                  {searchQuery.length > 0 && (
-                    <TouchableOpacity onPress={() => setSearchQuery('')}>
-                      <Ionicons name="close-circle" size={wp(4.5)} color="#64748B" />
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </LinearGradient>
+      <SafeAreaView style={styles.safeArea}>
+        <ScrollView 
+          style={styles.mainScroll}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Header */}
+          <View style={styles.headerContainer}>
+            <View style={styles.topHeader}>
+              <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+                <Ionicons name="arrow-back" size={wp(5.5)} color={COLORS.white} />
+              </TouchableOpacity>
+              <Text style={styles.headerTitle}>Room Directory</Text>
+              <View style={{ width: wp(10) }} />
+            </View>
 
-              {/* Floor Filter */}
-              <FloorFilter />
-
-              {/* Stats Banner */}
-              <View style={styles.statsBanner}>
-                <View style={styles.statItem}>
-                  <Ionicons name="business" size={wp(4)} color="#10B981" />
-                  <View>
-                    <Text style={styles.statValue}>{rooms.length}</Text>
-                    <Text style={styles.statLabel}>Locations</Text>
-                  </View>
-                </View>
-                <View style={styles.statDivider} />
-                <View style={styles.statItem}>
-                  <Ionicons name="layers" size={wp(4)} color="#04e1f5" />
-                  <View>
-                    <Text style={styles.statValue}>5</Text>
-                    <Text style={styles.statLabel}>Floors</Text>
-                  </View>
-                </View>
-                <View style={styles.statDivider} />
-                <View style={styles.statItem}>
-                  <Ionicons name="navigate" size={wp(4)} color="#F59E0B" />
-                  <View>
-                    <Text style={styles.statValue}>AR</Text>
-                    <Text style={styles.statLabel}>Navigation</Text>
-                  </View>
-                </View>
-              </View>
-
-              {/* Room List */}
-              <FlatList
-                data={filteredRooms}
-                keyExtractor={item => item.id}
-                renderItem={renderRoomItem}
-                scrollEnabled={false}
-                contentContainerStyle={styles.listContent}
-                ListEmptyComponent={
-                  <View style={styles.emptyState}>
-                    <Ionicons name="search-outline" size={wp(15)} color="#4B5563" />
-                    <Text style={styles.emptyTitle}>No Locations Found</Text>
-                    <Text style={styles.emptySubtitle}>Try adjusting your search or filter</Text>
-                  </View>
-                }
+            {/* Search Bar */}
+            <View style={styles.searchContainer}>
+              <Ionicons name="search-outline" size={wp(4.5)} color={COLORS.textSecondary} />
+              <TextInput 
+                style={styles.searchInput}
+                placeholder="Search by room name, number or service..."
+                placeholderTextColor={COLORS.textLight}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
               />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setSearchQuery('')}>
+                  <Ionicons name="close-circle" size={wp(4)} color={COLORS.textSecondary} />
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
 
-              {/* Legend */}
-              <View style={styles.legend}>
-                <Text style={styles.legendTitle}>Floor Guide</Text>
-                <View style={styles.legendItems}>
-                  <View style={styles.legendItem}>
-                    <View style={[styles.legendDot, { backgroundColor: '#10B981' }]} />
-                    <Text style={styles.legendText}>Ground Floor</Text>
-                  </View>
-                  <View style={styles.legendItem}>
-                    <View style={[styles.legendDot, { backgroundColor: '#04e1f5' }]} />
-                    <Text style={styles.legendText}>1st Floor</Text>
-                  </View>
-                  <View style={styles.legendItem}>
-                    <View style={[styles.legendDot, { backgroundColor: '#8B5CF6' }]} />
-                    <Text style={styles.legendText}>2nd Floor</Text>
-                  </View>
-                  <View style={styles.legendItem}>
-                    <View style={[styles.legendDot, { backgroundColor: '#F59E0B' }]} />
-                    <Text style={styles.legendText}>3rd Floor</Text>
-                  </View>
-                  <View style={styles.legendItem}>
-                    <View style={[styles.legendDot, { backgroundColor: '#6B7280' }]} />
-                    <Text style={styles.legendText}>Basement</Text>
-                  </View>
-                </View>
+          {/* Floor Filter */}
+          <FloorFilter />
+
+          {/* Stats Banner */}
+          <View style={[styles.statsBanner, styles.cardShadow]}>
+            <View style={styles.statItem}>
+              <Ionicons name="business-outline" size={wp(4)} color={COLORS.success} />
+              <View>
+                <Text style={styles.statValue}>{rooms.length}</Text>
+                <Text style={styles.statLabel}>Locations</Text>
               </View>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Ionicons name="layers-outline" size={wp(4)} color={COLORS.primary} />
+              <View>
+                <Text style={styles.statValue}>5</Text>
+                <Text style={styles.statLabel}>Floors</Text>
+              </View>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Ionicons name="navigate-outline" size={wp(4)} color={COLORS.warning} />
+              <View>
+                <Text style={styles.statValue}>AR</Text>
+                <Text style={styles.statLabel}>Navigation</Text>
+              </View>
+            </View>
+          </View>
 
-              <View style={{ height: hp(5) }} />
-            </ScrollView>
-          </SafeAreaView>
-        </View>
-      </ImageBackground>
+          {/* Room List */}
+          <FlatList
+            data={filteredRooms}
+            keyExtractor={item => item.id}
+            renderItem={renderRoomItem}
+            scrollEnabled={false}
+            contentContainerStyle={styles.listContent}
+            ListEmptyComponent={
+              <View style={styles.emptyState}>
+                <Ionicons name="search-outline" size={wp(12)} color={COLORS.border} />
+                <Text style={styles.emptyTitle}>No Locations Found</Text>
+                <Text style={styles.emptySubtitle}>Try adjusting your search or filter</Text>
+              </View>
+            }
+          />
+
+          {/* Legend */}
+          <View style={[styles.legend, styles.cardShadow]}>
+            <Text style={styles.legendTitle}>Floor Guide</Text>
+            <View style={styles.legendItems}>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: '#10B981' }]} />
+                <Text style={styles.legendText}>Ground Floor</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: COLORS.primary }]} />
+                <Text style={styles.legendText}>1st Floor</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: COLORS.appointment }]} />
+                <Text style={styles.legendText}>2nd Floor</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: COLORS.warning }]} />
+                <Text style={styles.legendText}>3rd Floor</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: '#6B7280' }]} />
+                <Text style={styles.legendText}>Basement</Text>
+              </View>
+            </View>
+          </View>
+
+          <View style={{ height: hp(5) }} />
+        </ScrollView>
+      </SafeAreaView>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  backgroundImage: { flex: 1 },
-  overlay: { flex: 1, backgroundColor: 'rgba(5, 44, 82, 0.36)' },
-  safeArea: { flex: 1 },
-  mainScroll: { flex: 1 },
-  scrollContent: { paddingBottom: hp(5) },
+  container: { 
+    flex: 1, 
+    backgroundColor: COLORS.background 
+  },
+  gradientBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '100%',
+  },
+  safeArea: { 
+    flex: 1 
+  },
+  mainScroll: { 
+    flex: 1 
+  },
+  scrollContent: { 
+    paddingBottom: hp(5) 
+  },
 
-  headerGradient: {
-    paddingTop: Platform.OS === 'ios' ? hp(2) : StatusBar.currentHeight + hp(2),
-    paddingBottom: hp(2.5),
-    borderBottomLeftRadius: wp(6),
-    borderBottomRightRadius: wp(6),
+  cardShadow: { ...SHADOWS.medium },
+
+  // Header
+  headerContainer: {
+    paddingBottom: hp(1),
   },
   topHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: wp(5),
-    paddingTop: hp(1),
+    paddingTop: Platform.OS === 'ios' ? hp(1) : StatusBar.currentHeight + hp(1),
+    paddingBottom: hp(1.5),
   },
-  iconBtn: {
+  backBtn: {
     width: wp(10),
     height: wp(10),
     borderRadius: wp(3),
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    backgroundColor: 'rgba(255,255,255,0.15)',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(4, 225, 245, 0.3)',
+    borderColor: 'rgba(255,255,255,0.2)',
   },
   headerTitle: { 
-    color: '#fff', 
+    color: COLORS.white, 
     fontSize: wp(5), 
     fontWeight: 'bold',
   },
@@ -300,20 +309,21 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    backgroundColor: COLORS.white,
     marginHorizontal: wp(5),
-    marginTop: hp(2),
-    paddingHorizontal: wp(4),
-    borderRadius: wp(6),
+    marginTop: hp(1.5),
+    paddingHorizontal: wp(3.5),
+    borderRadius: wp(3.5),
     borderWidth: 1,
-    borderColor: 'rgba(4, 225, 245, 0.3)',
-    gap: wp(2.5),
+    borderColor: COLORS.border,
+    gap: wp(2),
+    ...SHADOWS.small,
   },
   searchInput: { 
     flex: 1, 
-    color: '#fff', 
+    color: COLORS.text, 
     fontSize: wp(3.5), 
-    paddingVertical: hp(1.5),
+    paddingVertical: hp(1.2),
   },
 
   filterContainer: {
@@ -322,27 +332,28 @@ const styles = StyleSheet.create({
   },
   filterScroll: {
     paddingHorizontal: wp(4),
-    gap: wp(2.5),
+    gap: wp(2),
   },
   filterChip: {
     paddingHorizontal: wp(4),
-    paddingVertical: hp(1),
+    paddingVertical: hp(0.8),
     borderRadius: wp(5),
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    backgroundColor: COLORS.white,
     borderWidth: 1,
-    borderColor: 'rgba(4, 225, 245, 0.3)',
+    borderColor: COLORS.border,
+    ...SHADOWS.small,
   },
   filterChipActive: {
-    backgroundColor: '#04e1f5',
-    borderColor: '#04e1f5',
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
   },
   filterText: {
-    color: '#04e1f5',
-    fontSize: wp(3.2),
-    fontWeight: '600',
+    color: COLORS.textSecondary,
+    fontSize: wp(3),
+    fontWeight: '500',
   },
   filterTextActive: {
-    color: '#fff',
+    color: COLORS.white,
   },
 
   statsBanner: {
@@ -350,11 +361,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     marginHorizontal: wp(4),
     marginVertical: hp(1),
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    backgroundColor: COLORS.white,
     borderRadius: wp(4),
     paddingVertical: hp(1.2),
     borderWidth: 1,
-    borderColor: 'rgba(4, 225, 245, 0.15)',
+    borderColor: COLORS.border,
   },
   statItem: {
     flexDirection: 'row',
@@ -362,40 +373,41 @@ const styles = StyleSheet.create({
     gap: wp(2),
   },
   statValue: {
-    color: '#fff',
+    color: COLORS.text,
     fontSize: wp(4),
     fontWeight: 'bold',
   },
   statLabel: {
-    color: '#94A3B8',
+    color: COLORS.textSecondary,
     fontSize: wp(2.5),
   },
   statDivider: {
     width: 1,
     height: hp(3),
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: COLORS.border,
   },
 
   listContent: {
     padding: wp(4),
-    gap: hp(1.2),
+    gap: hp(1),
   },
 
   roomCard: {
     borderRadius: wp(4),
     overflow: 'hidden',
+    backgroundColor: COLORS.white,
     borderWidth: 1,
-    borderColor: 'rgba(4, 225, 245, 0.15)',
+    borderColor: COLORS.border,
   },
-  cardGradient: {
+  cardContent: {
     flexDirection: 'row',
     padding: wp(3.5),
     gap: wp(3),
     alignItems: 'center',
   },
   floorIcon: {
-    width: wp(12),
-    height: wp(12),
+    width: wp(11),
+    height: wp(11),
     borderRadius: wp(3),
     justifyContent: 'center',
     alignItems: 'center',
@@ -403,22 +415,22 @@ const styles = StyleSheet.create({
 
   roomDetails: {
     flex: 1,
-    gap: hp(0.5),
+    gap: hp(0.3),
   },
   roomName: {
-    color: '#fff',
+    color: COLORS.text,
     fontSize: wp(3.8),
     fontWeight: 'bold',
   },
   roomDescription: {
-    color: '#94A3B8',
+    color: COLORS.textSecondary,
     fontSize: wp(2.8),
   },
   roomMeta: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: wp(2),
-    marginTop: hp(0.3),
+    marginTop: hp(0.2),
   },
   metaBadge: {
     flexDirection: 'row',
@@ -426,7 +438,7 @@ const styles = StyleSheet.create({
     gap: wp(1),
   },
   metaText: {
-    color: '#64748B',
+    color: COLORS.textSecondary,
     fontSize: wp(2.5),
   },
   floorBadge: {
@@ -434,7 +446,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: wp(0.8),
     paddingHorizontal: wp(2),
-    paddingVertical: hp(0.3),
+    paddingVertical: hp(0.2),
     borderRadius: wp(2),
   },
   floorText: {
@@ -449,16 +461,16 @@ const styles = StyleSheet.create({
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: hp(10),
+    paddingVertical: hp(8),
   },
   emptyTitle: {
-    color: '#9CA3AF',
+    color: COLORS.text,
     fontSize: wp(4),
     fontWeight: 'bold',
     marginTop: hp(2),
   },
   emptySubtitle: {
-    color: '#6B7280',
+    color: COLORS.textSecondary,
     fontSize: wp(3.2),
     marginTop: hp(1),
   },
@@ -467,16 +479,16 @@ const styles = StyleSheet.create({
     marginHorizontal: wp(4),
     marginTop: hp(2),
     padding: wp(3.5),
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    backgroundColor: COLORS.white,
     borderRadius: wp(4),
     borderWidth: 1,
-    borderColor: 'rgba(4, 225, 245, 0.15)',
+    borderColor: COLORS.border,
   },
   legendTitle: {
-    color: '#fff',
+    color: COLORS.text,
     fontSize: wp(3.5),
     fontWeight: 'bold',
-    marginBottom: hp(1.2),
+    marginBottom: hp(1),
   },
   legendItems: {
     flexDirection: 'row',
@@ -494,7 +506,7 @@ const styles = StyleSheet.create({
     borderRadius: wp(1.25),
   },
   legendText: {
-    color: '#94A3B8',
+    color: COLORS.textSecondary,
     fontSize: wp(2.8),
   },
 });

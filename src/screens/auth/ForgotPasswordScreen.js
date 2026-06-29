@@ -13,7 +13,6 @@ import {
   TouchableWithoutFeedback, 
   Keyboard,
   Image,
-  ImageBackground,
   StatusBar,
   Animated,
   Dimensions,
@@ -21,6 +20,7 @@ import {
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { COLORS, SIZES, SHADOWS, FONTS } from '../../theme';
 
 const { width, height } = Dimensions.get('window');
 
@@ -52,21 +52,21 @@ const ToastNotification = ({ visible, message, type, onHide }) => {
     switch(type) {
       case 'success':
         return {
-          backgroundColor: 'rgba(0, 255, 136, 0.95)',
+          backgroundColor: COLORS.success,
           icon: 'checkmark-circle',
-          textColor: '#004D26',
+          textColor: COLORS.white,
         };
       case 'error':
         return {
-          backgroundColor: 'rgba(255, 77, 77, 0.95)',
+          backgroundColor: COLORS.danger,
           icon: 'close-circle',
-          textColor: '#FFFFFF',
+          textColor: COLORS.white,
         };
       default:
         return {
-          backgroundColor: 'rgba(4, 225, 245, 0.95)',
+          backgroundColor: COLORS.primary,
           icon: 'information-circle',
-          textColor: '#003344',
+          textColor: COLORS.white,
         };
     }
   };
@@ -114,18 +114,18 @@ const OTPNotification = ({ visible, otp, onClose, onCopy }) => {
   return (
     <Animated.View style={[styles.otpNotification, { transform: [{ translateY: slideAnim }] }]}>
       <View style={styles.otpNotificationContent}>
-        <View style={styles.otpNotificationIcon}>
-          <Ionicons name="key-outline" size={24} color="#04e1f5" />
+        <View style={[styles.otpNotificationIcon, { backgroundColor: COLORS.primary + '15' }]}>
+          <Ionicons name="key-outline" size={24} color={COLORS.primary} />
         </View>
         <View style={styles.otpNotificationTextContainer}>
-          <Text style={styles.otpNotificationTitle}>Verification Code Sent!</Text>
+          <Text style={[styles.otpNotificationTitle, { color: COLORS.primary }]}>Verification Code Sent!</Text>
           <Text style={styles.otpNotificationMessage}>
-            Your OTP code is: <Text style={styles.otpCode}>{otp}</Text>
+            Your OTP code is: <Text style={[styles.otpCode, { color: COLORS.primary }]}>{otp}</Text>
           </Text>
         </View>
-        <TouchableOpacity onPress={() => onCopy(otp)} style={styles.copyButton}>
-          <Ionicons name="copy-outline" size={20} color="#04e1f5" />
-          <Text style={styles.copyText}>Copy</Text>
+        <TouchableOpacity onPress={() => onCopy(otp)} style={[styles.copyButton, { backgroundColor: COLORS.primary + '15' }]}>
+          <Ionicons name="copy-outline" size={20} color={COLORS.primary} />
+          <Text style={[styles.copyText, { color: COLORS.primary }]}>Copy</Text>
         </TouchableOpacity>
       </View>
     </Animated.View>
@@ -167,7 +167,7 @@ const OTPInput = ({ code, setCode, onResendOTP, isResending, countdown }) => {
           <TextInput
             key={index}
             ref={ref => inputRefs.current[index] = ref}
-            style={styles.otpInput}
+            style={[styles.otpInput, { borderColor: COLORS.primary + '30' }]}
             value={code[index] || ''}
             onChangeText={(text) => handleChange(text, index)}
             onKeyPress={(e) => handleKeyPress(e, index)}
@@ -181,10 +181,10 @@ const OTPInput = ({ code, setCode, onResendOTP, isResending, countdown }) => {
       <View style={styles.resendContainer}>
         <Text style={styles.resendText}>Didn't receive code? </Text>
         {countdown > 0 ? (
-          <Text style={styles.timerText}>Resend in {countdown}s</Text>
+          <Text style={[styles.timerText, { color: COLORS.warning }]}>Resend in {countdown}s</Text>
         ) : (
           <TouchableOpacity onPress={onResendOTP} disabled={isResending}>
-            <Text style={styles.resendButton}>
+            <Text style={[styles.resendButton, { color: COLORS.primary }]}>
               {isResending ? 'Sending...' : 'Resend Code'}
             </Text>
           </TouchableOpacity>
@@ -235,6 +235,23 @@ const ForgotPasswordScreen = ({ navigation }) => {
     showToast("OTP copied to clipboard!", "success");
   };
 
+  // Format CNIC with dashes
+  const formatCNIC = (text) => {
+    const digits = text.replace(/\D/g, '');
+    if (digits.length <= 5) {
+      return digits;
+    } else if (digits.length <= 12) {
+      return digits.slice(0, 5) + '-' + digits.slice(5);
+    } else {
+      return digits.slice(0, 5) + '-' + digits.slice(5, 12) + '-' + digits.slice(12, 13);
+    }
+  };
+
+  // Format phone number (remove leading 0)
+  const formatPhone = (text) => {
+    return text.replace(/^0+/, '').replace(/\D/g, '');
+  };
+
   const handleSendOTP = () => {
     Keyboard.dismiss();
     
@@ -259,29 +276,29 @@ const ForgotPasswordScreen = ({ navigation }) => {
       isValid = true;
       identifier = email;
     } else if (selectedOption === 'phone') {
+      const cleanedPhone = phoneNumber.replace(/\D/g, '');
       if (!phoneNumber) {
         showToast("Please enter your phone number", "error");
         return;
       }
-      const phoneRegex = /^\d{10,11}$/;
-      if (!phoneRegex.test(phoneNumber)) {
-        showToast("Please enter a valid 10-11 digit phone number", "error");
+      if (cleanedPhone.length !== 10) {
+        showToast("Please enter 10 digits without 0", "error");
         return;
       }
       isValid = true;
-      identifier = phoneNumber;
+      identifier = cleanedPhone;
     } else if (selectedOption === 'cnic') {
+      const cleanedCnic = cnic.replace(/-/g, '');
       if (!cnic) {
         showToast("Please enter your CNIC number", "error");
         return;
       }
-      const cnicRegex = /^\d{13}$/;
-      if (!cnicRegex.test(cnic)) {
-        showToast("Please enter a valid 13-digit CNIC number", "error");
+      if (cleanedCnic.length !== 13) {
+        showToast("CNIC must be 13 digits", "error");
         return;
       }
       isValid = true;
-      identifier = cnic;
+      identifier = cleanedCnic;
     }
 
     if (!isValid) return;
@@ -297,10 +314,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
       setResendCountdown(30);
       startResendTimer();
       
-      // Show OTP notification
       setShowOTPNotification(true);
-      
-      // Auto-hide notification after 5 seconds
       setTimeout(() => {
         setShowOTPNotification(false);
       }, 5000);
@@ -330,7 +344,6 @@ const ForgotPasswordScreen = ({ navigation }) => {
       setResendCountdown(30);
       startResendTimer();
       
-      // Show new OTP notification
       setShowOTPNotification(true);
       setTimeout(() => {
         setShowOTPNotification(false);
@@ -405,12 +418,13 @@ const ForgotPasswordScreen = ({ navigation }) => {
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <View style={styles.container}>
-        <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+        <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
         
-        <ImageBackground
-          source={{ uri: 'https://i.pinimg.com/736x/3d/01/5f/3d015f0c3c861532da0215caa8207a15.jpg' }}
-          style={styles.backgroundImage}
-          resizeMode="cover"
+        <LinearGradient
+          colors={[COLORS.primary, COLORS.background, COLORS.background]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+          style={styles.gradientBackground}
         >
           
           <ToastNotification 
@@ -455,12 +469,12 @@ const ForgotPasswordScreen = ({ navigation }) => {
                   }} 
                   style={styles.backButton}
                 >
-                  <Ionicons name="arrow-back" size={24} color="#04e1f5" />
+                  <Ionicons name="arrow-back" size={24} color={COLORS.navyDark} />
                 </TouchableOpacity>
 
                 {/* Logo Section */}
                 <View style={styles.logoSection}>
-                  <View style={styles.logoCircle}>
+                  <View style={[styles.logoCircle, { borderColor: COLORS.primary }]}>
                     <Image source={require('../../../assets/logo.png')} style={styles.logoImage} />
                   </View>
                   <Text style={styles.appName}>
@@ -472,7 +486,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
                 </View>
 
                 {/* Form Card */}
-                <View style={styles.formCard}>
+                <View style={[styles.formCard, { borderColor: COLORS.primary + '46' }]}>
                   
                   {/* Step Indicator */}
                   <View style={styles.stepIndicator}>
@@ -497,7 +511,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
                           style={[styles.optionButton, selectedOption === 'email' && styles.optionButtonActive]}
                           onPress={() => setSelectedOption('email')}
                         >
-                          <Ionicons name="mail-outline" size={24} color={selectedOption === 'email' ? "#FFF" : "#04e1f5"} />
+                          <Ionicons name="mail-outline" size={24} color={selectedOption === 'email' ? COLORS.white : COLORS.primary} />
                           <Text style={[styles.optionText, selectedOption === 'email' && styles.optionTextActive]}>Email</Text>
                         </TouchableOpacity>
 
@@ -505,7 +519,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
                           style={[styles.optionButton, selectedOption === 'phone' && styles.optionButtonActive]}
                           onPress={() => setSelectedOption('phone')}
                         >
-                          <Ionicons name="call-outline" size={24} color={selectedOption === 'phone' ? "#FFF" : "#04e1f5"} />
+                          <Ionicons name="call-outline" size={24} color={selectedOption === 'phone' ? COLORS.white : COLORS.primary} />
                           <Text style={[styles.optionText, selectedOption === 'phone' && styles.optionTextActive]}>Phone</Text>
                         </TouchableOpacity>
 
@@ -513,7 +527,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
                           style={[styles.optionButton, selectedOption === 'cnic' && styles.optionButtonActive]}
                           onPress={() => setSelectedOption('cnic')}
                         >
-                          <Ionicons name="card-outline" size={24} color={selectedOption === 'cnic' ? "#FFF" : "#04e1f5"} />
+                          <Ionicons name="card-outline" size={24} color={selectedOption === 'cnic' ? COLORS.white : COLORS.primary} />
                           <Text style={[styles.optionText, selectedOption === 'cnic' && styles.optionTextActive]}>CNIC</Text>
                         </TouchableOpacity>
                       </View>
@@ -521,12 +535,12 @@ const ForgotPasswordScreen = ({ navigation }) => {
                       {selectedOption === 'email' && (
                         <View>
                           <Text style={styles.inputLabel}>Email Address</Text>
-                          <View style={styles.inputWrapper}>
-                            <Ionicons name="mail-outline" size={20} color="#04e1f5" />
+                          <View style={[styles.inputWrapper, { borderColor: COLORS.primary + '42' }]}>
+                            <Ionicons name="mail-outline" size={20} color={COLORS.primary} />
                             <TextInput 
                               style={styles.input}
                               placeholder="example@email.com"
-                              placeholderTextColor="#666"
+                              placeholderTextColor={COLORS.textLight}
                               value={email}
                               onChangeText={setEmail}
                               autoCapitalize="none"
@@ -540,34 +554,40 @@ const ForgotPasswordScreen = ({ navigation }) => {
                       {selectedOption === 'phone' && (
                         <View>
                           <Text style={styles.inputLabel}>Phone Number</Text>
-                          <View style={styles.inputWrapper}>
-                            <Ionicons name="call-outline" size={20} color="#04e1f5" />
+                          <View style={[styles.inputWrapper, { borderColor: COLORS.primary + '42' }]}>
+                            <View style={styles.countryCodeContainer}>
+                              <Text style={styles.countryCode}>+92</Text>
+                              <View style={styles.countryDivider} />
+                            </View>
                             <TextInput 
-                              style={styles.input}
-                              placeholder="03XXXXXXXXX"
-                              placeholderTextColor="#666"
+                              style={[styles.input, styles.phoneInput]}
+                              placeholder="3XXXXXXXXX"
+                              placeholderTextColor={COLORS.textLight}
                               value={phoneNumber}
-                              onChangeText={setPhoneNumber}
+                              onChangeText={(text) => setPhoneNumber(formatPhone(text))}
                               keyboardType="phone-pad"
-                              maxLength={11}
+                              maxLength={10}
                             />
                           </View>
+                          <Text style={[styles.hintText, { color: COLORS.textSecondary }]}>
+                            Enter 10 digits without 0
+                          </Text>
                         </View>
                       )}
 
                       {selectedOption === 'cnic' && (
                         <View>
                           <Text style={styles.inputLabel}>CNIC Number</Text>
-                          <View style={styles.inputWrapper}>
-                            <Ionicons name="card-outline" size={20} color="#04e1f5" />
+                          <View style={[styles.inputWrapper, { borderColor: COLORS.primary + '42' }]}>
+                            <Ionicons name="card-outline" size={20} color={COLORS.primary} />
                             <TextInput 
                               style={styles.input}
-                              placeholder="4210112345678"
-                              placeholderTextColor="#666"
+                              placeholder="12345-1234567-1"
+                              placeholderTextColor={COLORS.textLight}
                               value={cnic}
-                              onChangeText={setCnic}
+                              onChangeText={(text) => setCnic(formatCNIC(text))}
                               keyboardType="numeric"
-                              maxLength={13}
+                              maxLength={15}
                             />
                           </View>
                         </View>
@@ -575,8 +595,8 @@ const ForgotPasswordScreen = ({ navigation }) => {
 
                       <Text style={styles.hintText}>
                         {selectedOption === 'email' && "Enter your registered email address"}
-                        {selectedOption === 'phone' && "Enter your 10-11 digit mobile number"}
-                        {selectedOption === 'cnic' && "Enter your 13-digit CNIC number without dashes"}
+                        {selectedOption === 'phone' && "Enter your 10-digit mobile number without 0"}
+                        {selectedOption === 'cnic' && "Enter your 13-digit CNIC number"}
                         {!selectedOption && "Select an option above to continue"}
                       </Text>
                     </View>
@@ -597,12 +617,12 @@ const ForgotPasswordScreen = ({ navigation }) => {
                   {step === 3 && (
                     <View>
                       <Text style={styles.inputLabel}>New Password</Text>
-                      <View style={[styles.inputWrapper, passwordError && styles.inputWrapperError]}>
-                        <Ionicons name="lock-closed-outline" size={20} color={passwordError ? "#FF4D4D" : "#04e1f5"} />
+                      <View style={[styles.inputWrapper, passwordError && styles.inputWrapperError, { borderColor: COLORS.primary + '42' }]}>
+                        <Ionicons name="lock-closed-outline" size={20} color={passwordError ? COLORS.danger : COLORS.primary} />
                         <TextInput 
                           style={styles.input}
                           placeholder="Enter new password"
-                          placeholderTextColor="#666"
+                          placeholderTextColor={COLORS.textLight}
                           secureTextEntry={!showNewPassword}
                           value={newPassword}
                           onChangeText={(text) => {
@@ -611,37 +631,41 @@ const ForgotPasswordScreen = ({ navigation }) => {
                               setPasswordError(false);
                             }
                           }}
+                          autoComplete="off"
+                          textContentType="none"
                         />
                         <TouchableOpacity onPress={() => setShowNewPassword(!showNewPassword)}>
-                          <Ionicons name={showNewPassword ? "eye-off" : "eye"} size={20} color="#666" />
+                          <Ionicons name={showNewPassword ? "eye-off" : "eye"} size={20} color={COLORS.textLight} />
                         </TouchableOpacity>
                       </View>
                       {passwordError && (
-                        <Text style={styles.errorText}>
+                        <Text style={[styles.errorText, { color: COLORS.danger }]}>
                           Password must contain: 8+ chars, uppercase, lowercase, number & special character
                         </Text>
                       )}
 
                       <Text style={styles.inputLabel}>Confirm Password</Text>
-                      <View style={styles.inputWrapper}>
-                        <Ionicons name="shield-checkmark-outline" size={20} color="#04e1f5" />
+                      <View style={[styles.inputWrapper, { borderColor: COLORS.primary + '42' }]}>
+                        <Ionicons name="shield-checkmark-outline" size={20} color={COLORS.primary} />
                         <TextInput 
                           style={styles.input}
                           placeholder="Confirm new password"
-                          placeholderTextColor="#666"
+                          placeholderTextColor={COLORS.textLight}
                           secureTextEntry={!showConfirmPassword}
                           value={confirmPassword}
                           onChangeText={setConfirmPassword}
+                          autoComplete="off"
+                          textContentType="none"
                         />
                         <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
-                          <Ionicons name={showConfirmPassword ? "eye-off" : "eye"} size={20} color="#666" />
+                          <Ionicons name={showConfirmPassword ? "eye-off" : "eye"} size={20} color={COLORS.textLight} />
                         </TouchableOpacity>
                       </View>
                       
                       {confirmPassword.length > 0 && newPassword === confirmPassword && newPassword.length > 0 && !passwordError && (
                         <View style={styles.matchContainer}>
-                          <Ionicons name="checkmark-circle" size={16} color="#00FF88" />
-                          <Text style={styles.matchText}>✓ Passwords match</Text>
+                          <Ionicons name="checkmark-circle" size={16} color={COLORS.success} />
+                          <Text style={[styles.matchText, { color: COLORS.success }]}>✓ Passwords match</Text>
                         </View>
                       )}
                     </View>
@@ -657,9 +681,9 @@ const ForgotPasswordScreen = ({ navigation }) => {
                     } 
                     disabled={loading}
                   >
-                    <LinearGradient colors={['#04e1f5', '#0284c7']} style={styles.actionGradient}>
+                    <LinearGradient colors={[COLORS.primary, COLORS.secondary]} style={styles.actionGradient}>
                       {loading ? (
-                        <ActivityIndicator color="#FFF" />
+                        <ActivityIndicator color={COLORS.white} />
                       ) : (
                         <Text style={styles.actionText}>
                           {step === 1 ? "SEND VERIFICATION CODE" : 
@@ -696,7 +720,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
               </ScrollView>
             </KeyboardAvoidingView>
           </SafeAreaView>
-        </ImageBackground>
+        </LinearGradient>
       </View>
     </TouchableWithoutFeedback>
   );
@@ -705,8 +729,9 @@ const ForgotPasswordScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: COLORS.background,
   },
-  backgroundImage: {
+  gradientBackground: {
     flex: 1,
   },
   scrollContent: {
@@ -724,11 +749,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
+    ...SHADOWS.medium,
   },
   toastContent: {
     flexDirection: 'row',
@@ -737,7 +758,7 @@ const styles = StyleSheet.create({
   },
   toastMessage: {
     flex: 1,
-    fontSize: 14,
+    fontSize: SIZES.body,
     fontWeight: '500',
   },
 
@@ -748,15 +769,11 @@ const styles = StyleSheet.create({
     left: 20,
     right: 20,
     zIndex: 1000,
-    backgroundColor: 'rgba(8, 9, 37, 0.98)',
+    backgroundColor: COLORS.white,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#04e1f5',
-    shadowColor: '#04e1f5',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 10,
+    borderColor: COLORS.primary,
+    ...SHADOWS.large,
   },
   otpNotificationContent: {
     flexDirection: 'row',
@@ -768,7 +785,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(4, 225, 245, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -776,18 +792,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   otpNotificationTitle: {
-    color: '#04e1f5',
-    fontSize: 14,
+    fontSize: SIZES.body,
     fontWeight: 'bold',
   },
   otpNotificationMessage: {
-    color: '#FFF',
-    fontSize: 12,
+    color: COLORS.textSecondary,
+    fontSize: SIZES.small,
     marginTop: 2,
   },
   otpCode: {
-    color: '#04e1f5',
-    fontSize: 16,
+    fontSize: SIZES.h4,
     fontWeight: 'bold',
     fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
   },
@@ -795,20 +809,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(4, 225, 245, 0.1)',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
   },
   copyText: {
-    color: '#04e1f5',
-    fontSize: 12,
+    fontSize: SIZES.small,
     fontWeight: '500',
   },
 
   // Back Button
   backButton: {
-    paddingHorizontal: 20,
+    paddingHorizontal: SIZES.xl,
     paddingTop: Platform.OS === 'ios' ? 55 : 25,
     width: 60,
   },
@@ -826,8 +838,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: '#04e1f5',
-    shadowColor: '#04e1f5',
+    backgroundColor: COLORS.white,
+    shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.3,
     shadowRadius: 10,
@@ -842,31 +854,31 @@ const styles = StyleSheet.create({
   appName: {
     fontSize: 32,
     fontWeight: '900',
-    color: '#04e1f5',
+    color: COLORS.primary,
     letterSpacing: 2,
-    textShadowColor: 'rgba(0, 0, 0, 0.45)',
+    textShadowColor: COLORS.shadowDark,
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 8,
     marginTop: 12,
   },
   appNameWhite: {
-    color: '#FFFFFF',
+    color: COLORS.text,
   },
   tagline: {
     fontSize: 13,
-    color: '#e1eff0',
+    color: COLORS.white,
     letterSpacing: 1,
     marginTop: 4,
   },
 
   // Form Card
   formCard: {
-    backgroundColor: 'rgba(2, 4, 77, 0.75)',
+    backgroundColor: COLORS.white,
     borderRadius: 24,
     padding: 20,
     marginHorizontal: 20,
     borderWidth: 1,
-    borderColor: 'rgba(4, 225, 245, 0.46)',
+    ...SHADOWS.medium,
   },
 
   // Step Indicator
@@ -880,10 +892,10 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: 'rgba(4, 225, 245, 0.48)',
+    backgroundColor: COLORS.border,
   },
   stepDotActive: {
-    backgroundColor: '#12e4f7',
+    backgroundColor: COLORS.primary,
     width: 12,
     height: 12,
     borderRadius: 6,
@@ -891,15 +903,15 @@ const styles = StyleSheet.create({
   stepLine: {
     width: 30,
     height: 2,
-    backgroundColor: 'rgba(4, 225, 245, 0.51)',
+    backgroundColor: COLORS.border,
     marginHorizontal: 6,
   },
   stepLineActive: {
-    backgroundColor: '#04e1f5',
+    backgroundColor: COLORS.primary,
   },
   stepText: {
-    color: '#b9b6b6',
-    fontSize: 11,
+    color: COLORS.textSecondary,
+    fontSize: SIZES.small,
     textAlign: 'center',
     marginBottom: 20,
   },
@@ -917,29 +929,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: COLORS.backgroundSecondary,
     paddingVertical: 12,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(4, 225, 245, 0.3)',
+    borderColor: COLORS.border,
   },
   optionButtonActive: {
-    backgroundColor: '#04e1f5',
-    borderColor: '#04e1f5',
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
   },
   optionText: {
-    color: '#04e1f5',
-    fontSize: 14,
+    color: COLORS.primary,
+    fontSize: SIZES.body,
     fontWeight: '500',
   },
   optionTextActive: {
-    color: '#FFF',
+    color: COLORS.white,
   },
 
   // Input Styles
   inputLabel: {
-    color: '#CCE3E5',
-    fontSize: 12,
+    color: COLORS.text,
+    fontSize: SIZES.small,
     fontWeight: '500',
     marginBottom: 6,
     marginLeft: 4,
@@ -947,34 +959,52 @@ const styles = StyleSheet.create({
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.14)',
+    backgroundColor: COLORS.backgroundSecondary,
     borderRadius: 12,
     paddingHorizontal: 15,
     height: 52,
     borderWidth: 1,
-    borderColor: 'rgba(4, 225, 245, 0.42)',
     marginBottom: 8,
   },
   inputWrapperError: {
-    borderColor: '#FF4D4D',
+    borderColor: COLORS.danger,
     borderWidth: 2,
   },
   input: {
     flex: 1,
-    color: '#FFFFFF',
+    color: COLORS.text,
     marginLeft: 12,
-    fontSize: 14,
+    fontSize: SIZES.body,
+  },
+  phoneInput: {
+    marginLeft: 6,
   },
   hintText: {
-    color: '#cccbcb',
-    fontSize: 10,
+    color: COLORS.textSecondary,
+    fontSize: SIZES.xSmall,
     marginBottom: 16,
     marginLeft: 8,
   },
   errorText: {
-    color: '#FF4D4D',
-    fontSize: 11,
+    fontSize: SIZES.small,
     marginBottom: 16,
+    marginLeft: 8,
+  },
+
+  // Country Code
+  countryCodeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  countryCode: {
+    color: COLORS.text,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  countryDivider: {
+    width: 1.5,
+    height: 22,
+    backgroundColor: COLORS.border,
     marginLeft: 8,
   },
 
@@ -983,14 +1013,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   otpTitle: {
-    color: '#FFF',
-    fontSize: 18,
+    color: COLORS.text,
+    fontSize: SIZES.h4,
     fontWeight: 'bold',
     marginBottom: 8,
   },
   otpSubtitle: {
-    color: '#b4b3b3',
-    fontSize: 12,
+    color: COLORS.textSecondary,
+    fontSize: SIZES.small,
     textAlign: 'center',
     marginBottom: 20,
   },
@@ -1003,12 +1033,11 @@ const styles = StyleSheet.create({
   otpInput: {
     width: 45,
     height: 50,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: COLORS.backgroundSecondary,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(4, 225, 245, 0.3)',
-    color: '#FFF',
-    fontSize: 20,
+    color: COLORS.text,
+    fontSize: SIZES.h4,
     textAlign: 'center',
     fontWeight: 'bold',
   },
@@ -1019,17 +1048,15 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   resendText: {
-    color: '#bdbcbc',
-    fontSize: 12,
+    color: COLORS.textSecondary,
+    fontSize: SIZES.small,
   },
   resendButton: {
-    color: '#04e1f5',
-    fontSize: 12,
+    fontSize: SIZES.small,
     fontWeight: 'bold',
   },
   timerText: {
-    color: '#FFB800',
-    fontSize: 12,
+    fontSize: SIZES.small,
     fontWeight: 'bold',
   },
 
@@ -1042,8 +1069,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   matchText: {
-    color: '#00FF88',
-    fontSize: 12,
+    fontSize: SIZES.small,
     fontWeight: '500',
   },
 
@@ -1053,6 +1079,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     marginTop: 10,
     marginBottom: 16,
+    ...SHADOWS.button,
   },
   actionGradient: {
     height: 52,
@@ -1060,8 +1087,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   actionText: {
-    color: '#FFFFFF',
-    fontSize: 14,
+    color: COLORS.white,
+    fontSize: SIZES.h5,
     fontWeight: 'bold',
     letterSpacing: 1,
   },
@@ -1071,8 +1098,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cancelText: {
-    color: '#b9b9b9',
-    fontSize: 12,
+    color: COLORS.textSecondary,
+    fontSize: SIZES.small,
     textDecorationLine: 'underline',
   },
 });

@@ -1,40 +1,148 @@
 import React from 'react';
 import { 
   View, Text, TouchableOpacity, StyleSheet, ScrollView, 
-  ImageBackground, StatusBar, Dimensions, Image, Platform
+  StatusBar, Dimensions, Image, Platform, SafeAreaView
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { COLORS, SIZES, SHADOWS } from '../../theme';
 
 const { width, height } = Dimensions.get('window');
 
 const DoctorDashboardScreen = ({ navigation }) => {
-  // Mock doctor data
+  // Mock doctor data with real-time stats
   const doctorData = {
     name: 'Dr. Sara Malik',
-    specialization: 'Cardiologist',
+    specialization: 'Interventional Cardiologist',
+    department: 'Cardiology',
     todayPatients: 18,
     waitingPatients: 4,
     completedPatients: 14,
     priorityPatients: 2,
     rating: 4.8,
-    experience: '8+ years'
+    experience: '12 Years',
+    totalPatients: 1247,
+    successRate: 98,
+    availableSlots: 3,
+    nextPatient: 'Ahmed Khan',
+    nextToken: 'A-145',
+    queuePosition: 4,
+  };
+
+  const stats = [
+    { 
+      label: 'Today\'s Patients', 
+      value: doctorData.todayPatients, 
+      icon: 'people-outline', 
+      color: COLORS.primary,
+      bgColor: COLORS.primary + '15'
+    },
+    { 
+      label: 'Waiting', 
+      value: doctorData.waitingPatients, 
+      icon: 'time-outline', 
+      color: COLORS.warning,
+      bgColor: COLORS.warning + '15'
+    },
+    { 
+      label: 'Completed', 
+      value: doctorData.completedPatients, 
+      icon: 'checkmark-done-outline', 
+      color: COLORS.success,
+      bgColor: COLORS.success + '15'
+    },
+    { 
+      label: 'Priority', 
+      value: doctorData.priorityPatients, 
+      icon: 'alert-circle-outline', 
+      color: COLORS.danger,
+      bgColor: COLORS.danger + '15'
+    },
+  ];
+
+  const quickActions = [
+    { 
+      id: 1,
+      title: 'Call Next', 
+      desc: 'Call next patient',
+      icon: 'call-outline', 
+      color: COLORS.primary,
+      screen: 'CallNextPatientScreen'
+    },
+    { 
+      id: 2,
+      title: 'Queue', 
+      desc: 'View queue',
+      icon: 'people-outline', 
+      color: COLORS.warning,
+      screen: 'RealTimeQueueScreen'
+    },
+    { 
+      id: 3,
+      title: 'Load Balance', 
+      desc: 'Distribute patients',
+      icon: 'git-branch-outline', 
+      color: COLORS.appointment,
+      screen: 'DoctorLoadBalancerScreen'
+    },
+    { 
+      id: 4,
+      title: 'Availability', 
+      desc: 'Set schedule',
+      icon: 'calendar-outline', 
+      color: COLORS.success,
+      screen: 'DoctorAvailabilityScreen'
+    },
+    { 
+      id: 5,
+      title: 'Occupancy', 
+      desc: 'Hospital map',
+      icon: 'stats-chart-outline', 
+      color: COLORS.danger,
+      screen: 'OccupancyHeatmapScreen'
+    },
+    { 
+      id: 6,
+      title: 'Records', 
+      desc: 'Patient history',
+      icon: 'document-text-outline', 
+      color: COLORS.info,
+      screen: 'PatientHistoryScreen'
+    },
+    { 
+      id: 7,
+      title: 'Profile', 
+      desc: 'My profile',
+      icon: 'person-outline', 
+      color: COLORS.appointment,
+      screen: 'DoctorProfileScreen'
+    },
+    { 
+      id: 8,
+      title: 'Reports', 
+      desc: 'View reports',
+      icon: 'bar-chart-outline', 
+      color: COLORS.reports,
+      screen: 'ReportsScreen'
+    },
+  ];
+
+  const handleActionPress = (screen) => {
+    navigation.navigate(screen);
   };
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+      <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
       
-      <ImageBackground
-        source={{ uri: 'https://i.pinimg.com/736x/76/55/87/765587e389328e851fb9b1a5528fec76.jpg' }}
-        style={styles.backgroundImage}
-        resizeMode="cover"
-      >
-        <LinearGradient
-          colors={['rgba(0, 0, 0, 0.4)', 'rgba(0, 0, 0, 0.7)']}
-          style={StyleSheet.absoluteFill}
-        />
+      <LinearGradient
+        colors={[COLORS.primary, COLORS.secondary, COLORS.background]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 0.3 }}
+        style={styles.gradientBackground}
+      />
 
+      <SafeAreaView style={styles.safeArea}>
         <ScrollView 
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
@@ -47,241 +155,138 @@ const DoctorDashboardScreen = ({ navigation }) => {
                 <Text style={styles.greeting}>Good Morning,</Text>
                 <Text style={styles.doctorName}>{doctorData.name}</Text>
                 <Text style={styles.specialization}>{doctorData.specialization}</Text>
+                <Text style={styles.department}>{doctorData.department}</Text>
               </View>
               <View style={styles.profileCircle}>
-                <Ionicons name="person-circle" size={55} color="#04e1f5" />
+                <Image 
+                  source={require('../../../assets/logo.png')} 
+                  style={styles.profileImage}
+                />
               </View>
             </View>
             
             {/* Rating & Experience */}
             <View style={styles.badgeContainer}>
-              <View style={styles.badge}>
+              <View style={[styles.badge, styles.cardShadow]}>
                 <Ionicons name="star" size={14} color="#FFB800" />
                 <Text style={styles.badgeText}>{doctorData.rating} ★</Text>
               </View>
-              <View style={styles.badge}>
-                <Ionicons name="briefcase" size={14} color="#04e1f5" />
+              <View style={[styles.badge, styles.cardShadow]}>
+                <Ionicons name="briefcase-outline" size={14} color={COLORS.primary} />
                 <Text style={styles.badgeText}>{doctorData.experience}</Text>
+              </View>
+              <View style={[styles.badge, styles.cardShadow]}>
+                <Ionicons name="time-outline" size={14} color={COLORS.success} />
+                <Text style={styles.badgeText}>Available Slots: {doctorData.availableSlots}</Text>
               </View>
             </View>
           </View>
 
-          {/* Stats Cards Row */}
-          <View style={styles.statsContainer}>
+          {/* Next Patient Alert */}
+          <View style={[styles.nextPatientCard, styles.cardShadow]}>
             <LinearGradient
-              colors={['rgba(4, 225, 245, 0.15)', 'rgba(4, 225, 245, 0.05)']}
-              style={[styles.statCard, { borderColor: '#04e1f5' }]}
+              colors={[COLORS.primary + '15', COLORS.secondary + '10']}
+              style={styles.nextPatientGradient}
             >
-              <View style={[styles.statIcon, { backgroundColor: 'rgba(4, 225, 245, 0.2)' }]}>
-                <Ionicons name="people" size={28} color="#04e1f5" />
+              <View style={styles.nextPatientLeft}>
+                <View style={styles.nextPatientIcon}>
+                  <Ionicons name="person-outline" size={24} color={COLORS.primary} />
+                </View>
+                <View>
+                  <Text style={styles.nextPatientLabel}>Next Patient</Text>
+                  <Text style={styles.nextPatientName}>{doctorData.nextPatient}</Text>
+                  <Text style={styles.nextPatientToken}>Token: {doctorData.nextToken}</Text>
+                </View>
               </View>
-              <Text style={styles.statNumber}>{doctorData.todayPatients}</Text>
-              <Text style={styles.statLabel}>Today's Patients</Text>
-            </LinearGradient>
-
-            <LinearGradient
-              colors={['rgba(255, 77, 77, 0.15)', 'rgba(255, 77, 77, 0.05)']}
-              style={[styles.statCard, { borderColor: '#FF4D4D' }]}
-            >
-              <View style={[styles.statIcon, { backgroundColor: 'rgba(255, 77, 77, 0.2)' }]}>
-                <Ionicons name="time" size={28} color="#FF4D4D" />
-              </View>
-              <Text style={[styles.statNumber, { color: '#FF4D4D' }]}>{doctorData.waitingPatients}</Text>
-              <Text style={styles.statLabel}>Waiting</Text>
-            </LinearGradient>
-
-            <LinearGradient
-              colors={['rgba(0, 255, 136, 0.15)', 'rgba(0, 255, 136, 0.05)']}
-              style={[styles.statCard, { borderColor: '#00FF88' }]}
-            >
-              <View style={[styles.statIcon, { backgroundColor: 'rgba(0, 255, 136, 0.2)' }]}>
-                <Ionicons name="checkmark-done" size={28} color="#00FF88" />
-              </View>
-              <Text style={[styles.statNumber, { color: '#00FF88' }]}>{doctorData.completedPatients}</Text>
-              <Text style={styles.statLabel}>Completed</Text>
+              <TouchableOpacity 
+                style={[styles.nextPatientBtn, styles.cardShadow]}
+                onPress={() => handleActionPress('CallNextPatientScreen')}
+              >
+                <Text style={styles.nextPatientBtnText}>Call Now</Text>
+                <Ionicons name="arrow-forward" size={18} color={COLORS.white} />
+              </TouchableOpacity>
             </LinearGradient>
           </View>
 
-          {/* Priority Alert */}
-          {doctorData.priorityPatients > 0 && (
-            <TouchableOpacity style={styles.priorityAlert} activeOpacity={0.9}>
-              <LinearGradient
-                colors={['rgba(255, 77, 77, 0.9)', 'rgba(255, 77, 77, 0.7)']}
-                style={styles.priorityGradient}
-              >
-                <Ionicons name="warning" size={24} color="#FFF" />
-                <View style={styles.priorityTextContainer}>
-                  <Text style={styles.priorityTitle}>Priority Patients Waiting</Text>
-                  <Text style={styles.priorityDesc}>{doctorData.priorityPatients} critical patients need immediate attention</Text>
+          {/* Stats Cards Row */}
+          <View style={styles.statsContainer}>
+            {stats.map((stat, index) => (
+              <View key={index} style={[styles.statCard, styles.cardShadow]}>
+                <View style={[styles.statIcon, { backgroundColor: stat.bgColor }]}>
+                  <Ionicons name={stat.icon} size={24} color={stat.color} />
                 </View>
-                <Ionicons name="chevron-forward" size={24} color="#FFF" />
-              </LinearGradient>
-            </TouchableOpacity>
-          )}
+                <Text style={[styles.statNumber, { color: stat.color }]}>{stat.value}</Text>
+                <Text style={styles.statLabel}>{stat.label}</Text>
+              </View>
+            ))}
+          </View>
 
           {/* Quick Actions Section */}
           <Text style={styles.sectionTitle}>Quick Actions</Text>
           
           <View style={styles.actionsGrid}>
-            <TouchableOpacity 
-              style={styles.actionCard}
-              activeOpacity={0.8}
-              onPress={() => navigation.navigate('CallNextPatientScreen')}
-            >
-              <LinearGradient
-                colors={['rgba(4, 225, 245, 0.1)', 'rgba(4, 225, 245, 0.05)']}
-                style={styles.actionGradient}
+            {quickActions.map((action) => (
+              <TouchableOpacity 
+                key={action.id}
+                style={[styles.actionCard, styles.cardShadow]}
+                activeOpacity={0.8}
+                onPress={() => handleActionPress(action.screen)}
               >
-                <View style={[styles.actionIcon, { backgroundColor: 'rgba(4, 225, 245, 0.15)' }]}>
-                  <Ionicons name="call" size={32} color="#04e1f5" />
+                <View style={[styles.actionIcon, { backgroundColor: action.color + '15' }]}>
+                  <Ionicons name={action.icon} size={28} color={action.color} />
                 </View>
-                <Text style={styles.actionTitle}>Call Next</Text>
-                <Text style={styles.actionDesc}>Call next patient</Text>
-              </LinearGradient>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.actionCard}
-              activeOpacity={0.8}
-              onPress={() => navigation.navigate('RealTimeQueueScreen')}
-            >
-              <LinearGradient
-                colors={['rgba(255, 184, 0, 0.1)', 'rgba(255, 184, 0, 0.05)']}
-                style={styles.actionGradient}
-              >
-                <View style={[styles.actionIcon, { backgroundColor: 'rgba(255, 184, 0, 0.15)' }]}>
-                  <Ionicons name="people" size={32} color="#FFB800" />
-                </View>
-                <Text style={styles.actionTitle}>Queue</Text>
-                <Text style={styles.actionDesc}>View queue</Text>
-              </LinearGradient>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.actionCard}
-              activeOpacity={0.8}
-              onPress={() => navigation.navigate('DoctorLoadBalancerScreen')}
-            >
-              <LinearGradient
-                colors={['rgba(168, 85, 247, 0.1)', 'rgba(168, 85, 247, 0.05)']}
-                style={styles.actionGradient}
-              >
-                <View style={[styles.actionIcon, { backgroundColor: 'rgba(168, 85, 247, 0.15)' }]}>
-                  <Ionicons name="git-branch" size={32} color="#A855F7" />
-                </View>
-                <Text style={styles.actionTitle}>Load Balance</Text>
-                <Text style={styles.actionDesc}>Distribute patients</Text>
-              </LinearGradient>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.actionCard}
-              activeOpacity={0.8}
-              onPress={() => navigation.navigate('DoctorAvailabilityScreen')}
-            >
-              <LinearGradient
-                colors={['rgba(0, 255, 136, 0.1)', 'rgba(0, 255, 136, 0.05)']}
-                style={styles.actionGradient}
-              >
-                <View style={[styles.actionIcon, { backgroundColor: 'rgba(0, 255, 136, 0.15)' }]}>
-                  <Ionicons name="calendar" size={32} color="#00FF88" />
-                </View>
-                <Text style={styles.actionTitle}>Availability</Text>
-                <Text style={styles.actionDesc}>Set schedule</Text>
-              </LinearGradient>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.actionCard}
-              activeOpacity={0.8}
-              onPress={() => navigation.navigate('OccupancyHeatmapScreen')}
-            >
-              <LinearGradient
-                colors={['rgba(255, 77, 109, 0.1)', 'rgba(255, 77, 109, 0.05)']}
-                style={styles.actionGradient}
-              >
-                <View style={[styles.actionIcon, { backgroundColor: 'rgba(255, 77, 109, 0.15)' }]}>
-                  <Ionicons name="stats-chart" size={32} color="#FF4D6D" />
-                </View>
-                <Text style={styles.actionTitle}>Occupancy</Text>
-                <Text style={styles.actionDesc}>Hospital map</Text>
-              </LinearGradient>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.actionCard}
-              activeOpacity={0.8}
-              onPress={() => navigation.navigate('PatientHistoryScreen')}
-            >
-              <LinearGradient
-                colors={['rgba(59, 130, 246, 0.1)', 'rgba(59, 130, 246, 0.05)']}
-                style={styles.actionGradient}
-              >
-                <View style={[styles.actionIcon, { backgroundColor: 'rgba(59, 130, 246, 0.15)' }]}>
-                  <Ionicons name="document-text" size={32} color="#3B82F6" />
-                </View>
-                <Text style={styles.actionTitle}>Records</Text>
-                <Text style={styles.actionDesc}>Patient history</Text>
-              </LinearGradient>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.actionCard}
-              activeOpacity={0.8}
-              onPress={() => navigation.navigate('DoctorProfileScreen')}
-            >
-              <LinearGradient
-                colors={['rgba(236, 72, 153, 0.1)', 'rgba(236, 72, 153, 0.05)']}
-                style={styles.actionGradient}
-              >
-                <View style={[styles.actionIcon, { backgroundColor: 'rgba(236, 72, 153, 0.15)' }]}>
-                  <Ionicons name="person" size={32} color="#EC4899" />
-                </View>
-                <Text style={styles.actionTitle}>Profile</Text>
-                <Text style={styles.actionDesc}>My profile</Text>
-              </LinearGradient>
-            </TouchableOpacity>
+                <Text style={styles.actionTitle}>{action.title}</Text>
+                <Text style={styles.actionDesc}>{action.desc}</Text>
+              </TouchableOpacity>
+            ))}
           </View>
 
-          {/* Today's Schedule Preview */}
+          {/* Today's Schedule */}
           <View style={styles.scheduleSection}>
             <Text style={styles.sectionTitle}>Today's Schedule</Text>
-            <LinearGradient
-              colors={['rgba(4, 225, 245, 0.1)', 'rgba(4, 225, 245, 0.05)']}
-              style={styles.scheduleCard}
-            >
+            <View style={[styles.scheduleCard, styles.cardShadow]}>
               <View style={styles.scheduleItem}>
                 <View style={styles.scheduleTime}>
-                  <Ionicons name="time-outline" size={16} color="#04e1f5" />
+                  <Ionicons name="time-outline" size={16} color={COLORS.primary} />
                   <Text style={styles.scheduleTimeText}>09:00 AM - 01:00 PM</Text>
                 </View>
-                <Text style={styles.scheduleStatus}>Morning Shift</Text>
+                <View style={[styles.scheduleStatusBadge, { backgroundColor: COLORS.success + '15' }]}>
+                  <Text style={[styles.scheduleStatusText, { color: COLORS.success }]}>Active</Text>
+                </View>
               </View>
               <View style={styles.scheduleDivider} />
               <View style={styles.scheduleItem}>
                 <View style={styles.scheduleTime}>
-                  <Ionicons name="time-outline" size={16} color="#04e1f5" />
+                  <Ionicons name="time-outline" size={16} color={COLORS.primary} />
                   <Text style={styles.scheduleTimeText}>02:00 PM - 06:00 PM</Text>
                 </View>
-                <Text style={styles.scheduleStatus}>Evening Shift</Text>
+                <View style={[styles.scheduleStatusBadge, { backgroundColor: COLORS.warning + '15' }]}>
+                  <Text style={[styles.scheduleStatusText, { color: COLORS.warning }]}>Upcoming</Text>
+                </View>
               </View>
-            </LinearGradient>
+            </View>
           </View>
 
           {/* Quick Stats Footer */}
-          <View style={styles.footerStats}>
+          <View style={[styles.footerStats, styles.cardShadow]}>
             <View style={styles.footerStatItem}>
-              <Ionicons name="medkit" size={20} color="#04e1f5" />
-              <Text style={styles.footerStatText}>Total Patients: 1,247</Text>
+              <Ionicons name="medkit-outline" size={18} color={COLORS.primary} />
+              <Text style={styles.footerStatText}>Total: {doctorData.totalPatients}</Text>
             </View>
+            <View style={styles.footerDivider} />
             <View style={styles.footerStatItem}>
-              <Ionicons name="thumbs-up" size={20} color="#00FF88" />
-              <Text style={styles.footerStatText}>Success Rate: 98%</Text>
+              <Ionicons name="thumbs-up-outline" size={18} color={COLORS.success} />
+              <Text style={styles.footerStatText}>Success: {doctorData.successRate}%</Text>
+            </View>
+            <View style={styles.footerDivider} />
+            <View style={styles.footerStatItem}>
+              <Ionicons name="people-outline" size={18} color={COLORS.warning} />
+              <Text style={styles.footerStatText}>Queue: {doctorData.queuePosition}</Text>
             </View>
           </View>
 
         </ScrollView>
-      </ImageBackground>
+      </SafeAreaView>
     </View>
   );
 };
@@ -289,8 +294,12 @@ const DoctorDashboardScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: COLORS.background,
   },
-  backgroundImage: {
+  gradientBackground: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  safeArea: {
     flex: 1,
   },
   scrollContent: {
@@ -300,9 +309,9 @@ const styles = StyleSheet.create({
 
   // Header Section
   header: {
-    paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'ios' ? 55 : 25,
-    marginBottom: 20,
+    paddingHorizontal: SIZES.xl,
+    paddingTop: Platform.OS === 'ios' ? 10 : StatusBar.currentHeight + 10,
+    paddingBottom: SIZES.md,
   },
   headerTop: {
     flexDirection: 'row',
@@ -310,165 +319,213 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   greeting: {
-    color: '#CCE3E5',
-    fontSize: 14,
+    color: COLORS.white,
+    fontSize: SIZES.body,
     fontWeight: '500',
+    opacity: 0.8,
   },
   doctorName: {
-    color: '#FFFFFF',
-    fontSize: 24,
+    color: COLORS.white,
+    fontSize: SIZES.h2,
     fontWeight: 'bold',
     marginTop: 4,
   },
   specialization: {
-    color: '#04e1f5',
-    fontSize: 14,
+    color: COLORS.white,
+    fontSize: SIZES.body,
+    marginTop: 2,
+    opacity: 0.9,
+  },
+  department: {
+    color: COLORS.white,
+    fontSize: SIZES.small,
+    opacity: 0.7,
     marginTop: 2,
   },
   profileCircle: {
     width: 65,
     height: 65,
     borderRadius: 32.5,
-    backgroundColor: 'rgba(4, 225, 245, 0.1)',
+    backgroundColor: 'rgba(255,255,255,0.15)',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#04e1f5',
+    borderWidth: 2,
+    borderColor: COLORS.white,
+    ...SHADOWS.medium,
+  },
+  profileImage: {
+    width: 45,
+    height: 45,
+    borderRadius: 22.5,
   },
   badgeContainer: {
     flexDirection: 'row',
-    gap: 12,
+    flexWrap: 'wrap',
+    gap: 10,
     marginTop: 12,
   },
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: COLORS.white,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
     gap: 6,
   },
+  cardShadow: { ...SHADOWS.medium },
   badgeText: {
-    color: '#CCE3E5',
-    fontSize: 12,
+    color: COLORS.text,
+    fontSize: SIZES.small,
+  },
+
+  // Next Patient Card
+  nextPatientCard: {
+    marginHorizontal: SIZES.xl,
+    marginBottom: SIZES.xl,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  nextPatientGradient: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  nextPatientLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  nextPatientIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: COLORS.white,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...SHADOWS.small,
+  },
+  nextPatientLabel: {
+    fontSize: SIZES.small,
+    color: COLORS.textSecondary,
+  },
+  nextPatientName: {
+    fontSize: SIZES.h4,
+    fontWeight: 'bold',
+    color: COLORS.text,
+  },
+  nextPatientToken: {
+    fontSize: SIZES.small,
+    color: COLORS.primary,
+    fontWeight: '500',
+  },
+  nextPatientBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+    gap: 8,
+  },
+  nextPatientBtnText: {
+    color: COLORS.white,
+    fontWeight: '600',
+    fontSize: SIZES.small,
   },
 
   // Stats Cards
   statsContainer: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
-    gap: 12,
-    marginBottom: 20,
+    flexWrap: 'wrap',
+    paddingHorizontal: SIZES.xl,
+    gap: 10,
+    marginBottom: SIZES.xl,
   },
   statCard: {
     flex: 1,
-    padding: 12,
+    minWidth: (width - 60) / 2 - 10,
+    padding: 14,
     borderRadius: 16,
-    borderWidth: 1,
+    backgroundColor: COLORS.white,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   statIcon: {
-    width: 45,
-    height: 45,
-    borderRadius: 22.5,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   statNumber: {
-    fontSize: 28,
+    fontSize: SIZES.h3,
     fontWeight: 'bold',
-    color: '#FFFFFF',
   },
   statLabel: {
-    fontSize: 11,
-    color: '#CCE3E5',
-    marginTop: 4,
-  },
-
-  // Priority Alert
-  priorityAlert: {
-    marginHorizontal: 20,
-    marginBottom: 20,
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  priorityGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 15,
-    gap: 12,
-  },
-  priorityTextContainer: {
-    flex: 1,
-  },
-  priorityTitle: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  priorityDesc: {
-    color: 'rgba(255,255,255,0.8)',
-    fontSize: 11,
+    fontSize: SIZES.small,
+    color: COLORS.textSecondary,
     marginTop: 2,
   },
 
   // Quick Actions
   sectionTitle: {
-    color: '#FFFFFF',
-    fontSize: 18,
+    color: COLORS.text,
+    fontSize: SIZES.h3,
     fontWeight: 'bold',
-    marginHorizontal: 20,
-    marginBottom: 15,
+    marginHorizontal: SIZES.xl,
+    marginBottom: SIZES.md,
   },
   actionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: 20,
+    paddingHorizontal: SIZES.xl,
     gap: 12,
   },
   actionCard: {
-    width: (width - 52) / 2,
+    width: (width - 52) / 2 - 6,
+    padding: 14,
     borderRadius: 16,
-    overflow: 'hidden',
-  },
-  actionGradient: {
-    padding: 16,
+    backgroundColor: COLORS.white,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 16,
+    borderColor: COLORS.border,
   },
   actionIcon: {
-    width: 55,
-    height: 55,
-    borderRadius: 27.5,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   actionTitle: {
-    color: '#FFFFFF',
-    fontSize: 14,
+    color: COLORS.text,
+    fontSize: SIZES.body,
     fontWeight: '600',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   actionDesc: {
-    color: '#888',
-    fontSize: 11,
+    color: COLORS.textSecondary,
+    fontSize: SIZES.xSmall,
   },
 
   // Schedule Section
   scheduleSection: {
-    marginTop: 20,
+    marginTop: SIZES.xl,
   },
   scheduleCard: {
-    marginHorizontal: 20,
+    marginHorizontal: SIZES.xl,
     padding: 16,
     borderRadius: 16,
+    backgroundColor: COLORS.white,
     borderWidth: 1,
-    borderColor: 'rgba(4, 225, 245, 0.3)',
+    borderColor: COLORS.border,
   },
   scheduleItem: {
     flexDirection: 'row',
@@ -481,17 +538,21 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   scheduleTimeText: {
-    color: '#CCE3E5',
-    fontSize: 13,
+    color: COLORS.text,
+    fontSize: SIZES.body,
   },
-  scheduleStatus: {
-    color: '#04e1f5',
-    fontSize: 12,
+  scheduleStatusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  scheduleStatusText: {
+    fontSize: SIZES.xSmall,
     fontWeight: '500',
   },
   scheduleDivider: {
     height: 1,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: COLORS.border,
     marginVertical: 12,
   },
 
@@ -499,21 +560,30 @@ const styles = StyleSheet.create({
   footerStats: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 24,
-    marginTop: 20,
-    paddingVertical: 15,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.1)',
-    marginHorizontal: 20,
+    alignItems: 'center',
+    marginTop: SIZES.xl,
+    marginHorizontal: SIZES.xl,
+    paddingVertical: 14,
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   footerStatItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    paddingHorizontal: 8,
+  },
+  footerDivider: {
+    width: 1,
+    height: 20,
+    backgroundColor: COLORS.border,
   },
   footerStatText: {
-    color: '#888',
-    fontSize: 11,
+    color: COLORS.textSecondary,
+    fontSize: SIZES.small,
+    fontWeight: '500',
   },
 });
 

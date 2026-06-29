@@ -1,71 +1,82 @@
 import React, { useState } from 'react';
-import { 
-  View, Text, StyleSheet, ScrollView, TouchableOpacity, 
-  Dimensions, TextInput, Platform, StatusBar, ImageBackground,
-  SafeAreaView
+import {
+  View, Text, StyleSheet, ScrollView, TouchableOpacity,
+  Dimensions, TextInput, Platform, StatusBar,
+  SafeAreaView, Alert
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { COLORS, SIZES, SHADOWS } from '../../theme';
 
 const { width, height } = Dimensions.get('window');
 
 // Responsive sizing
-const isTablet = width >= 768;
 const wp = (percentage) => (width * percentage) / 100;
 const hp = (percentage) => (height * percentage) / 100;
 
 const HospitalDirectoryScreen = ({ navigation }) => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedFloor, setSelectedFloor] = useState(null);
 
   const floors = [
-    { 
-      floor: 'Basement', 
-      icon: 'layers-outline',
-      depts: [
-        { name: 'Radiology', room: 'B-101', icon: 'scan-outline', description: 'X-Ray, CT Scan, MRI' },
-        { name: 'MRI/CT Scan', room: 'B-105', icon: 'medical-outline', description: 'Advanced Imaging' },
-        { name: 'Mortuary', room: 'B-LL', icon: 'fitness-outline', description: '24/7 Service' },
-        { name: 'Parking', room: 'P1-P3', icon: 'car-outline', description: 'Patient & Visitor Parking' }
-      ] 
-    },
-    { 
-      floor: 'Ground Floor', 
-      icon: 'business-outline',
-      depts: [
-        { name: 'Emergency', room: 'ER-Main', icon: 'flash-outline', description: '24/7 Emergency Care' },
-        { name: 'OPD Registration', room: 'G-20', icon: 'clipboard-outline', description: 'New Patient Registration' },
-        { name: 'Pharmacy', room: 'G-12', icon: 'medkit-outline', description: '24/7 Medicine Dispensary' },
-        { name: 'Lab Collection', room: 'G-05', icon: 'flask-outline', description: 'Blood & Sample Collection' }
-      ] 
-    },
-    { 
-      floor: '1st Floor', 
-      icon: 'chevron-up-circle-outline',
-      depts: [
-        { name: 'Cardiology', room: '101-C', icon: 'heart-outline', description: 'Heart Specialist' },
-        { name: 'Neurology', room: '108-N', icon: 'pulse-outline', description: 'Brain & Nerve Specialist' },
-        { name: 'Dialysis Unit', room: '115-D', icon: 'water-outline', description: 'Kidney Dialysis' },
-        { name: 'Cafeteria', room: 'C-Wing', icon: 'restaurant-outline', description: 'Food & Refreshments' }
-      ] 
-    },
     {
-      floor: '2nd Floor',
-      icon: 'chevron-up-circle-outline',
+      id: 'basement',
+      floor: 'Basement',
+      icon: 'layers-outline',
+      color: '#8B5CF6',
       depts: [
-        { name: 'Pediatrics', room: '201-P', icon: 'happy-outline', description: 'Child Specialist' },
-        { name: 'Gynecology', room: '208-G', icon: 'female-outline', description: 'Women\'s Health' },
-        { name: 'Physiotherapy', room: '215-PT', icon: 'fitness-outline', description: 'Rehabilitation' },
-        { name: 'Laboratory', room: '220-L', icon: 'flask-outline', description: 'Pathology Tests' }
+        { name: 'Radiology', room: 'B-101', icon: 'scan-outline', description: 'X-Ray, CT Scan, MRI', x: 1, y: 1, color: '#8B5CF6' },
+        { name: 'MRI/CT Scan', room: 'B-105', icon: 'medical-outline', description: 'Advanced Imaging', x: 3, y: 1, color: '#8B5CF6' },
+        { name: 'Mortuary', room: 'B-LL', icon: 'fitness-outline', description: '24/7 Service', x: 1, y: 3, color: '#6B7280' },
+        { name: 'Parking', room: 'P1-P3', icon: 'car-outline', description: 'Patient & Visitor Parking', x: 3, y: 3, color: '#3B82F6' }
       ]
     },
     {
+      id: 'ground',
+      floor: 'Ground Floor',
+      icon: 'business-outline',
+      color: '#10B981',
+      depts: [
+        { name: 'Emergency', room: 'ER-Main', icon: 'flash-outline', description: '24/7 Emergency Care', x: 1, y: 1, color: '#EF4444' },
+        { name: 'OPD Registration', room: 'G-20', icon: 'clipboard-outline', description: 'New Patient Registration', x: 3, y: 1, color: '#F59E0B' },
+        { name: 'Pharmacy', room: 'G-12', icon: 'medkit-outline', description: '24/7 Medicine Dispensary', x: 1, y: 3, color: '#10B981' },
+        { name: 'Lab Collection', room: 'G-05', icon: 'flask-outline', description: 'Blood & Sample Collection', x: 3, y: 3, color: '#8B5CF6' }
+      ]
+    },
+    {
+      id: 'first',
+      floor: '1st Floor',
+      icon: 'chevron-up-circle-outline',
+      color: '#3B82F6',
+      depts: [
+        { name: 'Cardiology', room: '101-C', icon: 'heart-outline', description: 'Heart Specialist', x: 1, y: 1, color: '#EF4444' },
+        { name: 'Neurology', room: '108-N', icon: 'pulse-outline', description: 'Brain & Nerve Specialist', x: 3, y: 1, color: '#8B5CF6' },
+        { name: 'Dialysis Unit', room: '115-D', icon: 'water-outline', description: 'Kidney Dialysis', x: 1, y: 3, color: '#3B82F6' },
+        { name: 'Cafeteria', room: 'C-Wing', icon: 'restaurant-outline', description: 'Food & Refreshments', x: 3, y: 3, color: '#F59E0B' }
+      ]
+    },
+    {
+      id: 'second',
+      floor: '2nd Floor',
+      icon: 'chevron-up-circle-outline',
+      color: '#F59E0B',
+      depts: [
+        { name: 'Pediatrics', room: '201-P', icon: 'happy-outline', description: 'Child Specialist', x: 1, y: 1, color: '#EC4899' },
+        { name: 'Gynecology', room: '208-G', icon: 'female-outline', description: 'Women\'s Health', x: 3, y: 1, color: '#EC4899' },
+        { name: 'Physiotherapy', room: '215-PT', icon: 'fitness-outline', description: 'Rehabilitation', x: 1, y: 3, color: '#10B981' },
+        { name: 'Laboratory', room: '220-L', icon: 'flask-outline', description: 'Pathology Tests', x: 3, y: 3, color: '#8B5CF6' }
+      ]
+    },
+    {
+      id: 'third',
       floor: '3rd Floor',
       icon: 'chevron-up-circle-outline',
+      color: '#EF4444',
       depts: [
-        { name: 'ICU', room: '301-ICU', icon: 'alert-circle-outline', description: 'Intensive Care Unit' },
-        { name: 'Operation Theatre', room: '305-OT', icon: 'medical-outline', description: 'Surgical Suites' },
-        { name: 'Recovery Room', room: '310-RR', icon: 'bed-outline', description: 'Post-op Care' },
-        { name: 'Administration', room: '315-AD', icon: 'business-outline', description: 'Hospital Management' }
+        { name: 'ICU', room: '301-ICU', icon: 'alert-circle-outline', description: 'Intensive Care Unit', x: 1, y: 1, color: '#EF4444' },
+        { name: 'Operation Theatre', room: '305-OT', icon: 'medical-outline', description: 'Surgical Suites', x: 3, y: 1, color: '#EF4444' },
+        { name: 'Recovery Room', room: '310-RR', icon: 'bed-outline', description: 'Post-op Care', x: 1, y: 3, color: '#10B981' },
+        { name: 'Administration', room: '315-AD', icon: 'business-outline', description: 'Hospital Management', x: 3, y: 3, color: '#6B7280' }
       ]
     }
   ];
@@ -73,190 +84,255 @@ const HospitalDirectoryScreen = ({ navigation }) => {
   // Filter departments based on search
   const filteredFloors = floors.map(floor => ({
     ...floor,
-    depts: floor.depts.filter(d => 
+    depts: floor.depts.filter(d =>
       d.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       d.description.toLowerCase().includes(searchQuery.toLowerCase())
     )
   })).filter(floor => floor.depts.length > 0);
 
-  const getFloorIcon = (floorName) => {
-    if (floorName.includes('Basement')) return 'layers-outline';
-    if (floorName.includes('Ground')) return 'business-outline';
-    return 'chevron-up-circle-outline';
+  // Get unique departments for legend
+  const allDepartments = [...new Set(floors.flatMap(f => f.depts.map(d => d.name)))];
+
+  const renderFloorGrid = (floor) => {
+    // Create a 4x4 grid (x: 1-4, y: 1-4)
+    const grid = [];
+    const deptMap = {};
+    floor.depts.forEach(d => {
+      deptMap[`${d.x},${d.y}`] = d;
+    });
+
+    for (let row = 1; row <= 4; row++) {
+      const rowItems = [];
+      for (let col = 1; col <= 4; col++) {
+        const key = `${col},${row}`;
+        const dept = deptMap[key];
+        rowItems.push(
+          <TouchableOpacity
+            key={key}
+            style={[styles.gridCell, dept ? { backgroundColor: dept.color + '20', borderColor: dept.color } : styles.emptyCell]}
+            onPress={() => {
+              if (dept) {
+                Alert.alert(
+                  dept.name,
+                  `Room: ${dept.room}\n${dept.description}\n\nFloor: ${floor.floor}`,
+                  [
+                    { text: 'Get Directions', onPress: () => Alert.alert('Directions', `Navigating to ${dept.name} (${dept.room})`) },
+                    { text: 'Close', style: 'cancel' }
+                  ]
+                );
+              }
+            }}
+            activeOpacity={0.7}
+            disabled={!dept}
+          >
+            {dept ? (
+              <>
+                <Ionicons name={dept.icon} size={wp(4)} color={dept.color} />
+                <Text style={[styles.gridCellText, { color: dept.color }]} numberOfLines={1}>
+                  {dept.name.split(' ').slice(0, 2).join(' ')}
+                </Text>
+                <Text style={styles.gridRoomText}>{dept.room}</Text>
+              </>
+            ) : (
+              <View style={styles.emptyCellContent} />
+            )}
+          </TouchableOpacity>
+        );
+      }
+      grid.push(
+        <View key={row} style={styles.gridRow}>
+          {rowItems}
+        </View>
+      );
+    }
+    return grid;
   };
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-      
-      <ImageBackground
-        source={{ uri: 'https://i.pinimg.com/736x/3d/01/5f/3d015f0c3c861532da0215caa8207a15.jpg' }}
-        style={styles.backgroundImage}
-        resizeMode="cover"
-      >
-        <View style={styles.overlay}>
-          <SafeAreaView style={styles.safeArea}>
-            {/* Header */}
-            <LinearGradient
-              colors={['rgba(0, 29, 61, 0.95)', 'rgba(0, 8, 20, 0.85)']}
-              style={styles.headerGradient}
-            >
-              <View style={styles.topHeader}>
-                <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.goBack()}>
-                  <Ionicons name="chevron-back" size={wp(6)} color="#04e1f5" />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>Hospital Directory</Text>
-                <View style={{ width: wp(10) }} />
-              </View>
 
-              {/* Search Bar */}
-              <View style={styles.searchContainer}>
-                <Ionicons name="search" size={wp(5)} color="#04e1f5" />
-                <TextInput 
-                  style={styles.searchInput}
-                  placeholder="Search departments, services..."
-                  placeholderTextColor="#94A3B8"
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
-                />
-                {searchQuery.length > 0 && (
-                  <TouchableOpacity onPress={() => setSearchQuery('')}>
-                    <Ionicons name="close-circle" size={wp(4.5)} color="#64748B" />
-                  </TouchableOpacity>
-                )}
-              </View>
+      <LinearGradient
+        colors={[COLORS.primary, COLORS.secondary, COLORS.background]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 0.25 }}
+        style={styles.gradientBackground}
+      />
 
-              {/* Info Banner */}
-              <View style={styles.infoBanner}>
-                <Ionicons name="location-outline" size={wp(4)} color="#04e1f5" />
-                <Text style={styles.infoText}>Tap on any department for AR Navigation</Text>
-              </View>
-            </LinearGradient>
+      <SafeAreaView style={styles.safeArea}>
+        {/* Header */}
+        <View style={styles.headerContainer}>
+          <View style={styles.topHeader}>
+            <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+              <Ionicons name="arrow-back" size={wp(5.5)} color={COLORS.white} />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Hospital Map</Text>
+            <View style={{ width: wp(10) }} />
+          </View>
 
-            {/* Directory List */}
-            <ScrollView 
-              contentContainerStyle={styles.scrollContent} 
-              showsVerticalScrollIndicator={false}
-            >
-              {filteredFloors.length > 0 ? (
-                filteredFloors.map((item, index) => (
-                  <View key={index} style={styles.floorCard}>
-                    {/* Floor Header */}
-                    <LinearGradient
-                      colors={['rgba(4, 225, 245, 0.15)', 'rgba(4, 225, 245, 0.05)']}
-                      style={styles.floorHeader}
-                    >
-                      <Ionicons name={item.icon} size={wp(5)} color="#04e1f5" />
-                      <Text style={styles.floorText}>{item.floor.toUpperCase()}</Text>
-                      <View style={styles.floorBadge}>
-                        <Text style={styles.floorBadgeText}>{item.depts.length} Services</Text>
-                      </View>
-                    </LinearGradient>
-                    
-                    {/* Departments Grid */}
-                    <View style={styles.deptGrid}>
-                      {item.depts.map((dept, i) => (
-                        <TouchableOpacity 
-                          key={i} 
-                          style={styles.deptCard}
-                          activeOpacity={0.85}
-                          onPress={() => navigation.navigate('ARNavigation', { 
-                            room: dept.room,
-                            department: dept.name 
-                          })}
-                        >
-                          <View style={styles.deptIconWrapper}>
-                            <LinearGradient
-                              colors={['rgba(4, 225, 245, 0.2)', 'rgba(4, 225, 245, 0.05)']}
-                              style={styles.deptIconGradient}
-                            >
-                              <Ionicons name={dept.icon} size={wp(5.5)} color="#04e1f5" />
-                            </LinearGradient>
-                          </View>
-                          
-                          <View style={styles.deptInfo}>
-                            <Text style={styles.deptName}>{dept.name}</Text>
-                            <Text style={styles.deptDescription}>{dept.description}</Text>
-                            <View style={styles.roomRow}>
-                              <Ionicons name="location-outline" size={wp(3)} color="#64748B" />
-                              <Text style={styles.roomText}>Room: {dept.room}</Text>
-                            </View>
-                          </View>
-                          
-                          <View style={styles.navIcon}>
-                            <Ionicons name="navigate-circle-outline" size={wp(6)} color="#04e1f5" />
-                          </View>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  </View>
-                ))
-              ) : (
-                <View style={styles.emptyState}>
-                  <Ionicons name="search-outline" size={wp(15)} color="#4B5563" />
-                  <Text style={styles.emptyTitle}>No Results Found</Text>
-                  <Text style={styles.emptySubtitle}>Try searching with different keywords</Text>
-                </View>
-              )}
-              
-              {/* Help Section */}
-              <View style={styles.helpSection}>
-                <LinearGradient
-                  colors={['rgba(4, 225, 245, 0.08)', 'rgba(4, 225, 245, 0.03)']}
-                  style={styles.helpCard}
-                >
-                  <Ionicons name="help-circle-outline" size={wp(6)} color="#04e1f5" />
-                  <View style={styles.helpContent}>
-                    <Text style={styles.helpTitle}>Need Help?</Text>
-                    <Text style={styles.helpText}>Visit the information desk on Ground Floor or call our helpline</Text>
-                    <TouchableOpacity style={styles.helpButton}>
-                      <Text style={styles.helpButtonText}>Contact Reception →</Text>
-                    </TouchableOpacity>
-                  </View>
-                </LinearGradient>
-              </View>
-              
-              <View style={{ height: hp(10) }} />
-            </ScrollView>
-          </SafeAreaView>
+          {/* Search Bar */}
+          <View style={styles.searchContainer}>
+            <Ionicons name="search-outline" size={wp(4.5)} color={COLORS.textSecondary} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search departments, services..."
+              placeholderTextColor={COLORS.textLight}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')}>
+                <Ionicons name="close-circle" size={wp(4)} color={COLORS.textSecondary} />
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {/* Legend */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.legendScroll}>
+            {floors.map(floor => (
+              <TouchableOpacity
+                key={floor.id}
+                style={[styles.legendChip, selectedFloor === floor.id && styles.legendChipActive]}
+                onPress={() => setSelectedFloor(selectedFloor === floor.id ? null : floor.id)}
+              >
+                <View style={[styles.legendDot, { backgroundColor: floor.color }]} />
+                <Text style={[styles.legendText, selectedFloor === floor.id && styles.legendTextActive]}>
+                  {floor.floor}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
         </View>
-      </ImageBackground>
+
+        {/* Directory List with Grid View */}
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {(selectedFloor ? floors.filter(f => f.id === selectedFloor) : filteredFloors).length > 0 ? (
+            (selectedFloor ? floors.filter(f => f.id === selectedFloor) : filteredFloors).map((item, index) => (
+              <View key={index} style={[styles.floorCard, styles.cardShadow]}>
+                {/* Floor Header */}
+                <View style={[styles.floorHeader, { borderBottomColor: item.color + '30' }]}>
+                  <View style={[styles.floorIconWrapper, { backgroundColor: item.color + '15' }]}>
+                    <Ionicons name={item.icon} size={wp(4.5)} color={item.color} />
+                  </View>
+                  <Text style={[styles.floorText, { color: item.color }]}>{item.floor.toUpperCase()}</Text>
+                  <View style={[styles.floorBadge, { backgroundColor: item.color + '15' }]}>
+                    <Text style={[styles.floorBadgeText, { color: item.color }]}>{item.depts.length}</Text>
+                  </View>
+                </View>
+
+                {/* Floor Map Grid */}
+                <View style={styles.gridContainer}>
+                  <View style={styles.gridLegend}>
+                    <Text style={styles.gridLegendText}>Department Map View</Text>
+                    <Text style={styles.gridLegendSub}>Tap any department for details</Text>
+                  </View>
+                  {renderFloorGrid(item)}
+                </View>
+
+                {/* Department List below grid */}
+                <View style={styles.deptListContainer}>
+                  <Text style={styles.deptListTitle}>Departments on this floor:</Text>
+                  {item.depts.map((dept, i) => (
+                    <TouchableOpacity
+                      key={i}
+                      style={[styles.deptListItem, { borderLeftColor: dept.color || item.color }]}
+                      onPress={() => {
+                        Alert.alert(
+                          dept.name,
+                          `Room: ${dept.room}\n${dept.description}`,
+                          [
+                            { text: 'Get Directions', onPress: () => Alert.alert('Directions', `Navigating to ${dept.name} (${dept.room})`) },
+                            { text: 'Close', style: 'cancel' }
+                          ]
+                        );
+                      }}
+                    >
+                      <Ionicons name={dept.icon} size={wp(3.5)} color={dept.color || item.color} />
+                      <View style={styles.deptListItemInfo}>
+                        <Text style={styles.deptListItemName}>{dept.name}</Text>
+                        <Text style={styles.deptListItemRoom}>{dept.room}</Text>
+                      </View>
+                      <Ionicons name="chevron-forward" size={wp(3.5)} color={COLORS.textSecondary} />
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            ))
+          ) : (
+            <View style={styles.emptyState}>
+              <Ionicons name="search-outline" size={wp(12)} color={COLORS.border} />
+              <Text style={styles.emptyTitle}>No Results Found</Text>
+              <Text style={styles.emptySubtitle}>Try searching with different keywords</Text>
+            </View>
+          )}
+
+          {/* Help Section */}
+          <View style={[styles.helpSection, styles.cardShadow]}>
+            <View style={styles.helpCard}>
+              <Ionicons name="help-circle-outline" size={wp(5)} color={COLORS.primary} />
+              <View style={styles.helpContent}>
+                <Text style={styles.helpTitle}>Need Help Finding a Department?</Text>
+                <Text style={styles.helpText}>Visit the information desk on Ground Floor or ask any staff member for assistance.</Text>
+                <TouchableOpacity style={styles.helpButton} onPress={() => Alert.alert('Reception', 'Connecting to hospital reception...')}>
+                  <Text style={styles.helpButtonText}>Contact Reception →</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+
+          <View style={{ height: hp(10) }} />
+        </ScrollView>
+      </SafeAreaView>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  backgroundImage: { flex: 1 },
-  overlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.2)' },
-  safeArea: { flex: 1 },
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background
+  },
+  gradientBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '100%',
+  },
+  safeArea: {
+    flex: 1
+  },
 
-  headerGradient: {
-    paddingTop: Platform.OS === 'ios' ? hp(2) : StatusBar.currentHeight + hp(2),
-    paddingBottom: hp(2.5),
-    borderBottomLeftRadius: wp(6),
-    borderBottomRightRadius: wp(6),
+  cardShadow: { ...SHADOWS.medium },
+
+  // Header
+  headerContainer: {
+    paddingBottom: hp(1),
   },
   topHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: wp(5),
-    paddingTop: hp(1),
+    paddingTop: Platform.OS === 'ios' ? hp(1) : StatusBar.currentHeight + hp(1),
+    paddingBottom: hp(1.5),
   },
-  iconBtn: {
+  backBtn: {
     width: wp(10),
     height: wp(10),
     borderRadius: wp(3),
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    backgroundColor: 'rgba(255,255,255,0.15)',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(4, 225, 245, 0.3)',
+    borderColor: 'rgba(255,255,255,0.2)',
   },
-  headerTitle: { 
-    color: '#fff', 
-    fontSize: wp(5), 
+  headerTitle: {
+    color: COLORS.white,
+    fontSize: wp(5),
     fontWeight: 'bold',
     letterSpacing: 0.5,
   },
@@ -264,166 +340,243 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
-    marginHorizontal: wp(5),
-    marginTop: hp(2),
-    paddingHorizontal: wp(4),
-    borderRadius: wp(6),
-    borderWidth: 1,
-    borderColor: 'rgba(4, 225, 245, 0.3)',
-    gap: wp(2.5),
-  },
-  searchInput: { 
-    flex: 1, 
-    color: '#fff', 
-    fontSize: wp(3.5), 
-    paddingVertical: hp(1.5),
-  },
-
-  infoBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(4, 225, 245, 0.08)',
+    backgroundColor: COLORS.white,
     marginHorizontal: wp(5),
     marginTop: hp(1.5),
-    paddingHorizontal: wp(4),
-    paddingVertical: hp(1),
-    borderRadius: wp(4),
+    paddingHorizontal: wp(3.5),
+    borderRadius: wp(3.5),
+    borderWidth: 1,
+    borderColor: COLORS.border,
     gap: wp(2),
+    ...SHADOWS.small,
   },
-  infoText: { color: '#04e1f5', fontSize: wp(3), fontWeight: '500' },
+  searchInput: {
+    flex: 1,
+    color: COLORS.text,
+    fontSize: wp(3.5),
+    paddingVertical: hp(1.2),
+  },
 
-  scrollContent: { 
-    padding: wp(4), 
+  // Legend
+  legendScroll: {
+    paddingHorizontal: wp(5),
+    marginTop: hp(1.2),
+    marginBottom: hp(0.5),
+  },
+  legendChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.white,
+    paddingHorizontal: wp(3),
+    paddingVertical: hp(0.5),
+    borderRadius: wp(4),
+    marginRight: wp(2),
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    ...SHADOWS.small,
+  },
+  legendChipActive: {
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.primary + '10',
+  },
+  legendDot: {
+    width: wp(2.5),
+    height: wp(2.5),
+    borderRadius: wp(1.25),
+    marginRight: wp(1.5),
+  },
+  legendText: {
+    color: COLORS.textSecondary,
+    fontSize: wp(2.8),
+    fontWeight: '500',
+  },
+  legendTextActive: {
+    color: COLORS.primary,
+  },
+
+  scrollContent: {
+    padding: wp(4),
     paddingBottom: hp(15),
   },
-  
-  floorCard: { 
+
+  floorCard: {
     marginBottom: hp(2.5),
-  },
-  floorHeader: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    marginBottom: hp(1.5),
-    paddingHorizontal: wp(3),
-    paddingVertical: hp(1),
+    backgroundColor: COLORS.white,
     borderRadius: wp(4),
+    padding: wp(3.5),
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  floorHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingBottom: hp(1.5),
+    borderBottomWidth: 1,
     gap: wp(2),
   },
-  floorText: { 
-    color: '#04e1f5', 
-    fontWeight: 'bold', 
-    fontSize: wp(3.5), 
-    letterSpacing: 1,
+  floorIconWrapper: {
+    width: wp(8),
+    height: wp(8),
+    borderRadius: wp(2),
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  floorText: {
+    fontWeight: 'bold',
+    fontSize: wp(3.5),
+    letterSpacing: 0.5,
     flex: 1,
   },
   floorBadge: {
-    backgroundColor: 'rgba(4, 225, 245, 0.15)',
     paddingHorizontal: wp(2.5),
-    paddingVertical: hp(0.5),
+    paddingVertical: hp(0.3),
     borderRadius: wp(3),
   },
-  floorBadgeText: { color: '#04e1f5', fontSize: wp(2.5), fontWeight: '600' },
-  
-  deptGrid: { 
-    gap: hp(1.2),
-  },
-  deptCard: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    backgroundColor: 'rgba(0, 0, 0, 0.45)', 
-    padding: wp(3.5), 
-    borderRadius: wp(4),
-    borderWidth: 1,
-    borderColor: 'rgba(4, 225, 245, 0.15)',
-  },
-  deptIconWrapper: {
-    marginRight: wp(3),
-  },
-  deptIconGradient: {
-    width: wp(12),
-    height: wp(12),
-    borderRadius: wp(3),
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(4, 225, 245, 0.3)',
-  },
-  deptInfo: { 
-    flex: 1,
-  },
-  deptName: { 
-    color: '#fff', 
-    fontSize: wp(3.8), 
-    fontWeight: 'bold',
-  },
-  deptDescription: { 
-    color: '#94A3B8', 
-    fontSize: wp(2.8), 
-    marginTop: hp(0.3),
-  },
-  roomRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: wp(1),
-    marginTop: hp(0.5),
-  },
-  roomText: { 
-    color: '#64748B', 
+  floorBadgeText: {
     fontSize: wp(2.5),
-  },
-  navIcon: {
-    marginLeft: wp(2),
+    fontWeight: '600',
   },
 
-  emptyState: { 
-    alignItems: 'center', 
-    justifyContent: 'center', 
-    paddingVertical: hp(10),
+  // Grid
+  gridContainer: {
+    marginTop: hp(1.5),
+    marginBottom: hp(1),
   },
-  emptyTitle: { 
-    color: '#9CA3AF', 
-    fontSize: wp(4), 
-    fontWeight: 'bold', 
+  gridLegend: {
+    marginBottom: hp(1),
+  },
+  gridLegendText: {
+    color: COLORS.text,
+    fontSize: wp(3.2),
+    fontWeight: '600',
+  },
+  gridLegendSub: {
+    color: COLORS.textSecondary,
+    fontSize: wp(2.5),
+    marginTop: hp(0.2),
+  },
+  gridRow: {
+    flexDirection: 'row',
+    gap: wp(1),
+    marginBottom: wp(1),
+  },
+  gridCell: {
+    flex: 1,
+    aspectRatio: 1,
+    borderRadius: wp(2),
+    borderWidth: 1.5,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: wp(1),
+    minHeight: wp(15),
+    backgroundColor: COLORS.backgroundSecondary,
+  },
+  emptyCell: {
+    backgroundColor: COLORS.backgroundSecondary,
+    borderColor: COLORS.border,
+    borderWidth: 0.5,
+  },
+  emptyCellContent: {
+    opacity: 0.3,
+  },
+  gridCellText: {
+    fontSize: wp(2.2),
+    fontWeight: '600',
+    textAlign: 'center',
+    marginTop: wp(0.5),
+  },
+  gridRoomText: {
+    fontSize: wp(1.8),
+    color: COLORS.textSecondary,
+    marginTop: wp(0.3),
+  },
+
+  // Department List
+  deptListContainer: {
+    marginTop: hp(1.5),
+    paddingTop: hp(1.5),
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  deptListTitle: {
+    color: COLORS.textSecondary,
+    fontSize: wp(2.8),
+    fontWeight: '500',
+    marginBottom: hp(0.8),
+  },
+  deptListItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: hp(0.7),
+    paddingHorizontal: wp(2),
+    borderLeftWidth: 3,
+    marginBottom: hp(0.3),
+    backgroundColor: COLORS.backgroundSecondary,
+    borderRadius: wp(1),
+    gap: wp(2),
+  },
+  deptListItemInfo: {
+    flex: 1,
+  },
+  deptListItemName: {
+    color: COLORS.text,
+    fontSize: wp(3),
+    fontWeight: '500',
+  },
+  deptListItemRoom: {
+    color: COLORS.textSecondary,
+    fontSize: wp(2.2),
+  },
+
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: hp(8),
+  },
+  emptyTitle: {
+    color: COLORS.text,
+    fontSize: wp(4),
+    fontWeight: 'bold',
     marginTop: hp(2),
   },
-  emptySubtitle: { 
-    color: '#6B7280', 
-    fontSize: wp(3.2), 
+  emptySubtitle: {
+    color: COLORS.textSecondary,
+    fontSize: wp(3.2),
     marginTop: hp(1),
   },
 
   helpSection: {
-    marginTop: hp(3),
+    marginTop: hp(2),
+    backgroundColor: COLORS.white,
+    borderRadius: wp(4),
+    padding: wp(3.5),
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   helpCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: wp(4),
-    borderRadius: wp(4),
-    borderWidth: 1,
-    borderColor: 'rgba(4, 225, 245, 0.2)',
     gap: wp(3),
   },
   helpContent: {
     flex: 1,
-    gap: hp(0.5),
+    gap: hp(0.3),
   },
   helpTitle: {
-    color: '#fff',
-    fontSize: wp(3.8),
+    color: COLORS.text,
+    fontSize: wp(3.5),
     fontWeight: 'bold',
   },
   helpText: {
-    color: '#94A3B8',
+    color: COLORS.textSecondary,
     fontSize: wp(3),
     lineHeight: wp(4),
   },
   helpButton: {
-    marginTop: hp(0.8),
+    marginTop: hp(0.3),
   },
   helpButtonText: {
-    color: '#04e1f5',
+    color: COLORS.primary,
     fontSize: wp(3),
     fontWeight: '600',
   },

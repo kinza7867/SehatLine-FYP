@@ -3,11 +3,12 @@ import {
   View, Text, StyleSheet, TouchableOpacity, 
   TextInput, SafeAreaView, Alert, KeyboardAvoidingView, 
   Platform, ScrollView, Dimensions, StatusBar, Image,
-  Keyboard, TouchableWithoutFeedback, Modal, Share, ImageBackground
+  Keyboard, TouchableWithoutFeedback, Modal, Share
 } from 'react-native';
-import Ionicons from 'react-native-vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { COLORS, SIZES, SHADOWS, FONTS } from '../../theme';
 
 const { width, height } = Dimensions.get('window');
 
@@ -38,6 +39,7 @@ const PatientPortalScreen = ({ navigation }) => {
   const validateName = (name) => {
     if (!name.trim()) return 'Full name is required';
     if (name.trim().length < 3) return 'Name must be at least 3 characters';
+    if (name.trim().length > 50) return 'Name cannot exceed 50 characters';
     return '';
   };
 
@@ -63,7 +65,8 @@ const PatientPortalScreen = ({ navigation }) => {
 
   const validateAddress = (address) => {
     if (!address.trim()) return 'Address is required';
-    if (address.trim().length < 5) return 'Please enter your address';
+    if (address.trim().length < 5) return 'Please enter at least 5 characters';
+    if (address.trim().length > 100) return 'Address cannot exceed 100 characters';
     return '';
   };
 
@@ -86,9 +89,35 @@ const PatientPortalScreen = ({ navigation }) => {
     let formattedValue = value;
     let error = '';
     
-    if (field === 'cnic') formattedValue = formatCNIC(value);
-    else if (field === 'phone') formattedValue = formatPhoneNumber(value);
-    else formattedValue = value;
+    if (field === 'cnic') {
+      const cleaned = value.replace(/\D/g, '');
+      if (cleaned.length <= 13) {
+        formattedValue = formatCNIC(value);
+      } else {
+        return;
+      }
+    } else if (field === 'phone') {
+      const cleaned = value.replace(/\D/g, '');
+      if (cleaned.length <= 11) {
+        formattedValue = formatPhoneNumber(value);
+      } else {
+        return;
+      }
+    } else if (field === 'name') {
+      if (value.length <= 50) {
+        formattedValue = value;
+      } else {
+        return;
+      }
+    } else if (field === 'address') {
+      if (value.length <= 100) {
+        formattedValue = value;
+      } else {
+        return;
+      }
+    } else {
+      formattedValue = value;
+    }
     
     error = validator(formattedValue);
     
@@ -108,22 +137,20 @@ const PatientPortalScreen = ({ navigation }) => {
     };
   };
 
-  // After generating pass, save user data
-const saveUserDataToStorage = async () => {
-  try {
-    const userData = {
-      name: formData.name,
-      email: formData.email || '',
-      phone: formData.phone,
-      role: 'patient',
-      joinDate: new Date().toLocaleDateString(),
-    };
-    await AsyncStorage.setItem('userData', JSON.stringify(userData));
-  } catch (error) {
-    console.log('Error:', error);
-  }
-};
-
+  const saveUserDataToStorage = async () => {
+    try {
+      const userData = {
+        name: formData.name,
+        email: formData.email || '',
+        phone: formData.phone,
+        role: 'patient',
+        joinDate: new Date().toLocaleDateString(),
+      };
+      await AsyncStorage.setItem('userData', JSON.stringify(userData));
+    } catch (error) {
+      console.log('Error:', error);
+    }
+  };
 
   const handleRegister = () => {
     const nameError = validateName(formData.name);
@@ -155,6 +182,7 @@ const saveUserDataToStorage = async () => {
   const handleConfirmPass = () => {
     setShowPassModal(false);
     setIsRegistered(true);
+    saveUserDataToStorage();
     Alert.alert(
       '✅ Pass Generated Successfully!',
       'Your digital pass is ready. You can now access hospital services.',
@@ -174,7 +202,7 @@ const saveUserDataToStorage = async () => {
   };
 
   const handleViewDoctors = () => {
-    navigation.navigate('DoctorDetailScreen', { 
+    navigation.navigate('DoctorListScreen', { 
       patientData: formData,
       passData: generatedPass 
     });
@@ -190,273 +218,321 @@ const saveUserDataToStorage = async () => {
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <View style={styles.container}>
-        <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-        <ImageBackground
-          source={{ uri: 'https://i.pinimg.com/736x/3d/01/5f/3d015f0c3c861532da0215caa8207a15.jpg' }}
-          style={styles.backgroundImage}
-          resizeMode="cover"
+        <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
+        <LinearGradient
+          colors={[COLORS.primary, COLORS.background, COLORS.background]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 0.3 }}
+          style={styles.gradientBackground}
         >
-          <View style={styles.overlay}>
-            <SafeAreaView style={styles.safeArea}>
-              <View style={styles.header}>
-                <TouchableOpacity onPress={handleBack} style={styles.backBtn}>
-                  <Ionicons name="arrow-back" size={28} color="#04e1f5" />
-                </TouchableOpacity>
-                
-                <View style={styles.logoRow}>
-                  <Image 
-                    source={require('../../../assets/logo.png')} 
-                    style={styles.logoImage}
-                    resizeMode="contain"
-                  />
-                  <Text style={styles.logoText}>SEHAT<Text style={{color:'#FFF'}}>LINE</Text></Text>
-                </View>
-                
-                <View style={{ width: 28 }}>
-                  <Ionicons name="shield-checkmark" size={24} color="#04e1f5" opacity={0.5} />
-                </View>
+          <SafeAreaView style={styles.safeArea}>
+            <View style={styles.header}>
+              <TouchableOpacity onPress={handleBack} style={styles.backBtn}>
+                <Ionicons name="arrow-back" size={28} color={COLORS.secondary} />
+              </TouchableOpacity>
+              
+              <View style={styles.logoRow}>
+                <Image 
+                  source={require('../../../assets/logo.png')} 
+                  style={styles.logoImage}
+                  resizeMode="contain"
+                />
+                <Text style={styles.logoText}>SEHAT<Text style={{color:COLORS.text}}>LINE</Text></Text>
               </View>
+              
+              <View style={{ width: 28 }}>
+                <Ionicons name="shield-checkmark" size={24} color={COLORS.navyDark} opacity={0.9} />
+              </View>
+            </View>
 
-              <KeyboardAvoidingView 
-                behavior={Platform.OS === "ios" ? "padding" : "height"}
-                style={{ flex: 1 }}
-                keyboardVerticalOffset={Platform.OS === 'ios' ? 10 : 0}
+            <KeyboardAvoidingView 
+              behavior={Platform.OS === "ios" ? "padding" : "height"}
+              style={{ flex: 1 }}
+              keyboardVerticalOffset={Platform.OS === 'ios' ? 10 : 0}
+            >
+              <ScrollView 
+                contentContainerStyle={styles.scrollPadding}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
               >
-                <ScrollView 
-                  contentContainerStyle={styles.scrollPadding}
-                  showsVerticalScrollIndicator={false}
-                  keyboardShouldPersistTaps="handled"
-                >
-                  {!isRegistered ? (
-                    <View>
-                      <Text style={styles.welcomeText}>Get Hospital Pass</Text>
-                      <Text style={styles.subText}>Quick entry pass for government hospitals</Text>
+                {!isRegistered ? (
+                  <View>
+                    <Text style={styles.welcomeText}>Get Hospital Pass</Text>
+                    <Text style={styles.subText}>Quick entry pass for government hospitals</Text>
 
-                      <View style={styles.formCard}>
-                        {/* Full Name */}
-                        <View style={styles.inputWrapper}>
-                          <Text style={styles.label}>FULL NAME <Text style={styles.required}>*</Text></Text>
-                          <View style={[styles.inputContainer, errors.name && styles.inputError]}>
-                            <Ionicons name="person-outline" size={20} color="#04e1f5" />
-                            <TextInput 
-                              ref={nameRef}
-                              style={styles.input}
-                              placeholder="Enter your full name" 
-                              placeholderTextColor="#999"
-                              value={formData.name}
-                              onChangeText={(v) => handleFieldChange('name', v, validateName)}
-                              returnKeyType="next"
-                              onSubmitEditing={() => cnicRef.current?.focus()}
-                            />
-                          </View>
-                          {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
+                    <View style={[styles.formCard, { borderColor: COLORS.primary + '30' }]}>
+                      {/* Full Name */}
+                      <View style={styles.inputWrapper}>
+                        <Text style={styles.label}>FULL NAME <Text style={styles.required}>*</Text></Text>
+                        <View style={[styles.inputContainer, errors.name && styles.inputError]}>
+                          <Ionicons name="person-outline" size={20} color={errors.name ? COLORS.danger : COLORS.primary} />
+                          <TextInput 
+                            ref={nameRef}
+                            style={styles.input}
+                            placeholder="Enter your full name" 
+                            placeholderTextColor={COLORS.textLight}
+                            value={formData.name}
+                            onChangeText={(v) => handleFieldChange('name', v, validateName)}
+                            returnKeyType="next"
+                            onSubmitEditing={() => cnicRef.current?.focus()}
+                            maxLength={50}
+                          />
+                          {formData.name.length > 0 && !errors.name && (
+                            <Ionicons name="checkmark-circle" size={20} color={COLORS.success} />
+                          )}
                         </View>
+                        {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
+                      </View>
 
-                        {/* CNIC Number */}
-                        <View style={styles.inputWrapper}>
-                          <Text style={styles.label}>CNIC NUMBER <Text style={styles.required}>*</Text></Text>
-                          <View style={[styles.inputContainer, errors.cnic && styles.inputError]}>
-                            <Ionicons name="card-outline" size={20} color="#04e1f5" />
-                            <TextInput 
-                              ref={cnicRef}
-                              style={styles.input}
-                              placeholder="42101-1234567-1" 
-                              placeholderTextColor="#999"
-                              keyboardType="numeric"
-                              value={formData.cnic}
-                              onChangeText={(v) => handleFieldChange('cnic', v, validateCNIC)}
-                              maxLength={15}
-                              returnKeyType="next"
-                              onSubmitEditing={() => phoneRef.current?.focus()}
-                            />
-                          </View>
-                          {errors.cnic && <Text style={styles.errorText}>{errors.cnic}</Text>}
+                      {/* CNIC Number */}
+                      <View style={styles.inputWrapper}>
+                        <Text style={styles.label}>CNIC NUMBER <Text style={styles.required}>*</Text></Text>
+                        <View style={[styles.inputContainer, errors.cnic && styles.inputError]}>
+                          <Ionicons name="card-outline" size={20} color={errors.cnic ? COLORS.danger : COLORS.primary} />
+                          <TextInput 
+                            ref={cnicRef}
+                            style={styles.input}
+                            placeholder="42101-1234567-1" 
+                            placeholderTextColor={COLORS.textLight}
+                            keyboardType="numeric"
+                            value={formData.cnic}
+                            onChangeText={(v) => handleFieldChange('cnic', v, validateCNIC)}
+                            maxLength={15}
+                            returnKeyType="next"
+                            onSubmitEditing={() => phoneRef.current?.focus()}
+                          />
+                          {formData.cnic.length === 15 && !errors.cnic && (
+                            <Ionicons name="checkmark-circle" size={20} color={COLORS.success} />
+                          )}
                         </View>
+                        {errors.cnic && <Text style={styles.errorText}>{errors.cnic}</Text>}
+                      </View>
 
-                        {/* Phone Number */}
-                        <View style={styles.inputWrapper}>
-                          <Text style={styles.label}>PHONE NUMBER <Text style={styles.required}>*</Text></Text>
-                          <View style={[styles.inputContainer, errors.phone && styles.inputError]}>
-                            <Ionicons name="call-outline" size={20} color="#04e1f5" />
-                            <TextInput 
-                              ref={phoneRef}
-                              style={styles.input}
-                              placeholder="0300-1234567" 
-                              placeholderTextColor="#999"
-                              keyboardType="phone-pad"
-                              value={formData.phone}
-                              onChangeText={(v) => handleFieldChange('phone', v, validatePhone)}
-                              maxLength={15}
-                              returnKeyType="next"
-                              onSubmitEditing={() => addressRef.current?.focus()}
-                            />
-                          </View>
-                          {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
+                      {/* Phone Number */}
+                      <View style={styles.inputWrapper}>
+                        <Text style={styles.label}>PHONE NUMBER <Text style={styles.required}>*</Text></Text>
+                        <View style={[styles.inputContainer, errors.phone && styles.inputError]}>
+                          <Ionicons name="call-outline" size={20} color={errors.phone ? COLORS.danger : COLORS.primary} />
+                          <TextInput 
+                            ref={phoneRef}
+                            style={styles.input}
+                            placeholder="0300-1234567" 
+                            placeholderTextColor={COLORS.textLight}
+                            keyboardType="phone-pad"
+                            value={formData.phone}
+                            onChangeText={(v) => handleFieldChange('phone', v, validatePhone)}
+                            maxLength={15}
+                            returnKeyType="next"
+                            onSubmitEditing={() => addressRef.current?.focus()}
+                          />
+                          {formData.phone.length >= 12 && !errors.phone && (
+                            <Ionicons name="checkmark-circle" size={20} color={COLORS.success} />
+                          )}
                         </View>
+                        {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
+                      </View>
 
-                        {/* Address */}
-                        <View style={styles.inputWrapper}>
-                          <Text style={styles.label}>ADDRESS <Text style={styles.required}>*</Text></Text>
-                          <View style={[styles.inputContainer, styles.textAreaContainer, errors.address && styles.inputError]}>
-                            <Ionicons name="location-outline" size={20} color="#04e1f5" style={styles.locationIcon} />
-                            <TextInput 
-                              ref={addressRef}
-                              style={[styles.input, styles.textArea]}
-                              placeholder="House #, Street, Area" 
-                              placeholderTextColor="#999"
-                              multiline
-                              numberOfLines={2}
-                              value={formData.address}
-                              onChangeText={(v) => handleFieldChange('address', v, validateAddress)}
-                              returnKeyType="done"
-                              onSubmitEditing={handleRegister}
-                            />
-                          </View>
-                          {errors.address && <Text style={styles.errorText}>{errors.address}</Text>}
+                      {/* Address */}
+                      <View style={styles.inputWrapper}>
+                        <Text style={styles.label}>ADDRESS <Text style={styles.required}>*</Text></Text>
+                        <View style={[styles.inputContainer, styles.textAreaContainer, errors.address && styles.inputError]}>
+                          <Ionicons name="location-outline" size={20} color={errors.address ? COLORS.danger : COLORS.primary} style={styles.locationIcon} />
+                          <TextInput 
+                            ref={addressRef}
+                            style={[styles.input, styles.textArea]}
+                            placeholder="House #, Street, Area" 
+                            placeholderTextColor={COLORS.textLight}
+                            multiline
+                            numberOfLines={2}
+                            value={formData.address}
+                            onChangeText={(v) => handleFieldChange('address', v, validateAddress)}
+                            returnKeyType="done"
+                            onSubmitEditing={handleRegister}
+                            maxLength={100}
+                          />
                         </View>
+                        {errors.address && <Text style={styles.errorText}>{errors.address}</Text>}
+                        <Text style={[styles.charCount, { color: COLORS.textLight }]}>
+                          {formData.address.length}/100
+                        </Text>
+                      </View>
 
-                        <TouchableOpacity style={styles.mainBtn} onPress={handleRegister}>
-                          <LinearGradient colors={['#04e1f5', '#0284c7']} style={styles.btnGrad}>
-                            <Text style={styles.btnText}>GENERATE PASS</Text>
-                            <Ionicons name="arrow-forward" size={18} color="#FFF" />
-                          </LinearGradient>
-                        </TouchableOpacity>
+                      <TouchableOpacity style={styles.mainBtn} onPress={handleRegister}>
+                        <LinearGradient colors={[COLORS.primary, COLORS.secondary]} style={styles.btnGrad}>
+                          <Text style={styles.btnText}>GENERATE PASS</Text>
+                          <Ionicons name="arrow-forward" size={18} color={COLORS.white} />
+                        </LinearGradient>
+                      </TouchableOpacity>
 
-                        <View style={styles.infoNote}>
-                          <Ionicons name="information-circle" size={20} color="#04e1f5" />
-                          <Text style={styles.infoNoteText}>
-                            This pass helps hospitals verify your identity quickly.
-                          </Text>
-                        </View>
+                      <View style={[styles.infoNote, { backgroundColor: COLORS.primary + '10' }]}>
+                        <Ionicons name="information-circle" size={20} color={COLORS.primary} />
+                        <Text style={[styles.infoNoteText, { color: COLORS.primary }]}>
+                          This pass helps hospitals verify your identity quickly.
+                        </Text>
                       </View>
                     </View>
-                  ) : (
-                    <View style={styles.slipCenter}>
-                      <View style={styles.successAlert}>
-                        <Ionicons name="checkmark-circle" size={24} color="#04e1f5" />
-                        <Text style={styles.successText}>PASS GENERATED SUCCESSFULLY</Text>
-                      </View>
+                  </View>
+                ) : (
+                  <View style={styles.slipCenter}>
+                    <View style={[styles.successAlert, { borderColor: COLORS.primary }]}>
+                      <Ionicons name="checkmark-circle" size={24} color={COLORS.primary} />
+                      <Text style={[styles.successText, { color: COLORS.primary }]}>PASS GENERATED SUCCESSFULLY</Text>
+                    </View>
 
-                      <View style={styles.idCardShadow}>
-                        <LinearGradient colors={['#FFF', '#F0FDFF']} style={styles.idCard}>
-                          <View style={styles.idHeader}>
-                            <View style={styles.idLogoRow}>
-                              <Image 
-                                source={require('../../../assets/logo.png')} 
-                                style={styles.smallLogo}
-                                resizeMode="contain"
-                              />
-                              <Text style={styles.idLogoText}>SEHATLINE<Text style={{fontWeight:'400'}}> PASS</Text></Text>
+                    {/* Beautiful ID Card with Light Outline */}
+                    <View style={styles.idCardWrapper}>
+                      <LinearGradient
+                        colors={[COLORS.primary + '15', COLORS.secondary + '10', COLORS.background]}
+                        style={styles.idCardBackground}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                      >
+                        <View style={[styles.idCard, styles.idCardShadow]}>
+                          {/* Card Header with Gradient Border */}
+                          <LinearGradient
+                            colors={[COLORS.primary, COLORS.secondary]}
+                            style={styles.cardHeaderGradient}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                          >
+                            <View style={styles.idHeader}>
+                              <View style={styles.idLogoRow}>
+                                <Image 
+                                  source={require('../../../assets/logo.png')} 
+                                  style={styles.smallLogo}
+                                  resizeMode="contain"
+                                />
+                                <Text style={styles.idLogoText}>SEHATLINE</Text>
+                              </View>
+                              <View style={styles.verifiedBadge}>
+                                <Ionicons name="shield-checkmark" size={14} color={COLORS.white} />
+                                <Text style={styles.idTag}>VERIFIED</Text>
+                              </View>
                             </View>
-                            <View style={styles.verifiedBadge}>
-                              <Ionicons name="shield-checkmark" size={16} color="#04e1f5" />
-                              <Text style={styles.idTag}>VERIFIED</Text>
-                            </View>
-                          </View>
+                          </LinearGradient>
 
+                          {/* Card Body */}
                           <View style={styles.idBody}>
                             <View style={styles.qrBox}>
-                              <Ionicons name="qr-code" size={90} color="#04e1f5" />
-                              <Text style={styles.scanText}>SCAN AT HOSPITAL</Text>
+                              <View style={styles.qrCodeContainer}>
+                                <Ionicons name="qr-code" size={80} color={COLORS.primary} />
+                              </View>
+                              <Text style={styles.scanText}>SCAN TO VERIFY</Text>
                             </View>
                             
                             <View style={styles.infoBox}>
-                              <Text style={styles.infoLabel}>PATIENT NAME</Text>
-                              <Text style={styles.infoValue}>{formData.name.toUpperCase()}</Text>
+                              <View style={styles.infoRow}>
+                                <Text style={styles.infoLabel}>PATIENT NAME</Text>
+                                <Text style={styles.infoValue}>{formData.name.toUpperCase()}</Text>
+                              </View>
                               
-                              <Text style={[styles.infoLabel, {marginTop: 8}]}>CNIC</Text>
-                              <Text style={styles.infoValue}>{formData.cnic}</Text>
+                              <View style={styles.infoRow}>
+                                <Text style={styles.infoLabel}>CNIC</Text>
+                                <Text style={styles.infoValue}>{formData.cnic}</Text>
+                              </View>
 
-                              <Text style={[styles.infoLabel, {marginTop: 8}]}>PHONE</Text>
-                              <Text style={styles.infoValue}>{formData.phone}</Text>
+                              <View style={styles.infoRow}>
+                                <Text style={styles.infoLabel}>PHONE</Text>
+                                <Text style={styles.infoValue}>{formData.phone}</Text>
+                              </View>
                             </View>
                           </View>
 
+                          {/* Card Footer */}
                           <View style={styles.idFooter}>
-                            <View>
+                            <View style={styles.footerItem}>
                               <Text style={styles.refLabel}>PASS ID</Text>
                               <Text style={styles.refNum}>{generatedPass?.id}</Text>
                             </View>
-                            <View>
+                            <View style={styles.footerDivider} />
+                            <View style={styles.footerItem}>
                               <Text style={styles.refLabel}>ISSUED ON</Text>
                               <Text style={styles.dateText}>{generatedPass?.issueDate}</Text>
                             </View>
                           </View>
 
+                          {/* Share Button */}
                           <TouchableOpacity style={styles.shareButton} onPress={handleSharePass}>
-                            <Ionicons name="share-outline" size={20} color="#04e1f5" />
-                            <Text style={styles.shareText}>Share Pass</Text>
+                            <LinearGradient
+                              colors={[COLORS.primary + '10', COLORS.primary + '05']}
+                              style={styles.shareGradient}
+                              start={{ x: 0, y: 0 }}
+                              end={{ x: 1, y: 0 }}
+                            >
+                              <Ionicons name="share-outline" size={18} color={COLORS.primary} />
+                              <Text style={styles.shareText}>Share Pass</Text>
+                            </LinearGradient>
                           </TouchableOpacity>
-                        </LinearGradient>
-                      </View>
-
-                      <Text style={styles.nextTitle}>What would you like to do?</Text>
-                      
-                      <TouchableOpacity style={styles.actionCard} onPress={handleViewDoctors}>
-                        <LinearGradient colors={['rgba(4,225,245,0.15)', 'rgba(4,225,245,0.05)']} style={styles.actionGradient}>
-                          <View style={styles.actionIcon}>
-                            <Ionicons name="medical" size={28} color="#04e1f5" />
-                          </View>
-                          <View style={styles.actionTextContainer}>
-                            <Text style={styles.actionTitle}>Find a Doctor</Text>
-                            <Text style={styles.actionSub}>Book appointment with specialist</Text>
-                          </View>
-                          <Ionicons name="chevron-forward" size={24} color="#04e1f5" />
-                        </LinearGradient>
-                      </TouchableOpacity>
-
-                      <TouchableOpacity style={styles.actionCard} onPress={handleGoHome}>
-                        <LinearGradient colors={['rgba(255,255,255,0.1)', 'rgba(255,255,255,0.05)']} style={styles.actionGradient}>
-                          <View style={[styles.actionIcon, {backgroundColor: 'rgba(255,255,255,0.1)'}]}>
-                            <Ionicons name="home" size={28} color="#FFF" />
-                          </View>
-                          <View style={styles.actionTextContainer}>
-                            <Text style={styles.actionTitle}>Return to Home</Text>
-                            <Text style={styles.actionSub}>Explore other services</Text>
-                          </View>
-                          <Ionicons name="chevron-forward" size={24} color="#FFF" />
-                        </LinearGradient>
-                      </TouchableOpacity>
+                        </View>
+                      </LinearGradient>
                     </View>
-                  )}
-                </ScrollView>
-              </KeyboardAvoidingView>
 
-              {/* Pass Confirmation Modal */}
-              <Modal
-                animationType="slide"
-                transparent={true}
-                visible={showPassModal}
-                onRequestClose={() => setShowPassModal(false)}
-              >
-                <View style={styles.modalOverlay}>
-                  <View style={styles.modalContainer}>
-                    <View style={styles.modalIcon}>
-                      <Ionicons name="checkmark-circle" size={60} color="#04e1f5" />
-                    </View>
-                    <Text style={styles.modalTitle}>Pass Generated!</Text>
-                    <Text style={styles.modalText}>
-                      Your digital pass is ready. Show this at hospital entry for quick verification.
-                    </Text>
+                    <Text style={styles.nextTitle}>What would you like to do?</Text>
                     
-                    <View style={styles.passPreview}>
-                      <Text style={styles.passLabel}>PASS ID</Text>
-                      <Text style={styles.passValue}>{generatedPass?.id}</Text>
-                      <Text style={styles.passLabel}>ISSUED ON</Text>
-                      <Text style={styles.passValue}>{generatedPass?.issueDate}</Text>
-                    </View>
+                    <TouchableOpacity style={styles.actionCard} onPress={handleViewDoctors}>
+                      <LinearGradient colors={[COLORS.primary + '15', COLORS.primary + '05']} style={styles.actionGradient}>
+                        <View style={[styles.actionIcon, { backgroundColor: COLORS.primary + '39' }]}>
+                          <Ionicons name="medical" size={28} color={COLORS.primary} />
+                        </View>
+                        <View style={styles.actionTextContainer}>
+                          <Text style={styles.actionTitle}>Find a Doctor</Text>
+                          <Text style={styles.actionSub}>Book appointment with specialist</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={24} color={COLORS.primary} />
+                      </LinearGradient>
+                    </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.modalButton} onPress={handleConfirmPass}>
-                      <LinearGradient colors={['#04e1f5', '#0284c7']} style={styles.modalButtonGradient}>
-                        <Text style={styles.modalButtonText}>CONTINUE</Text>
+                    <TouchableOpacity style={styles.actionCard} onPress={handleGoHome}>
+                      <LinearGradient colors={[COLORS.secondary + '15', COLORS.secondary + '05']} style={styles.actionGradient}>
+                        <View style={[styles.actionIcon, { backgroundColor: COLORS.secondary + '39' }]}>
+                          <Ionicons name="home" size={28} color={COLORS.secondary} />
+                        </View>
+                        <View style={styles.actionTextContainer}>
+                          <Text style={styles.actionTitle}>Return to Home</Text>
+                          <Text style={styles.actionSub}>Explore other services</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={24} color={COLORS.secondary} />
                       </LinearGradient>
                     </TouchableOpacity>
                   </View>
+                )}
+              </ScrollView>
+            </KeyboardAvoidingView>
+
+            {/* Pass Confirmation Modal */}
+            <Modal
+              animationType="slide"
+              transparent={true}
+              visible={showPassModal}
+              onRequestClose={() => setShowPassModal(false)}
+            >
+              <View style={styles.modalOverlay}>
+                <View style={[styles.modalContainer, { borderColor: COLORS.primary }]}>
+                  <View style={styles.modalIcon}>
+                    <Ionicons name="checkmark-circle" size={60} color={COLORS.primary} />
+                  </View>
+                  <Text style={[styles.modalTitle, { color: COLORS.primary }]}>Pass Generated!</Text>
+                  <Text style={styles.modalText}>
+                    Your digital pass is ready. Show this at hospital entry for quick verification.
+                  </Text>
+                  
+                  <View style={[styles.passPreview, { backgroundColor: COLORS.backgroundSecondary }]}>
+                    <Text style={[styles.passLabel, { color: COLORS.textSecondary }]}>PASS ID</Text>
+                    <Text style={[styles.passValue, { color: COLORS.primary }]}>{generatedPass?.id}</Text>
+                    <Text style={[styles.passLabel, { color: COLORS.textSecondary }]}>ISSUED ON</Text>
+                    <Text style={[styles.passValue, { color: COLORS.primary }]}>{generatedPass?.issueDate}</Text>
+                  </View>
+
+                  <TouchableOpacity style={styles.modalButton} onPress={handleConfirmPass}>
+                    <LinearGradient colors={[COLORS.primary, COLORS.secondary]} style={styles.modalButtonGradient}>
+                      <Text style={styles.modalButtonText}>CONTINUE</Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
                 </View>
-              </Modal>
-            </SafeAreaView>
-          </View>
-        </ImageBackground>
+              </View>
+            </Modal>
+          </SafeAreaView>
+        </LinearGradient>
       </View>
     </TouchableWithoutFeedback>
   );
@@ -464,12 +540,10 @@ const saveUserDataToStorage = async () => {
 
 const styles = StyleSheet.create({
   container: { 
-    flex: 1 
-  },
-  backgroundImage: {
     flex: 1,
+    backgroundColor: COLORS.background,
   },
-  overlay: {
+  gradientBackground: {
     flex: 1,
   },
   safeArea: {
@@ -479,8 +553,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row', 
     justifyContent: 'space-between', 
     alignItems: 'center', 
-    paddingHorizontal: 20, 
-    paddingVertical: 15,
+    paddingHorizontal: SIZES.xl, 
+    paddingVertical: SIZES.md,
     marginTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 
   },
   backBtn: { 
@@ -493,71 +567,68 @@ const styles = StyleSheet.create({
     gap: 8 
   },
   logoImage: { 
-    width: 35, 
-    height: 35, 
-    borderRadius: 35 
+    width: 40, 
+    height: 40, 
+    borderRadius: 40, 
   },
   logoText: { 
-    color: '#04e1f5', 
+    color: COLORS.primary, 
     fontWeight: '900', 
     fontSize: 22, 
     letterSpacing: 1 
   },
   scrollPadding: { 
-    paddingHorizontal: 20, 
+    paddingHorizontal: SIZES.xl, 
     paddingBottom: 40, 
     flexGrow: 1 
   },
 
   welcomeText: { 
-    color: '#FFF', 
+    color: COLORS.text, 
     fontSize: 28, 
     fontWeight: 'bold',
-    textShadowColor: 'rgba(0,0,0,0.3)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
   },
   subText: { 
-    color: '#B2DFDB', 
+    color: COLORS.textSecondary, 
     fontSize: 13, 
     marginBottom: 20, 
     marginTop: 5 
   },
 
   formCard: { 
-    backgroundColor: 'rgba(2, 4, 77, 0.75)', 
+    backgroundColor: COLORS.white, 
     borderRadius: 20, 
-    padding: 20, 
+    padding: SIZES.xl, 
     borderWidth: 1, 
-    borderColor: 'rgba(4, 225, 245, 0.3)' 
+    ...SHADOWS.medium,
   },
   inputWrapper: { 
     marginBottom: 15 
   },
   label: { 
-    color: '#f6f8f8', 
-    fontSize: 12, 
+    color: COLORS.text, 
+    fontSize: SIZES.small, 
     fontWeight: 'bold', 
     marginBottom: 6, 
     letterSpacing: 1 
   },
   required: { 
-    color: '#FF4D4D', 
-    fontSize: 12 
+    color: COLORS.danger, 
+    fontSize: SIZES.small 
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.17)',
+    backgroundColor: COLORS.backgroundSecondary,
     borderRadius: 12,
     paddingHorizontal: 15,
     borderWidth: 1,
-    borderColor: 'rgba(4, 225, 245, 0.3)',
+    borderColor: COLORS.border,
   },
   input: { 
     flex: 1,
-    color: '#FFF', 
-    fontSize: 14, 
+    color: COLORS.text, 
+    fontSize: SIZES.body, 
     paddingVertical: Platform.OS === 'ios' ? 12 : 8,
     marginLeft: 12,
   },
@@ -573,35 +644,39 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   inputError: { 
-    borderColor: '#FF4D4D', 
+    borderColor: COLORS.danger, 
     borderWidth: 2 
   },
   errorText: { 
-    color: '#FF4D4D', 
-    fontSize: 11, 
+    color: COLORS.danger, 
+    fontSize: SIZES.small, 
     marginTop: 4, 
     marginLeft: 8 
+  },
+  charCount: {
+    fontSize: SIZES.xSmall,
+    textAlign: 'right',
+    marginTop: 2,
   },
 
   infoNote: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(4, 225, 245, 0.1)',
     padding: 12,
     borderRadius: 8,
     marginTop: 15,
     gap: 8,
   },
   infoNoteText: {
-    color: '#04e1f5',
-    fontSize: 11,
+    fontSize: SIZES.small,
     flex: 1,
   },
 
   mainBtn: { 
     borderRadius: 15, 
     overflow: 'hidden', 
-    marginTop: 10 
+    marginTop: 10,
+    ...SHADOWS.button,
   },
   btnGrad: { 
     height: 55, 
@@ -611,9 +686,9 @@ const styles = StyleSheet.create({
     gap: 10 
   },
   btnText: { 
-    color: '#FFF', 
+    color: COLORS.white, 
     fontWeight: '900', 
-    fontSize: 14 
+    fontSize: SIZES.h5 
   },
 
   slipCenter: { 
@@ -621,7 +696,7 @@ const styles = StyleSheet.create({
     flex: 1 
   },
   successAlert: { 
-    backgroundColor: 'rgba(4,225,245,0.1)', 
+    backgroundColor: COLORS.primary + '10', 
     width: '100%', 
     padding: 12, 
     borderRadius: 10, 
@@ -630,25 +705,39 @@ const styles = StyleSheet.create({
     gap: 10, 
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#04e1f5'
   },
   successText: { 
-    color: '#04e1f5', 
     fontWeight: '900', 
-    fontSize: 12 
+    fontSize: SIZES.small 
   },
-  
-  idCardShadow: { 
-    elevation: 20, 
-    shadowColor: '#04e1f5', 
-    shadowOpacity: 0.4, 
-    shadowRadius: 15, 
-    marginBottom: 20 
+
+  // Beautiful ID Card Styles
+  idCardWrapper: {
+    width: width - 40,
+    marginBottom: 20,
+    borderRadius: 24,
+    overflow: 'hidden',
+    ...SHADOWS.large,
   },
-  idCard: { 
-    width: width - 40, 
-    borderRadius: 20, 
-    padding: 20 
+  idCardBackground: {
+    padding: 3,
+    borderRadius: 24,
+  },
+  idCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: 21,
+    overflow: 'hidden',
+  },
+  idCardShadow: {
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  cardHeaderGradient: {
+    paddingHorizontal: 20,
+    paddingVertical: 14,
   },
   idHeader: { 
     flexDirection: 'row', 
@@ -658,104 +747,140 @@ const styles = StyleSheet.create({
   idLogoRow: { 
     flexDirection: 'row', 
     alignItems: 'center', 
-    gap: 5 
+    gap: 8 
   },
   smallLogo: { 
-    width: 30, 
-    height: 30 
+    width: 28, 
+    height: 28,
+    borderRadius: 28,
   },
   idLogoText: { 
-    color: '#0284c7', 
+    color: COLORS.white, 
     fontWeight: '900', 
-    fontSize: 16 
+    fontSize: 16,
+    letterSpacing: 0.5,
   },
   verifiedBadge: { 
     flexDirection: 'row', 
     alignItems: 'center', 
     gap: 4, 
-    backgroundColor: '#E8F5E9', 
-    paddingHorizontal: 8, 
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    paddingHorizontal: 10, 
     paddingVertical: 4, 
-    borderRadius: 5 
+    borderRadius: 12,
   },
   idTag: { 
-    color: '#04e1f5', 
+    color: COLORS.white, 
     fontWeight: 'bold', 
-    fontSize: 10 
+    fontSize: SIZES.xSmall 
   },
   
   idBody: { 
     flexDirection: 'row', 
-    marginTop: 25, 
-    gap: 20 
+    padding: 20,
+    gap: 16,
+    backgroundColor: COLORS.white,
   },
   qrBox: { 
-    alignItems: 'center' 
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  qrCodeContainer: {
+    width: 90,
+    height: 90,
+    backgroundColor: COLORS.primary + '08',
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.primary + '20',
   },
   scanText: { 
-    color: '#0284c7', 
+    color: COLORS.textSecondary, 
     fontSize: 8, 
     fontWeight: 'bold', 
-    marginTop: 5 
+    marginTop: 6,
+    letterSpacing: 0.5,
   },
   infoBox: { 
-    flex: 1 
+    flex: 1,
+    justifyContent: 'center',
+  },
+  infoRow: {
+    marginBottom: 6,
   },
   infoLabel: { 
-    color: '#777', 
-    fontSize: 9, 
-    fontWeight: 'bold' 
+    color: COLORS.textSecondary, 
+    fontSize: 8, 
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
+    marginBottom: 1,
   },
   infoValue: { 
-    color: '#000', 
-    fontSize: 14, 
-    fontWeight: '900' 
+    color: COLORS.text, 
+    fontSize: 13, 
+    fontWeight: '700',
   },
   
   idFooter: { 
-    marginTop: 20, 
-    borderTopWidth: 1, 
-    borderTopColor: '#DDD', 
-    paddingTop: 15, 
     flexDirection: 'row', 
-    justifyContent: 'space-between' 
+    justifyContent: 'space-around',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    backgroundColor: COLORS.backgroundSecondary,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  footerItem: {
+    alignItems: 'center',
+  },
+  footerDivider: {
+    width: 1,
+    height: 30,
+    backgroundColor: COLORS.border,
   },
   refLabel: { 
-    color: '#999', 
-    fontSize: 9 
+    color: COLORS.textLight, 
+    fontSize: 8,
+    fontWeight: '500',
+    letterSpacing: 0.5,
   },
   refNum: { 
-    color: '#0284c7', 
+    color: COLORS.primary, 
     fontSize: 11, 
     fontWeight: 'bold', 
-    marginTop: 2 
+    marginTop: 2,
   },
   dateText: { 
-    color: '#0284c7', 
+    color: COLORS.primary, 
     fontSize: 11, 
     fontWeight: 'bold', 
-    marginTop: 2 
+    marginTop: 2,
   },
   
   shareButton: { 
-    marginTop: 15, 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    justifyContent: 'center', 
-    gap: 6, 
-    paddingVertical: 8, 
-    borderTopWidth: 1, 
-    borderTopColor: '#DDD' 
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  shareGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.primary + '20',
   },
   shareText: { 
-    color: '#04c5f5', 
-    fontSize: 12, 
-    fontWeight: '500' 
+    color: COLORS.primary, 
+    fontSize: SIZES.small, 
+    fontWeight: '600',
   },
 
   nextTitle: { 
-    color: '#FFF', 
-    fontSize: 18, 
+    color: COLORS.text, 
+    fontSize: SIZES.h4, 
     fontWeight: 'bold', 
     marginBottom: 15, 
     alignSelf: 'flex-start' 
@@ -764,7 +889,8 @@ const styles = StyleSheet.create({
     width: '100%', 
     marginBottom: 12, 
     borderRadius: 15, 
-    overflow: 'hidden' 
+    overflow: 'hidden',
+    ...SHADOWS.small,
   },
   actionGradient: { 
     flexDirection: 'row', 
@@ -776,7 +902,6 @@ const styles = StyleSheet.create({
     width: 50, 
     height: 50, 
     borderRadius: 12, 
-    backgroundColor: 'rgba(4, 225, 245, 0.39)', 
     justifyContent: 'center', 
     alignItems: 'center' 
   },
@@ -784,48 +909,46 @@ const styles = StyleSheet.create({
     flex: 1 
   },
   actionTitle: { 
-    color: '#FFF', 
-    fontSize: 16, 
+    color: COLORS.text, 
+    fontSize: SIZES.h5, 
     fontWeight: 'bold' 
   },
   actionSub: { 
-    color: '#d2e7e6', 
-    fontSize: 12 
+    color: COLORS.textSecondary, 
+    fontSize: SIZES.small 
   },
   
   // Modal Styles
   modalOverlay: { 
     flex: 1, 
-    backgroundColor: 'rgba(10, 10, 10, 0.9)', 
+    backgroundColor: 'rgba(0, 0, 0, 0.5)', 
     justifyContent: 'center', 
     alignItems: 'center' 
   },
   modalContainer: { 
-    backgroundColor: '#0A1520', 
+    backgroundColor: COLORS.white, 
     borderRadius: 20, 
     padding: 25, 
     width: width - 40, 
     alignItems: 'center', 
-    borderWidth: 1, 
-    borderColor: '#04e1f5' 
+    borderWidth: 1,
+    ...SHADOWS.large,
   },
   modalIcon: { 
     marginBottom: 15 
   },
   modalTitle: { 
-    color: '#04e1f5', 
     fontSize: 22, 
     fontWeight: 'bold', 
     marginBottom: 10 
   },
   modalText: { 
-    color: '#FFF', 
+    color: COLORS.textSecondary, 
     textAlign: 'center', 
     marginBottom: 20, 
-    fontSize: 14 
+    fontSize: SIZES.body 
   },
   passPreview: { 
-    backgroundColor: 'rgba(0,0,0,0.5)', 
     borderRadius: 12, 
     padding: 15, 
     width: '100%', 
@@ -833,29 +956,28 @@ const styles = StyleSheet.create({
     alignItems: 'center' 
   },
   passLabel: { 
-    color: '#B2DFDB', 
-    fontSize: 11, 
+    fontSize: SIZES.small, 
     marginTop: 8 
   },
   passValue: { 
-    color: '#04e1f5', 
-    fontSize: 14, 
+    fontSize: SIZES.body, 
     fontWeight: 'bold', 
     marginTop: 2 
   },
   modalButton: { 
     width: '100%', 
     borderRadius: 12, 
-    overflow: 'hidden' 
+    overflow: 'hidden',
+    ...SHADOWS.button,
   },
   modalButtonGradient: { 
     padding: 15, 
     alignItems: 'center' 
   },
   modalButtonText: { 
-    color: '#FFF', 
+    color: COLORS.white, 
     fontWeight: 'bold', 
-    fontSize: 14 
+    fontSize: SIZES.h5 
   }
 });
 
