@@ -49,6 +49,7 @@ import AISymptomCheckerScreen from '../screens/ai/AISymptomCheckerScreen';
 import AIHealthTipsScreen from '../screens/ai/AIHealthTipsScreen';
 import VoiceHealthAssistantScreen from '../screens/ai/VoiceHealthAssistantScreen';
 import PredictiveWaitScreen from '../screens/ai/PredictiveWaitScreen';
+import AISeverityResultScreen from '../screens/ai/AISeverityResultScreen';
 
 // --- PHARMACY & REPORTS ---
 import PharmacyDashboardScreen from '../screens/pharmacy/PharmacyDashboardScreen';
@@ -141,6 +142,7 @@ function MainStack() {
       <Stack.Screen name="AIHealthTipsScreen" component={AIHealthTipsScreen} />
       <Stack.Screen name="VoiceAssistant" component={VoiceHealthAssistantScreen} />
       <Stack.Screen name="PredictiveWaitScreen" component={PredictiveWaitScreen} />
+      <Stack.Screen name="AISeverityResultScreen" component={AISeverityResultScreen} />
 
       {/* Dashboards */}
       <Stack.Screen name="PharmacyDashboardScreen" component={PharmacyDashboardScreen} />

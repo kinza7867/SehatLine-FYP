@@ -130,7 +130,6 @@ const PersonalInfoStep = ({ formData, setFormData, errors, setErrors, onNext, sh
     }
   };
 
-  // ─── CNIC Validation ──────────────────────────────────────────────────────
   const validateField = useCallback((field, value) => {
     let error = '';
     switch(field) {
@@ -164,11 +163,9 @@ const PersonalInfoStep = ({ formData, setFormData, errors, setErrors, onNext, sh
     return !error;
   }, [formData.password]);
 
-  // ─── Field Changes ──────────────────────────────────────────────────────
   const handleFieldChange = useCallback((field, value) => {
     let processedValue = value;
     
-    // CNIC: format with dashes
     if (field === 'cnic') {
       const digits = value.replace(/\D/g, '');
       if (digits.length <= 5) {
@@ -183,7 +180,6 @@ const PersonalInfoStep = ({ formData, setFormData, errors, setErrors, onNext, sh
       return;
     }
     
-    // ─── CDA CARD: Only accept digits, RB added automatically ──────────
     if (field === 'cdaCard') {
       const digits = value.replace(/[^0-9]/g, '');
       if (digits.length <= 4) {
@@ -196,7 +192,6 @@ const PersonalInfoStep = ({ formData, setFormData, errors, setErrors, onNext, sh
       return;
     }
     
-    // Phone: remove leading 0
     if (field === 'phone') {
       processedValue = value.replace(/^0+/, '').replace(/\D/g, '');
     }
@@ -271,7 +266,6 @@ const PersonalInfoStep = ({ formData, setFormData, errors, setErrors, onNext, sh
       <Text style={styles.stepTitle}>Personal Information</Text>
       <Text style={styles.stepSubtitle}>Enter your personal details to get started</Text>
 
-      {/* Full Name */}
       <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>Full Name <Text style={styles.requiredStar}>*</Text></Text>
         <View style={[styles.inputWrapper, errors.name ? styles.inputError : styles.inputDefault]}>
@@ -291,7 +285,6 @@ const PersonalInfoStep = ({ formData, setFormData, errors, setErrors, onNext, sh
         {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
       </View>
 
-      {/* CNIC */}
       <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>CNIC Number <Text style={styles.requiredStar}>*</Text></Text>
         <View style={[styles.inputWrapper, errors.cnic ? styles.inputError : styles.inputDefault]}>
@@ -312,7 +305,6 @@ const PersonalInfoStep = ({ formData, setFormData, errors, setErrors, onNext, sh
         {errors.cnic && <Text style={styles.errorText}>{errors.cnic}</Text>}
       </View>
 
-      {/* ─── CDA CARD - Auto RB suffix ────────────────────────────────────── */}
       <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>CDA Card Number <Text style={styles.requiredStar}>*</Text></Text>
         <View style={[styles.inputWrapper, errors.cdaCard ? styles.inputError : styles.inputDefault]}>
@@ -347,7 +339,6 @@ const PersonalInfoStep = ({ formData, setFormData, errors, setErrors, onNext, sh
         )}
       </View>
 
-      {/* Date of Birth */}
       <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>Date of Birth <Text style={styles.requiredStar}>*</Text></Text>
         <TouchableOpacity 
@@ -366,7 +357,6 @@ const PersonalInfoStep = ({ formData, setFormData, errors, setErrors, onNext, sh
         {errors.dob && <Text style={styles.errorText}>{errors.dob}</Text>}
       </View>
 
-      {/* Mobile Number */}
       <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>Mobile Number <Text style={styles.requiredStar}>*</Text></Text>
         <View style={[styles.inputWrapper, errors.phone ? styles.inputError : styles.inputDefault]}>
@@ -390,7 +380,6 @@ const PersonalInfoStep = ({ formData, setFormData, errors, setErrors, onNext, sh
         {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
       </View>
 
-      {/* Email */}
       <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>Email Address <Text style={styles.requiredStar}>*</Text></Text>
         <View style={[styles.inputWrapper, errors.email ? styles.inputError : styles.inputDefault]}>
@@ -411,7 +400,6 @@ const PersonalInfoStep = ({ formData, setFormData, errors, setErrors, onNext, sh
         {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
       </View>
 
-      {/* Password */}
       <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>Create Password <Text style={styles.requiredStar}>*</Text></Text>
         <View style={[styles.inputWrapper, errors.password ? styles.inputError : styles.inputDefault]}>
@@ -437,7 +425,6 @@ const PersonalInfoStep = ({ formData, setFormData, errors, setErrors, onNext, sh
         {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
       </View>
 
-      {/* Confirm Password */}
       <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>Confirm Password <Text style={styles.requiredStar}>*</Text></Text>
         <View style={[styles.inputWrapper, errors.confirmPassword ? styles.inputError : styles.inputDefault]}>
@@ -468,7 +455,6 @@ const PersonalInfoStep = ({ formData, setFormData, errors, setErrors, onNext, sh
         )}
       </View>
 
-      {/* Address */}
       <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>Address <Text style={[styles.optionalText, { color: COLORS.textSecondary }]}>(Optional)</Text></Text>
         <View style={[styles.inputWrapper, styles.inputDefault]}>
@@ -491,7 +477,6 @@ const PersonalInfoStep = ({ formData, setFormData, errors, setErrors, onNext, sh
         </LinearGradient>
       </TouchableOpacity>
 
-      {/* Date Picker Modal */}
       {Platform.OS === 'ios' && showPicker && (
         <Modal transparent animationType="fade">
           <TouchableOpacity style={styles.pickerOverlay} activeOpacity={1} onPress={() => setShowPicker(false)}>
@@ -533,8 +518,6 @@ const PersonalInfoStep = ({ formData, setFormData, errors, setErrors, onNext, sh
 };
 
 // ─── STEP 2: CNIC Verification ─────────────────────────────────────────────
-// UPDATED: CNIC Frame - Horizontal/Landscape (Pakistani CNIC style)
-// FIXED: Permission handling with Linking
 
 const CnicVerificationStep = ({ formData, setFormData, onNext, onBack, showToast }) => {
   const [frontImage, setFrontImage] = useState(null);
@@ -565,7 +548,7 @@ const CnicVerificationStep = ({ formData, setFormData, onNext, onBack, showToast
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
-      aspect: [4, 3],
+      aspect: [16, 9],
       quality: 1,
     });
 
@@ -602,7 +585,7 @@ const CnicVerificationStep = ({ formData, setFormData, onNext, onBack, showToast
 
     const result = await ImagePicker.launchCameraAsync({
       allowsEditing: true,
-      aspect: [4, 3],
+      aspect: [16, 9],
       quality: 1,
     });
 
@@ -622,8 +605,8 @@ const CnicVerificationStep = ({ formData, setFormData, onNext, onBack, showToast
       'Upload CNIC Image',
       'Choose option',
       [
-        { text: ' Take Photo', onPress: () => takePhoto(side) },
-        { text: ' Choose from Gallery', onPress: () => pickImage(side) },
+        { text: 'Take Photo', onPress: () => takePhoto(side) },
+        { text: 'Choose from Gallery', onPress: () => pickImage(side) },
         { text: 'Cancel', style: 'cancel' },
       ]
     );
@@ -656,20 +639,24 @@ const CnicVerificationStep = ({ formData, setFormData, onNext, onBack, showToast
 
   return (
     <View style={styles.stepContainer}>
+      {/* Back Button Top */}
+      <TouchableOpacity style={styles.backButtonTop} onPress={onBack}>
+        <Ionicons name="arrow-back" size={24} color={COLORS.text} />
+      </TouchableOpacity>
+
       <Text style={styles.stepTitle}>CNIC Verification</Text>
       <Text style={styles.stepSubtitle}>Upload both sides of your CNIC for verification</Text>
 
-      {/* CNIC Front - Horizontal/Landscape Frame */}
       <View style={styles.uploadSection}>
         <Text style={styles.uploadLabel}>Front Side of CNIC <Text style={styles.requiredStar}>*</Text></Text>
         <TouchableOpacity 
-          style={[styles.uploadBox, frontError && styles.uploadError]} 
+          style={[styles.uploadBox, styles.uploadBoxLandscape, frontError && styles.uploadError]} 
           onPress={() => showImageOptions('front')}
           activeOpacity={0.7}
         >
           {frontImage ? (
             <View style={styles.uploadPreview}>
-              <Image source={{ uri: frontImage }} style={styles.uploadImage} resizeMode="cover" />
+              <Image source={{ uri: frontImage }} style={styles.uploadImageLandscape} resizeMode="cover" />
               <View style={styles.uploadOverlay}>
                 <Ionicons name="camera" size={24} color={COLORS.white} />
                 <Text style={styles.uploadOverlayText}>Tap to change</Text>
@@ -682,26 +669,22 @@ const CnicVerificationStep = ({ formData, setFormData, onNext, onBack, showToast
               </View>
               <Text style={styles.uploadPlaceholderText}>Tap to upload front side</Text>
               <Text style={styles.uploadPlaceholderSubtext}>JPG, PNG supported</Text>
-              <View style={styles.cnicSizeHint}>
-                <Ionicons name="scan-outline" size={14} color={COLORS.textLight} />
-              </View>
             </View>
           )}
         </TouchableOpacity>
         {frontError && <Text style={styles.errorText}>{frontError}</Text>}
       </View>
 
-      {/* CNIC Back - Horizontal/Landscape Frame */}
       <View style={styles.uploadSection}>
         <Text style={styles.uploadLabel}>Back Side of CNIC <Text style={styles.requiredStar}>*</Text></Text>
         <TouchableOpacity 
-          style={[styles.uploadBox, backError && styles.uploadError]} 
+          style={[styles.uploadBox, styles.uploadBoxLandscape, backError && styles.uploadError]} 
           onPress={() => showImageOptions('back')}
           activeOpacity={0.7}
         >
           {backImage ? (
             <View style={styles.uploadPreview}>
-              <Image source={{ uri: backImage }} style={styles.uploadImage} resizeMode="cover" />
+              <Image source={{ uri: backImage }} style={styles.uploadImageLandscape} resizeMode="cover" />
               <View style={styles.uploadOverlay}>
                 <Ionicons name="camera" size={24} color={COLORS.white} />
                 <Text style={styles.uploadOverlayText}>Tap to change</Text>
@@ -714,9 +697,6 @@ const CnicVerificationStep = ({ formData, setFormData, onNext, onBack, showToast
               </View>
               <Text style={styles.uploadPlaceholderText}>Tap to upload back side</Text>
               <Text style={styles.uploadPlaceholderSubtext}>JPG, PNG supported</Text>
-              <View style={styles.cnicSizeHint}>
-                <Ionicons name="scan-outline" size={14} color={COLORS.textLight} />
-              </View>
             </View>
           )}
         </TouchableOpacity>
@@ -730,25 +710,19 @@ const CnicVerificationStep = ({ formData, setFormData, onNext, onBack, showToast
         </Text>
       </View>
 
-      <View style={styles.stepButtons}>
-        <TouchableOpacity style={styles.backButtonStep} onPress={onBack}>
-          <Ionicons name="arrow-back" size={20} color={COLORS.text} />
-          <Text style={styles.backButtonText}>Back</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.verifyButton} onPress={handleVerify}>
-          <LinearGradient colors={[COLORS.primary, COLORS.secondary]} style={styles.verifyGradient}>
-            <Text style={styles.verifyText}>VERIFY & CONTINUE</Text>
-            <Ionicons name="arrow-forward" size={20} color={COLORS.white} />
-          </LinearGradient>
-        </TouchableOpacity>
-      </View>
+      <TouchableOpacity style={styles.verifyButton} onPress={handleVerify}>
+        <LinearGradient colors={[COLORS.primary, COLORS.secondary]} style={styles.verifyGradient}>
+          <Text style={styles.verifyText}>VERIFY & CONTINUE</Text>
+          <Ionicons name="arrow-forward" size={20} color={COLORS.white} />
+        </LinearGradient>
+      </TouchableOpacity>
     </View>
   );
 };
 
 // ─── STEP 3: Account Created ───────────────────────────────────────────────
 
-const AccountCreatedStep = ({ formData, onComplete }) => {
+const AccountCreatedStep = ({ formData, onComplete, onBack }) => {
   const [loading, setLoading] = useState(false);
 
   const handleViewProfile = async () => {
@@ -763,9 +737,18 @@ const AccountCreatedStep = ({ formData, onComplete }) => {
         accountStatus: 'active'
       };
 
+      // Save user data for login
       await AsyncStorage.setItem('userData', JSON.stringify(userData));
       await AsyncStorage.setItem('isLoggedIn', 'true');
       await AsyncStorage.setItem('userRole', 'patient');
+      
+      // Save credentials for login
+      const credentials = {
+        email: formData.email,
+        password: formData.password,
+        cnic: formData.cnic
+      };
+      await AsyncStorage.setItem('userCredentials', JSON.stringify(credentials));
 
       setLoading(false);
       onComplete(userData);
@@ -777,6 +760,11 @@ const AccountCreatedStep = ({ formData, onComplete }) => {
 
   return (
     <View style={styles.stepContainer}>
+      {/* Back Button Top */}
+      <TouchableOpacity style={styles.backButtonTop} onPress={onBack}>
+        <Ionicons name="arrow-back" size={24} color={COLORS.text} />
+      </TouchableOpacity>
+
       <View style={styles.successIconContainer}>
         <LinearGradient colors={[COLORS.success, COLORS.secondary]} style={styles.successIcon}>
           <Ionicons name="checkmark" size={48} color={COLORS.white} />
@@ -874,6 +862,34 @@ const SignupScreen = ({ navigation }) => {
   const [errors, setErrors] = useState({});
   const toastTimeoutRef = useRef(null);
 
+  // Load saved data when app starts
+  useEffect(() => {
+    const loadSavedData = async () => {
+      try {
+        const savedData = await AsyncStorage.getItem('signupData');
+        if (savedData) {
+          const parsedData = JSON.parse(savedData);
+          setFormData(prev => ({ ...prev, ...parsedData }));
+        }
+      } catch (error) {
+        console.log('Error loading saved data:', error);
+      }
+    };
+    loadSavedData();
+  }, []);
+
+  // Save data whenever formData changes
+  useEffect(() => {
+    const saveData = async () => {
+      try {
+        await AsyncStorage.setItem('signupData', JSON.stringify(formData));
+      } catch (error) {
+        console.log('Error saving data:', error);
+      }
+    };
+    saveData();
+  }, [formData]);
+
   const showToast = useCallback((message, type) => {
     if (toastTimeoutRef.current) {
       clearTimeout(toastTimeoutRef.current);
@@ -895,6 +911,8 @@ const SignupScreen = ({ navigation }) => {
   }, []);
 
   const handleComplete = useCallback((userData) => {
+    // Clear signup data after successful signup
+    AsyncStorage.removeItem('signupData');
     navigation.replace('ProfileScreen', {
       userData: userData,
       fromSignup: true
@@ -1033,6 +1051,15 @@ const styles = StyleSheet.create({
   backButtonPlaceholder: {
     height: Platform.OS === 'ios' ? 45 : 35,
   },
+  
+  // Top back button for step 2 and 3
+  backButtonTop: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    zIndex: 10,
+    padding: 8,
+  },
 
   logoSection: {
     alignItems: 'center',
@@ -1132,9 +1159,11 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     borderRadius: 20,
     padding: 18,
+    paddingTop: 50,
     borderWidth: 1,
     borderColor: COLORS.border,
     ...SHADOWS.medium,
+    position: 'relative',
   },
   stepTitle: {
     fontSize: 20,
@@ -1199,7 +1228,6 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
 
-  // ─── CDA Card Styles ─────────────────────────────────────────────────────
   cdaSuffixContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1301,7 +1329,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 
-  // ─── CNIC Upload - Horizontal/Landscape Frame (Pakistani CNIC) ──────
   uploadSection: {
     marginBottom: 18,
   },
@@ -1314,13 +1341,16 @@ const styles = StyleSheet.create({
   },
   uploadBox: {
     width: '100%',
-    height: 180,
     backgroundColor: COLORS.backgroundSecondary,
     borderRadius: 12,
     borderWidth: 2,
     borderColor: COLORS.border,
     borderStyle: 'dashed',
     overflow: 'hidden',
+  },
+  uploadBoxLandscape: {
+    aspectRatio: 16 / 9,
+    minHeight: 140,
   },
   uploadError: {
     borderColor: COLORS.danger,
@@ -1347,9 +1377,10 @@ const styles = StyleSheet.create({
     flex: 1,
     position: 'relative',
   },
-  uploadImage: {
+  uploadImageLandscape: {
     width: '100%',
     height: '100%',
+    aspectRatio: 16 / 9,
   },
   uploadOverlay: {
     position: 'absolute',
@@ -1376,16 +1407,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1.5,
     borderColor: COLORS.primary + '30',
-  },
-  cnicSizeHint: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 6,
-    gap: 4,
-  },
-  cnicSizeHintText: {
-    fontSize: 11,
-    color: COLORS.textLight,
   },
 
   verificationNotice: {
@@ -1424,28 +1445,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
 
-  stepButtons: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  backButtonStep: {
-    flex: 1,
-    height: 48,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: COLORS.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    gap: 6,
-  },
-  backButtonText: {
-    color: COLORS.text,
-    fontSize: 14,
-    fontWeight: '600',
-  },
   verifyButton: {
-    flex: 2,
     borderRadius: 12,
     overflow: 'hidden',
     ...SHADOWS.button,

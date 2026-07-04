@@ -3,7 +3,7 @@ import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView,
   Dimensions, Image, StatusBar, SafeAreaView, Modal,
   Alert, RefreshControl, Platform, TextInput, Animated,
-  TouchableWithoutFeedback, FlatList,
+  TouchableWithoutFeedback, FlatList, BackHandler
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -24,6 +24,8 @@ const HospitalHomeScreen = ({ navigation }) => {
   const [userData, setUserData] = useState(null);
   const [activeToken, setActiveToken] = useState(null);
   const [showTokenDetails, setShowTokenDetails] = useState(false);
+  const [hasActiveToken, setHasActiveToken] = useState(false);
+  const [notificationEnabled, setNotificationEnabled] = useState(false);
 
   // Today's hospital-wide stats
   const [todayData] = useState({
@@ -43,16 +45,12 @@ const HospitalHomeScreen = ({ navigation }) => {
     { id: 3, dept: 'Laboratory',  current: 'L-05', waiting: 12, time: '22 min', color: '#10B981', icon: 'flask-outline',     screen: 'LiveTokenQueueScreen' },
   ]);
 
-  // AI Insight state with live updates
-  const [aiInsight, setAiInsight] = useState({
-    predictedWait: '18 min',
-    bestTime: '2:00 PM',
-    save: '12 min',
-    congestion: 'Moderate',
-    tip: 'Visit after 2 PM to reduce wait by ~40%',
-    queuePosition: '5',
-    totalAhead: '7',
-    status: 'Waiting',
+  // AI Health Tip - Replacing AI Insight
+  const [aiHealthTip] = useState({
+    title: '💡 AI Health Tip',
+    message: 'Regular walking for 30 minutes daily can reduce heart disease risk by 30%. Start your wellness journey today!',
+    icon: 'fitness-outline',
+    color: COLORS.primary,
   });
 
   // Quick Actions
@@ -60,13 +58,13 @@ const HospitalHomeScreen = ({ navigation }) => {
     { id: 1, name: 'Generate\nToken',    icon: 'ticket-outline',        color: COLORS.primary, screen: 'GenerateTokenScreen' },
     { id: 2, name: 'Book\nAppointment', icon: 'calendar-outline',       color: '#8B5CF6',      screen: 'BookAppointmentScreen' },
     { id: 3, name: 'Live\nQueue',       icon: 'timer-outline',          color: '#FF6B35',      screen: 'LiveTokenQueueScreen' },
-    { id: 4, name: 'Laboratory',        icon: 'flask-outline',          color: '#10B981',      screen: 'LabDashboardScreen' },
-    { id: 5, name: 'Pharmacy',          icon: 'medkit-outline',         color: '#F59E0B',      screen: 'PharmacyDashboardScreen' },
+    { id: 4, name: 'Laboratory',        icon: 'flask-outline',          color: '#F59E0B',      screen: 'LabDashboardScreen' },
+    { id: 5, name: 'Pharmacy',          icon: 'medkit-outline',         color: '#10B981',      screen: 'PharmacyDashboardScreen' },
     { id: 6, name: 'Chronic\nOPD',     icon: 'medical-outline',        color: '#6366F1',      screen: 'ChronicDashboardScreen' },
     { id: 7, name: 'My\nReports',       icon: 'document-text-outline',  color: '#EF4444',      screen: 'ReportsListScreen' },
   ];
 
-  // My Token Button - Separate from Quick Actions
+  // My Token Button
   const myTokenAction = {
     id: 8,
     name: 'My Token',
@@ -93,6 +91,7 @@ const HospitalHomeScreen = ({ navigation }) => {
     { id: '8', name: 'Profile',           icon: 'person-outline',        screen: 'ProfileScreen' },
     { id: '9', name: 'Settings',          icon: 'settings-outline',      screen: 'SettingsScreen' },
     { id: '10', name: 'Appointments',     icon: 'list-outline',          screen: 'AppointmentList' },
+    { id: '11', name: 'AI Health Tips',   icon: 'bulb-outline',          screen: 'AIHealthTipsScreen' },
   ];
 
   // Side menu
@@ -118,6 +117,7 @@ const HospitalHomeScreen = ({ navigation }) => {
       section: 'PATIENT SERVICES', items: [
         { name: 'My Reports',      icon: 'document-text-outline',  screen: 'ReportsListScreen' },
         { name: 'Notifications',   icon: 'notifications-outline',  screen: 'Notifications' },
+        { name: 'AI Health Tips',  icon: 'bulb-outline',           screen: 'AIHealthTipsScreen' },
       ],
     },
     {
@@ -133,7 +133,23 @@ const HospitalHomeScreen = ({ navigation }) => {
   useEffect(() => {
     getUserData();
     loadAppointmentData();
-    updateAIInsight();
+    checkActiveToken();
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (showMenu) {
+        setShowMenu(false);
+        return true;
+      }
+      if (showSearchModal) {
+        setShowSearchModal(false);
+        setSearchQuery('');
+        setSearchResults([]);
+        return true;
+      }
+      return false;
+    });
+
+    return () => backHandler.remove();
   }, []);
 
   // Auto-update live queue every 30 sec
@@ -146,32 +162,31 @@ const HospitalHomeScreen = ({ navigation }) => {
           time: `${Math.floor(Math.random() * 20) + 5} min`,
         }))
       );
-      updateAIInsight();
+      checkActiveToken();
     }, 30000);
     return () => clearInterval(interval);
   }, []);
 
-  const updateAIInsight = () => {
-    const waitTimes = ['12 min', '18 min', '22 min', '15 min', '20 min'];
-    const tips = [
-      'Visit after 2 PM to reduce wait by ~40%',
-      'Morning hours are less crowded',
-      'Weekends have shorter queues',
-      'Avoid peak hours 11 AM - 1 PM',
-      'Book appointment online to skip queue'
-    ];
-    const statuses = ['Waiting', 'Next', 'Almost There'];
-    
-    setAiInsight({
-      predictedWait: waitTimes[Math.floor(Math.random() * waitTimes.length)],
-      bestTime: `${Math.floor(Math.random() * 4) + 1}:00 PM`,
-      save: `${Math.floor(Math.random() * 15) + 5} min`,
-      congestion: ['Low', 'Moderate', 'High'][Math.floor(Math.random() * 3)],
-      tip: tips[Math.floor(Math.random() * tips.length)],
-      queuePosition: `${Math.floor(Math.random() * 8) + 2}`,
-      totalAhead: `${Math.floor(Math.random() * 15) + 5}`,
-      status: statuses[Math.floor(Math.random() * statuses.length)],
-    });
+  const checkActiveToken = async () => {
+    try {
+      const stored = await AsyncStorage.getItem('activeToken');
+      if (stored) {
+        const token = JSON.parse(stored);
+        if (token.status === 'active' || token.status === 'pending') {
+          setHasActiveToken(true);
+          setActiveToken(token);
+        } else {
+          setHasActiveToken(false);
+          setActiveToken(null);
+        }
+      } else {
+        setHasActiveToken(false);
+        setActiveToken(null);
+      }
+    } catch (e) {
+      setHasActiveToken(false);
+      setActiveToken(null);
+    }
   };
 
   const getUserData = async () => {
@@ -193,7 +208,10 @@ const HospitalHomeScreen = ({ navigation }) => {
         const active = appointments.filter(a =>
           a.status === 'Confirmed' || a.status === 'Pending'
         );
-        if (active.length > 0) setActiveToken(active[active.length - 1]);
+        if (active.length > 0) {
+          setActiveToken(active[active.length - 1]);
+          setHasActiveToken(true);
+        }
       }
     } catch (e) { console.log('loadAppointmentData error:', e); }
   };
@@ -233,6 +251,7 @@ const HospitalHomeScreen = ({ navigation }) => {
         text: 'Logout', style: 'destructive', onPress: async () => {
           await AsyncStorage.removeItem('userData');
           await AsyncStorage.removeItem('userToken');
+          await AsyncStorage.removeItem('activeToken');
           navigation.replace('Login');
         },
       },
@@ -243,7 +262,7 @@ const HospitalHomeScreen = ({ navigation }) => {
     setRefreshing(true);
     await loadAppointmentData();
     await getUserData();
-    updateAIInsight();
+    await checkActiveToken();
     setTimeout(() => setRefreshing(false), 800);
   };
 
@@ -253,7 +272,7 @@ const HospitalHomeScreen = ({ navigation }) => {
     <View style={styles.headerContainer}>
       <View style={styles.topHeader}>
         <TouchableOpacity style={styles.iconBtn} onPress={() => setShowMenu(true)}>
-          <Ionicons name="menu-outline" size={24} color={COLORS.white} />
+          <Ionicons name="menu-outline" size={wp(5.5)} color={COLORS.white} />
         </TouchableOpacity>
 
         <View style={styles.logoWrapper}>
@@ -268,10 +287,10 @@ const HospitalHomeScreen = ({ navigation }) => {
 
         <View style={styles.headerRight}>
           <TouchableOpacity style={styles.iconBtn} onPress={() => setShowSearchModal(true)}>
-            <Ionicons name="search-outline" size={22} color={COLORS.white} />
+            <Ionicons name="search-outline" size={wp(5)} color={COLORS.white} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.iconBtn} onPress={() => navigateTo('SettingsScreen')}>
-            <Ionicons name="settings-outline" size={22} color={COLORS.white} />
+            <Ionicons name="settings-outline" size={wp(5)} color={COLORS.white} />
           </TouchableOpacity>
         </View>
       </View>
@@ -303,7 +322,8 @@ const HospitalHomeScreen = ({ navigation }) => {
   );
 
   const renderMyToken = () => {
-    const hasToken = !!activeToken;
+    if (!hasActiveToken || !activeToken) return null;
+
     return (
       <View style={[styles.tokenCard, SHADOWS.medium]}>
         <View style={styles.tokenHeader}>
@@ -314,47 +334,49 @@ const HospitalHomeScreen = ({ navigation }) => {
         </View>
         <View style={styles.tokenContent}>
           <View style={styles.tokenLeft}>
-            <Text style={styles.tokenNumber}>{hasToken ? activeToken.token : '---'}</Text>
-            <Text style={[styles.tokenStatus, { color: hasToken ? '#34D399' : '#94A3B8' }]}>
-              {hasToken ? '● Active' : 'No Token — Tap to Generate'}
+            <Text style={styles.tokenNumber}>{activeToken.token || '---'}</Text>
+            <Text style={[styles.tokenStatus, { color: '#34D399' }]}>
+              ● Active
             </Text>
-            {hasToken && (
-              <View style={styles.tokenInfoRow}>
-                <Text style={styles.tokenInfoText}>{activeToken.department}</Text>
-                <Text style={styles.tokenInfoText}>•</Text>
-                <Text style={styles.tokenInfoText}>{activeToken.time}</Text>
-              </View>
-            )}
+            <View style={styles.tokenInfoRow}>
+              <Text style={styles.tokenInfoText}>{activeToken.department || 'OPD'}</Text>
+              <Text style={styles.tokenInfoText}>•</Text>
+              <Text style={styles.tokenInfoText}>{activeToken.time || 'N/A'}</Text>
+            </View>
           </View>
-          <Ionicons name="qr-code" size={52} color={COLORS.primary} />
+          <Ionicons name="qr-code" size={wp(13)} color={COLORS.primary} />
         </View>
-        {hasToken && (
-          <View style={styles.tokenActions}>
-            <TouchableOpacity style={[styles.tokenActionBtn, { borderColor: COLORS.primary }]}
-              onPress={() => Alert.alert('Download', 'Token PDF downloading...')}>
-              <Ionicons name="download-outline" size={15} color={COLORS.primary} />
-              <Text style={[styles.tokenActionText, { color: COLORS.primary }]}>PDF</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.tokenActionBtn, { borderColor: COLORS.primary }]}
-              onPress={() => Alert.alert('Share', 'Sharing token...')}>
-              <Ionicons name="share-outline" size={15} color={COLORS.primary} />
-              <Text style={[styles.tokenActionText, { color: COLORS.primary }]}>Share</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.tokenActionBtn, { backgroundColor: COLORS.primary }]}
-              onPress={() => navigateTo('LiveTokenQueueScreen')}>
-              <Ionicons name="timer-outline" size={15} color={COLORS.white} />
-              <Text style={[styles.tokenActionText, { color: COLORS.white }]}>Track</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.tokenActionBtn, { borderColor: '#EF4444' }]}
-              onPress={() => { Alert.alert('Cancel Token', 'Are you sure?', [
+        <View style={styles.tokenActions}>
+          <TouchableOpacity style={[styles.tokenActionBtn, { borderColor: COLORS.primary }]}
+            onPress={() => Alert.alert('Download', 'Token PDF downloading...')}>
+            <Ionicons name="download-outline" size={wp(3.5)} color={COLORS.primary} />
+            <Text style={[styles.tokenActionText, { color: COLORS.primary }]}>PDF</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.tokenActionBtn, { borderColor: COLORS.primary }]}
+            onPress={() => Alert.alert('Share', 'Sharing token...')}>
+            <Ionicons name="share-outline" size={wp(3.5)} color={COLORS.primary} />
+            <Text style={[styles.tokenActionText, { color: COLORS.primary }]}>Share</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.tokenActionBtn, { backgroundColor: COLORS.primary }]}
+            onPress={() => navigateTo('LiveTokenQueueScreen')}>
+            <Ionicons name="timer-outline" size={wp(3.5)} color={COLORS.white} />
+            <Text style={[styles.tokenActionText, { color: COLORS.white }]}>Track</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.tokenActionBtn, { borderColor: '#EF4444' }]}
+            onPress={() => { 
+              Alert.alert('Cancel Token', 'Are you sure?', [
                 { text: 'No', style: 'cancel' },
-                { text: 'Yes', style: 'destructive', onPress: () => setActiveToken(null) },
-              ]); }}>
-              <Ionicons name="close-outline" size={15} color="#EF4444" />
-              <Text style={[styles.tokenActionText, { color: '#EF4444' }]}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+                { text: 'Yes', style: 'destructive', onPress: async () => {
+                  await AsyncStorage.removeItem('activeToken');
+                  setHasActiveToken(false);
+                  setActiveToken(null);
+                }},
+              ]);
+            }}>
+            <Ionicons name="close-outline" size={wp(3.5)} color="#EF4444" />
+            <Text style={[styles.tokenActionText, { color: '#EF4444' }]}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   };
@@ -368,7 +390,7 @@ const HospitalHomeScreen = ({ navigation }) => {
         activeOpacity={0.8}
       >
         <View style={[styles.myTokenIcon, { backgroundColor: myTokenAction.color + '18' }]}>
-          <Ionicons name={myTokenAction.icon} size={22} color={myTokenAction.color} />
+          <Ionicons name={myTokenAction.icon} size={wp(5.5)} color={myTokenAction.color} />
         </View>
         <View style={styles.myTokenContent}>
           <Text style={styles.myTokenName}>My Token</Text>
@@ -380,7 +402,7 @@ const HospitalHomeScreen = ({ navigation }) => {
         </View>
         <Ionicons 
           name={showTokenDetails ? 'chevron-up' : 'chevron-down'} 
-          size={20} 
+          size={wp(5)} 
           color={COLORS.textLight} 
         />
       </TouchableOpacity>
@@ -395,7 +417,7 @@ const HospitalHomeScreen = ({ navigation }) => {
         <View style={styles.popupHeader}>
           <Text style={styles.popupTitle}>Token Details</Text>
           <TouchableOpacity onPress={() => setShowTokenDetails(false)}>
-            <Ionicons name="close" size={20} color={COLORS.textLight} />
+            <Ionicons name="close" size={wp(5)} color={COLORS.textLight} />
           </TouchableOpacity>
         </View>
         <View style={styles.popupRow}>
@@ -438,100 +460,38 @@ const HospitalHomeScreen = ({ navigation }) => {
             activeOpacity={0.8}
           >
             <View style={[styles.quickIcon, { backgroundColor: item.color + '18' }]}>
-              <Ionicons name={item.icon} size={22} color={item.color} />
+              <Ionicons name={item.icon} size={wp(5.5)} color={item.color} />
             </View>
             <Text style={styles.quickName}>{item.name}</Text>
           </TouchableOpacity>
         ))}
-        {/* My Token Button - Integrated in Grid */}
         {renderMyTokenButton()}
       </View>
       {renderTokenDetailsPopup()}
     </View>
   );
 
-  const renderAIInsight = () => (
-    <View style={[styles.aiCard, SHADOWS.medium]}>
+  // ─── AI HEALTH TIP - Replacing AI Queue Insight ──────────────────
+  const renderAIHealthTip = () => (
+    <TouchableOpacity 
+      style={[styles.aiTipCard, SHADOWS.medium]} 
+      onPress={() => navigateTo('AIHealthTipsScreen')}
+      activeOpacity={0.85}
+    >
       <LinearGradient
-        colors={[COLORS.primary + '12', COLORS.secondary + '08']}
-        style={styles.aiGradient}
+        colors={[aiHealthTip.color + '12', COLORS.secondary + '08']}
+        style={styles.aiTipGradient}
       >
-        <View style={styles.aiHeader}>
-          <View style={styles.aiLeft}>
-            <Ionicons name="analytics-outline" size={20} color={COLORS.primary} />
-            <Text style={styles.aiTitle}>AI Queue Insight</Text>
+        <View style={styles.aiTipHeader}>
+          <View style={[styles.aiTipIcon, { backgroundColor: aiHealthTip.color + '18' }]}>
+            <Ionicons name={aiHealthTip.icon} size={wp(5)} color={aiHealthTip.color} />
           </View>
-          <View style={styles.aiLiveBadge}>
-            <View style={styles.aiLiveDot} />
-            <Text style={styles.aiLiveText}>Live</Text>
-          </View>
+          <Text style={styles.aiTipTitle}>{aiHealthTip.title}</Text>
+          <Ionicons name="chevron-forward" size={wp(4.5)} color={COLORS.textLight} />
         </View>
-
-        {/* Queue Position */}
-        <View style={styles.aiPositionContainer}>
-          <View style={styles.aiPositionItem}>
-            <Text style={styles.aiPositionLabel}>Your Position</Text>
-            <Text style={styles.aiPositionValue}>#{aiInsight.queuePosition}</Text>
-          </View>
-          <View style={styles.aiPositionDivider} />
-          <View style={styles.aiPositionItem}>
-            <Text style={styles.aiPositionLabel}>Ahead of You</Text>
-            <Text style={styles.aiPositionValue}>{aiInsight.totalAhead}</Text>
-          </View>
-          <View style={styles.aiPositionDivider} />
-          <View style={styles.aiPositionItem}>
-            <Text style={styles.aiPositionLabel}>Status</Text>
-            <Text style={[styles.aiPositionValue, { 
-              color: aiInsight.status === 'Next' ? '#34D399' : 
-                     aiInsight.status === 'Almost There' ? '#F59E0B' : COLORS.primary 
-            }]}>
-              {aiInsight.status}
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.aiContent}>
-          <View style={styles.aiItem}>
-            <Text style={styles.aiLabel}>Predicted Wait</Text>
-            <Text style={styles.aiValue}>{aiInsight.predictedWait}</Text>
-          </View>
-          <View style={styles.aiDivider} />
-          <View style={styles.aiItem}>
-            <Text style={styles.aiLabel}>Best Time</Text>
-            <Text style={styles.aiValue}>{aiInsight.bestTime}</Text>
-          </View>
-          <View style={styles.aiDivider} />
-          <View style={styles.aiItem}>
-            <Text style={styles.aiLabel}>You Save</Text>
-            <Text style={[styles.aiValue, { color: '#34D399' }]}>{aiInsight.save}</Text>
-          </View>
-          <View style={styles.aiDivider} />
-          <View style={styles.aiItem}>
-            <Text style={styles.aiLabel}>Congestion</Text>
-            <Text style={[styles.aiValue, { 
-              color: aiInsight.congestion === 'Low' ? '#34D399' : 
-                     aiInsight.congestion === 'Moderate' ? '#F59E0B' : '#EF4444' 
-            }]}>
-              {aiInsight.congestion}
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.aiTipRow}>
-          <Ionicons name="bulb-outline" size={14} color={COLORS.primary} />
-          <Text style={styles.aiTip}>💡 {aiInsight.tip}</Text>
-        </View>
-
-        <TouchableOpacity 
-          style={styles.aiRefreshBtn}
-          onPress={updateAIInsight}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="refresh-outline" size={16} color={COLORS.primary} />
-          <Text style={styles.aiRefreshText}>Update Insight</Text>
-        </TouchableOpacity>
+        <Text style={styles.aiTipMessage}>{aiHealthTip.message}</Text>
       </LinearGradient>
-    </View>
+    </TouchableOpacity>
   );
 
   const renderModules = () => (
@@ -547,7 +507,7 @@ const HospitalHomeScreen = ({ navigation }) => {
           >
             <LinearGradient colors={[item.color + '18', 'transparent']} style={styles.moduleGradient}>
               <View style={[styles.moduleIcon, { backgroundColor: item.color + '18' }]}>
-                <Ionicons name={item.icon} size={26} color={item.color} />
+                <Ionicons name={item.icon} size={wp(6.5)} color={item.color} />
               </View>
               <Text style={styles.moduleName}>{item.name}</Text>
               <Text style={styles.moduleDesc}>{item.desc}</Text>
@@ -583,7 +543,7 @@ const HospitalHomeScreen = ({ navigation }) => {
         >
           <View style={styles.queueLeft}>
             <View style={[styles.queueIcon, { backgroundColor: item.color + '18' }]}>
-              <Ionicons name={item.icon} size={18} color={item.color} />
+              <Ionicons name={item.icon} size={wp(4.5)} color={item.color} />
             </View>
             <View>
               <Text style={styles.queueDept}>{item.dept}</Text>
@@ -616,7 +576,7 @@ const HospitalHomeScreen = ({ navigation }) => {
             <Text style={styles.announceTitle}>{item.title}</Text>
             <Text style={styles.announceSub}>{item.sub}</Text>
           </View>
-          <Ionicons name="chevron-forward" size={16} color={COLORS.textLight} />
+          <Ionicons name="chevron-forward" size={wp(4)} color={COLORS.textLight} />
         </View>
       ))}
     </View>
@@ -637,7 +597,7 @@ const HospitalHomeScreen = ({ navigation }) => {
             <View style={[styles.searchModal, SHADOWS.large]}>
               <View style={styles.searchInputRow}>
                 <View style={styles.searchInputWrap}>
-                  <Ionicons name="search-outline" size={20} color={COLORS.textSecondary} />
+                  <Ionicons name="search-outline" size={wp(5)} color={COLORS.textSecondary} />
                   <TextInput
                     style={styles.searchInput}
                     placeholder="Search services..."
@@ -648,7 +608,7 @@ const HospitalHomeScreen = ({ navigation }) => {
                   />
                   {searchQuery.length > 0 && (
                     <TouchableOpacity onPress={() => handleSearch('')}>
-                      <Ionicons name="close-circle" size={20} color={COLORS.textLight} />
+                      <Ionicons name="close-circle" size={wp(5)} color={COLORS.textLight} />
                     </TouchableOpacity>
                   )}
                 </View>
@@ -662,16 +622,16 @@ const HospitalHomeScreen = ({ navigation }) => {
                   {searchResults.map((item) => (
                     <TouchableOpacity key={item.id} style={styles.searchResultItem} onPress={() => handleSearchItemPress(item)}>
                       <View style={[styles.searchResultIcon, { backgroundColor: COLORS.primary + '15' }]}>
-                        <Ionicons name={item.icon} size={20} color={COLORS.primary} />
+                        <Ionicons name={item.icon} size={wp(5)} color={COLORS.primary} />
                       </View>
                       <Text style={styles.searchResultName}>{item.name}</Text>
-                      <Ionicons name="chevron-forward" size={16} color={COLORS.textLight} />
+                      <Ionicons name="chevron-forward" size={wp(4)} color={COLORS.textLight} />
                     </TouchableOpacity>
                   ))}
                 </ScrollView>
               ) : (
                 <View style={styles.searchEmpty}>
-                  <Ionicons name={searchQuery ? 'search-outline' : 'compass-outline'} size={48} color={COLORS.textLight} />
+                  <Ionicons name={searchQuery ? 'search-outline' : 'compass-outline'} size={wp(12)} color={COLORS.textLight} />
                   <Text style={styles.searchEmptyText}>{searchQuery ? 'No results found' : 'Search for services'}</Text>
                 </View>
               )}
@@ -687,14 +647,13 @@ const HospitalHomeScreen = ({ navigation }) => {
       <View style={styles.menuOverlay}>
         <View style={styles.menuContainer}>
           <LinearGradient colors={[COLORS.primary, COLORS.secondary]} style={styles.menuHeader}>
-            {/* Logo Circle - Fixed */}
             <View style={styles.menuLogoCircle}>
               <Image source={require('../../../assets/logo.png')} style={styles.menuLogo} resizeMode="contain" />
             </View>
             <Text style={styles.menuHospital}>SehatLine</Text>
             <Text style={styles.menuAddress}>CDA Hospital, Islamabad</Text>
             <TouchableOpacity style={styles.closeMenuBtn} onPress={() => setShowMenu(false)}>
-              <Ionicons name="close-circle" size={28} color={COLORS.white} />
+              <Ionicons name="close-circle" size={wp(7)} color={COLORS.white} />
             </TouchableOpacity>
           </LinearGradient>
 
@@ -713,10 +672,10 @@ const HospitalHomeScreen = ({ navigation }) => {
                     }}
                   >
                     <View style={[styles.menuItemIcon, item.isLogout && { backgroundColor: '#EF444415' }]}>
-                      <Ionicons name={item.icon} size={16} color={item.isLogout ? '#EF4444' : COLORS.primary} />
+                      <Ionicons name={item.icon} size={wp(4)} color={item.isLogout ? '#EF4444' : COLORS.primary} />
                     </View>
                     <Text style={[styles.menuItemText, item.isLogout && { color: '#EF4444' }]}>{item.name}</Text>
-                    {!item.isLogout && <Ionicons name="chevron-forward" size={14} color={COLORS.textLight} />}
+                    {!item.isLogout && <Ionicons name="chevron-forward" size={wp(3.5)} color={COLORS.textLight} />}
                   </TouchableOpacity>
                 ))}
               </View>
@@ -751,7 +710,7 @@ const HospitalHomeScreen = ({ navigation }) => {
           {renderTodayStats()}
           {renderMyToken()}
           {renderQuickActions()}
-          {renderAIInsight()}
+          {renderAIHealthTip()}
           {renderModules()}
           {renderLiveQueue()}
           {renderAnnouncements()}
@@ -765,24 +724,24 @@ const HospitalHomeScreen = ({ navigation }) => {
         {/* Bottom Tab */}
         <View style={styles.bottomBar}>
           <TouchableOpacity style={styles.bottomTab} onPress={() => navigation.navigate('HospitalHome')}>
-            <Ionicons name="home" size={22} color={COLORS.primary} />
+            <Ionicons name="home" size={wp(5.5)} color={COLORS.primary} />
             <Text style={[styles.bottomLabel, styles.activeLabel]}>Home</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.bottomTab} onPress={() => navigateTo('BookAppointmentScreen')}>
-            <Ionicons name="calendar-outline" size={22} color={COLORS.textSecondary} />
+            <Ionicons name="calendar-outline" size={wp(5.5)} color={COLORS.textSecondary} />
             <Text style={styles.bottomLabel}>Book</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.bottomTabCenter} onPress={() => navigateTo('GenerateTokenScreen')}>
             <LinearGradient colors={[COLORS.primary, COLORS.secondary]} style={styles.bottomCenterBtn}>
-              <Ionicons name="ticket-outline" size={24} color={COLORS.white} />
+              <Ionicons name="ticket-outline" size={wp(6)} color={COLORS.white} />
             </LinearGradient>
           </TouchableOpacity>
           <TouchableOpacity style={styles.bottomTab} onPress={() => navigateTo('LiveTokenQueueScreen')}>
-            <Ionicons name="timer-outline" size={22} color={COLORS.textSecondary} />
+            <Ionicons name="timer-outline" size={wp(5.5)} color={COLORS.textSecondary} />
             <Text style={styles.bottomLabel}>Queue</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.bottomTab} onPress={() => navigateTo('ProfileScreen')}>
-            <Ionicons name="person-outline" size={22} color={COLORS.textSecondary} />
+            <Ionicons name="person-outline" size={wp(5.5)} color={COLORS.textSecondary} />
             <Text style={styles.bottomLabel}>Profile</Text>
           </TouchableOpacity>
         </View>
@@ -795,116 +754,292 @@ const HospitalHomeScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container:   { flex: 1, backgroundColor: COLORS.background },
-  safeArea:    { flex: 1 },
-  scrollContent: { paddingBottom: hp(10), paddingTop: hp(0.5) },
+  container: { flex: 1, backgroundColor: COLORS.background },
+  safeArea: { 
+    flex: 1, 
+    marginTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 
+  },
+  scrollContent: { 
+    paddingBottom: hp(10), 
+    paddingTop: hp(0.5) 
+  },
 
-  // Header
+  // ─── HEADER ──────────────────────────────────────────────────────
   headerContainer: {
-    paddingTop: Platform.OS === 'ios' ? hp(0.5) : (StatusBar.currentHeight || 24) + hp(0.5),
+    paddingTop: Platform.OS === 'ios' ? hp(0.5) : 0,
     paddingBottom: hp(0.5),
   },
   topHeader: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: wp(4), marginBottom: hp(0.8),
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center',
+    paddingHorizontal: wp(4), 
+    marginBottom: hp(0.8),
   },
   iconBtn: {
-    width: wp(9), height: wp(9), borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center',
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)',
+    width: wp(9), 
+    height: wp(9), 
+    borderRadius: wp(2.5),
+    backgroundColor: 'rgba(255,255,255,0.18)', 
+    justifyContent: 'center', 
+    alignItems: 'center',
+    borderWidth: 1, 
+    borderColor: 'rgba(255,255,255,0.25)',
   },
-  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  logoWrapper: { flexDirection: 'row', alignItems: 'center', gap: wp(1.5) },
+  headerRight: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: wp(1.5) 
+  },
+  logoWrapper: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: wp(1.5) 
+  },
   logoCircle: {
-    width: wp(12), height: wp(12), borderRadius: wp(7),
-    backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center',
-    borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.3)',
+    width: wp(12), 
+    height: wp(12), 
+    borderRadius: wp(6),
+    backgroundColor: 'rgba(255,255,255,0.18)', 
+    justifyContent: 'center', 
+    alignItems: 'center',
+    borderWidth: 1.5, 
+    borderColor: 'rgba(255,255,255,0.3)',
     overflow: 'hidden',
   },
-  logoImage:  { width: wp(10), height: wp(10), borderRadius: wp(5),overflow: 'hidden', },
-  logoText:   { color: COLORS.white, fontSize: wp(4.5), fontWeight: '900', letterSpacing: 0.5 },
-  logoSub:    { color: COLORS.white, fontSize: wp(2.2), opacity: 0.85, marginTop: hp(0.05) },
-  greetingRow:    { paddingHorizontal: wp(4), marginTop: hp(0.5) },
-  greetingHello:  { color: COLORS.white, fontSize: wp(3), fontWeight: '500', opacity: 0.9 },
-  greetingName:   { color: COLORS.white, fontSize: wp(4.8), fontWeight: '800' },
-  greetingSub:    { color: COLORS.white, fontSize: wp(2.5), opacity: 0.7, marginTop: hp(0.05) },
+  logoImage: { 
+    width: wp(10), 
+    height: wp(10), 
+    borderRadius: wp(5), 
+    resizeMode: 'contain' 
+  },
+  logoText: { 
+    color: COLORS.white, 
+    fontSize: wp(4.5), 
+    fontWeight: '900', 
+    letterSpacing: 0.5 
+  },
+  logoSub: { 
+    color: COLORS.white, 
+    fontSize: wp(2.2), 
+    opacity: 0.85, 
+    marginTop: hp(0.05) 
+  },
+  greetingRow: { 
+    paddingHorizontal: wp(4), 
+    marginTop: hp(0.5) 
+  },
+  greetingHello: { 
+    color: COLORS.white, 
+    fontSize: wp(3), 
+    fontWeight: '500', 
+    opacity: 0.9 
+  },
+  greetingName: { 
+    color: COLORS.white, 
+    fontSize: wp(4.8), 
+    fontWeight: '800' 
+  },
+  greetingSub: { 
+    color: COLORS.white, 
+    fontSize: wp(2.5), 
+    opacity: 0.7, 
+    marginTop: hp(0.05) 
+  },
 
-  // Stats
+  // ─── STATS ──────────────────────────────────────────────────────
   statsContainer: {
-    flexDirection: 'row', justifyContent: 'space-between',
-    paddingHorizontal: wp(4), marginBottom: hp(1.2),
+    flexDirection: 'row', 
+    justifyContent: 'space-between',
+    paddingHorizontal: wp(4), 
+    marginBottom: hp(1.2),
   },
   statBox: {
-    flex: 1, backgroundColor: COLORS.white, borderRadius: 10,
-    padding: wp(2.5), alignItems: 'center', marginHorizontal: wp(0.5),
-    borderWidth: 1, borderColor: COLORS.border,
-    ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 3 }, android: { elevation: 2 } }),
+    flex: 1, 
+    backgroundColor: COLORS.white, 
+    borderRadius: wp(2.5),
+    padding: wp(2.5), 
+    alignItems: 'center', 
+    marginHorizontal: wp(0.5),
+    borderWidth: 1, 
+    borderColor: COLORS.border,
+    ...Platform.select({ 
+      ios: { 
+        shadowColor: '#000', 
+        shadowOffset: { width: 0, height: 1 }, 
+        shadowOpacity: 0.06, 
+        shadowRadius: 3 
+      }, 
+      android: { elevation: 2 } 
+    }),
   },
-  statNumber: { fontSize: wp(4.5), fontWeight: '800', color: COLORS.text },
-  statLabel:  { fontSize: wp(2.3), color: COLORS.textSecondary, marginTop: hp(0.05) },
+  statNumber: { 
+    fontSize: wp(4.5), 
+    fontWeight: '800' 
+  },
+  statLabel: { 
+    fontSize: wp(2.3), 
+    color: COLORS.textSecondary, 
+    marginTop: hp(0.05) 
+  },
 
-  // Token Card
+  // ─── TOKEN CARD ──────────────────────────────────────────────
   tokenCard: {
-    backgroundColor: COLORS.white, borderRadius: 14, padding: wp(3.5),
-    marginHorizontal: wp(4), marginBottom: hp(1.2),
-    borderWidth: 1, borderColor: COLORS.border,
+    backgroundColor: COLORS.white, 
+    borderRadius: wp(3.5), 
+    padding: wp(3.5),
+    marginHorizontal: wp(4), 
+    marginBottom: hp(1.2),
+    borderWidth: 1, 
+    borderColor: COLORS.border,
   },
-  tokenHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: hp(0.5) },
-  tokenTitle:   { fontSize: wp(4), fontWeight: '700', color: COLORS.text },
-  tokenViewAll: { fontSize: wp(3), color: COLORS.primary, fontWeight: '600' },
-  tokenContent: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  tokenLeft:    { flex: 1 },
-  tokenNumber:  { fontSize: wp(7), fontWeight: '900', color: COLORS.text },
-  tokenStatus:  { fontSize: wp(2.8), fontWeight: '600', marginTop: hp(0.05) },
-  tokenInfoRow: { flexDirection: 'row', gap: 8, marginTop: hp(0.1) },
-  tokenInfoText:{ fontSize: wp(2.5), color: COLORS.textSecondary },
-  tokenActions: { flexDirection: 'row', gap: 6, marginTop: hp(0.8), flexWrap: 'wrap' },
+  tokenHeader: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    marginBottom: hp(0.5) 
+  },
+  tokenTitle: { 
+    fontSize: wp(4), 
+    fontWeight: '700', 
+    color: COLORS.text 
+  },
+  tokenViewAll: { 
+    fontSize: wp(3), 
+    color: COLORS.primary, 
+    fontWeight: '600' 
+  },
+  tokenContent: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center' 
+  },
+  tokenLeft: { flex: 1 },
+  tokenNumber: { 
+    fontSize: wp(7), 
+    fontWeight: '900', 
+    color: COLORS.text 
+  },
+  tokenStatus: { 
+    fontSize: wp(2.8), 
+    fontWeight: '600', 
+    marginTop: hp(0.05) 
+  },
+  tokenInfoRow: { 
+    flexDirection: 'row', 
+    gap: wp(2), 
+    marginTop: hp(0.1) 
+  },
+  tokenInfoText: { 
+    fontSize: wp(2.5), 
+    color: COLORS.textSecondary 
+  },
+  tokenActions: { 
+    flexDirection: 'row', 
+    gap: wp(1.5), 
+    marginTop: hp(0.8), 
+    flexWrap: 'wrap' 
+  },
   tokenActionBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    paddingHorizontal: wp(2.5), paddingVertical: hp(0.35),
-    borderRadius: 8, borderWidth: 1.5,
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: wp(1),
+    paddingHorizontal: wp(2.5), 
+    paddingVertical: hp(0.35),
+    borderRadius: wp(2), 
+    borderWidth: 1.5,
   },
-  tokenActionText: { fontSize: wp(2.4), fontWeight: '600' },
+  tokenActionText: { 
+    fontSize: wp(2.4), 
+    fontWeight: '600' 
+  },
 
-  // Section
-  section:        { paddingHorizontal: wp(4), marginBottom: hp(1.2) },
-  sectionTitle:   { fontSize: wp(4), fontWeight: '700', color: COLORS.text, marginBottom: hp(0.6) },
-  sectionHeader:  { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: hp(0.6) },
-  sectionTitleRow:{ flexDirection: 'row', alignItems: 'center', gap: 6 },
-  viewAllText:    { color: COLORS.primary, fontSize: wp(3), fontWeight: '600' },
-  liveDot:        { width: 8, height: 8, borderRadius: 4, backgroundColor: '#EF4444' },
+  // ─── SECTION ──────────────────────────────────────────────────
+  section: { 
+    paddingHorizontal: wp(4), 
+    marginBottom: hp(1.2) 
+  },
+  sectionTitle: { 
+    fontSize: wp(4), 
+    fontWeight: '700', 
+    color: COLORS.text, 
+    marginBottom: hp(0.6) 
+  },
+  sectionHeader: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    marginBottom: hp(0.6) 
+  },
+  sectionTitleRow: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: wp(1.5) 
+  },
+  viewAllText: { 
+    color: COLORS.primary, 
+    fontSize: wp(3), 
+    fontWeight: '600' 
+  },
+  liveDot: { 
+    width: wp(2), 
+    height: wp(2), 
+    borderRadius: wp(1), 
+    backgroundColor: '#EF4444' 
+  },
 
-  // Quick Actions
-  quickGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
+  // ─── QUICK ACTIONS ──────────────────────────────────────────
+  quickGrid: { 
+    flexDirection: 'row', 
+    flexWrap: 'wrap', 
+    justifyContent: 'space-between' 
+  },
   quickCard: {
-    width: (width - wp(12)) / 4, backgroundColor: COLORS.white, borderRadius: 10,
-    padding: wp(1.5), alignItems: 'center', borderWidth: 1, borderColor: COLORS.border, marginBottom: hp(0.6),
-  },
-  quickIcon: { width: wp(9), height: wp(9), borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
-  quickName: { fontSize: wp(2.3), color: COLORS.text, textAlign: 'center', marginTop: hp(0.15), fontWeight: '500' },
-
-  // My Token Button
-  myTokenButton: {
     width: (width - wp(12)) / 4, 
     backgroundColor: COLORS.white, 
-    borderRadius: 10,
+    borderRadius: wp(2.5),
     padding: wp(1.5), 
     alignItems: 'center', 
     borderWidth: 1, 
     borderColor: COLORS.border, 
     marginBottom: hp(0.6),
-    position: 'relative',
+  },
+  quickIcon: { 
+    width: wp(9), 
+    height: wp(9), 
+    borderRadius: wp(2.5), 
+    justifyContent: 'center', 
+    alignItems: 'center' 
+  },
+  quickName: { 
+    fontSize: wp(2.3), 
+    color: COLORS.text, 
+    textAlign: 'center', 
+    marginTop: hp(0.15), 
+    fontWeight: '500' 
+  },
+
+  // ─── MY TOKEN BUTTON ────────────────────────────────────────
+  myTokenButton: {
+    width: (width - wp(12)) / 4, 
+    backgroundColor: COLORS.white, 
+    borderRadius: wp(2.5),
+    padding: wp(1.5), 
+    alignItems: 'center', 
+    borderWidth: 1, 
+    borderColor: COLORS.border, 
+    marginBottom: hp(0.6),
   },
   myTokenIcon: { 
     width: wp(9), 
     height: wp(9), 
-    borderRadius: 10, 
+    borderRadius: wp(2.5), 
     justifyContent: 'center', 
     alignItems: 'center' 
   },
-  myTokenContent: {
-    alignItems: 'center',
-    marginTop: hp(0.1),
+  myTokenContent: { 
+    alignItems: 'center', 
+    marginTop: hp(0.1) 
   },
   myTokenName: { 
     fontSize: wp(2.3), 
@@ -923,10 +1058,10 @@ const styles = StyleSheet.create({
     marginTop: hp(0.05),
   },
 
-  // Token Details Popup
+  // ─── TOKEN DETAILS POPUP ────────────────────────────────────
   tokenDetailsPopup: {
     backgroundColor: COLORS.white,
-    borderRadius: 12,
+    borderRadius: wp(3),
     padding: wp(3),
     marginTop: hp(0.3),
     borderWidth: 1,
@@ -963,7 +1098,7 @@ const styles = StyleSheet.create({
   },
   popupAction: {
     marginTop: hp(0.5),
-    borderRadius: 8,
+    borderRadius: wp(2),
     overflow: 'hidden',
   },
   popupGradient: {
@@ -976,199 +1111,416 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // AI Card
-  aiCard: {
-    marginHorizontal: wp(4), marginBottom: hp(1.2),
-    borderRadius: 14, overflow: 'hidden',
-    borderWidth: 1, borderColor: COLORS.border, backgroundColor: COLORS.white,
+  // ─── AI HEALTH TIP - New Styles ─────────────────────────────
+  aiTipCard: {
+    marginHorizontal: wp(4), 
+    marginBottom: hp(1.2),
+    borderRadius: wp(3.5), 
+    overflow: 'hidden',
+    borderWidth: 1, 
+    borderColor: COLORS.border, 
+    backgroundColor: COLORS.white,
   },
-  aiGradient: { padding: wp(3.5) },
-  aiHeader:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: hp(0.6) },
-  aiLeft:     { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  aiTitle:    { fontSize: wp(3.5), fontWeight: '700', color: COLORS.text },
-  aiLiveBadge:{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#34D39918', paddingHorizontal: wp(2), paddingVertical: hp(0.15), borderRadius: 10 },
-  aiLiveDot:  { width: 6, height: 6, borderRadius: 3, backgroundColor: '#34D399' },
-  aiLiveText: { fontSize: wp(2.2), color: '#34D399', fontWeight: '700' },
-
-  // AI Position
-  aiPositionContainer: {
-    flexDirection: 'row',
-    backgroundColor: COLORS.backgroundSecondary,
-    borderRadius: 10,
-    padding: wp(2),
-    marginBottom: hp(0.6),
+  aiTipGradient: { 
+    padding: wp(3.5) 
   },
-  aiPositionItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  aiPositionLabel: {
-    fontSize: wp(2.2),
-    color: COLORS.textSecondary,
-  },
-  aiPositionValue: {
-    fontSize: wp(3.5),
-    fontWeight: '800',
-    color: COLORS.text,
-    marginTop: hp(0.05),
-  },
-  aiPositionDivider: {
-    width: 1,
-    height: hp(3),
-    backgroundColor: COLORS.border,
-  },
-
-  aiContent:  { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: hp(0.6) },
-  aiItem:     { flex: 1, alignItems: 'center' },
-  aiDivider:  { width: 1, height: 28, backgroundColor: COLORS.border },
-  aiLabel:    { fontSize: wp(2.2), color: COLORS.textSecondary },
-  aiValue:    { fontSize: wp(3.2), fontWeight: '700', color: COLORS.text, marginTop: hp(0.1) },
-  aiTipRow:   { flexDirection: 'row', alignItems: 'center', gap: 6, paddingTop: hp(0.5), borderTopWidth: 1, borderTopColor: COLORS.border + '60' },
-  aiTip:      { flex: 1, fontSize: wp(2.6), color: COLORS.textSecondary },
-  
-  aiRefreshBtn: {
+  aiTipHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: hp(0.3),
+  },
+  aiTipIcon: {
+    width: wp(9),
+    height: wp(9),
+    borderRadius: wp(2.5),
     justifyContent: 'center',
-    gap: 6,
-    marginTop: hp(0.5),
-    paddingVertical: hp(0.3),
-    borderRadius: 8,
-    backgroundColor: COLORS.primary + '10',
+    alignItems: 'center',
+    marginRight: wp(2),
   },
-  aiRefreshText: {
-    fontSize: wp(2.6),
-    color: COLORS.primary,
-    fontWeight: '600',
+  aiTipTitle: {
+    flex: 1,
+    fontSize: wp(3.5),
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  aiTipMessage: {
+    fontSize: wp(3),
+    color: COLORS.textSecondary,
+    paddingLeft: wp(2),
+    lineHeight: hp(2),
   },
 
-  // Modules
-  modulesRow: { flexDirection: 'row', gap: wp(2.5) },
+  // ─── MODULES ──────────────────────────────────────────────────
+  modulesRow: { 
+    flexDirection: 'row', 
+    gap: wp(2.5) 
+  },
   moduleCard: {
-    flex: 1, backgroundColor: COLORS.white, borderRadius: 12,
-    overflow: 'hidden', borderWidth: 1.5,
+    flex: 1, 
+    backgroundColor: COLORS.white, 
+    borderRadius: wp(3),
+    overflow: 'hidden', 
+    borderWidth: 1.5,
   },
-  moduleGradient: { padding: wp(3) },
-  moduleIcon:     { width: wp(10), height: wp(10), borderRadius: 10, justifyContent: 'center', alignItems: 'center', marginBottom: hp(0.4) },
-  moduleName:     { fontSize: wp(3.2), fontWeight: '700', color: COLORS.text },
-  moduleDesc:     { fontSize: wp(2.3), color: COLORS.textSecondary, marginTop: hp(0.1) },
-  moduleOpen:     { fontSize: wp(2.6), fontWeight: '700', marginTop: hp(0.4) },
+  moduleGradient: { 
+    padding: wp(3) 
+  },
+  moduleIcon: { 
+    width: wp(10), 
+    height: wp(10), 
+    borderRadius: wp(2.5), 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    marginBottom: hp(0.4) 
+  },
+  moduleName: { 
+    fontSize: wp(3.2), 
+    fontWeight: '700', 
+    color: COLORS.text 
+  },
+  moduleDesc: { 
+    fontSize: wp(2.3), 
+    color: COLORS.textSecondary, 
+    marginTop: hp(0.1) 
+  },
+  moduleOpen: { 
+    fontSize: wp(2.6), 
+    fontWeight: '700', 
+    marginTop: hp(0.4) 
+  },
 
-  // Live Queue
+  // ─── LIVE QUEUE ──────────────────────────────────────────────
   queueCard: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    backgroundColor: COLORS.white, borderRadius: 10, padding: wp(2.5),
-    marginBottom: hp(0.6), borderWidth: 1, borderColor: COLORS.border,
-    ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3 }, android: { elevation: 2 } }),
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center',
+    backgroundColor: COLORS.white, 
+    borderRadius: wp(2.5), 
+    padding: wp(2.5),
+    marginBottom: hp(0.6), 
+    borderWidth: 1, 
+    borderColor: COLORS.border,
+    ...Platform.select({ 
+      ios: { 
+        shadowColor: '#000', 
+        shadowOffset: { width: 0, height: 1 }, 
+        shadowOpacity: 0.05, 
+        shadowRadius: 3 
+      }, 
+      android: { elevation: 2 } 
+    }),
   },
-  queueLeft:  { flexDirection: 'row', alignItems: 'center', gap: wp(2.5) },
-  queueIcon:  { width: wp(9), height: wp(9), borderRadius: 9, justifyContent: 'center', alignItems: 'center' },
-  queueDept:  { fontSize: wp(3.2), fontWeight: '600', color: COLORS.text },
-  queueCurrent: { fontSize: wp(2.5), color: COLORS.textSecondary, marginTop: hp(0.1) },
-  queueRight: { alignItems: 'flex-end' },
-  queueWait:  { fontSize: wp(2.6), color: COLORS.textSecondary, fontWeight: '500' },
-  queueTime:  { fontSize: wp(2.8), fontWeight: '700' },
+  queueLeft: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: wp(2.5) 
+  },
+  queueIcon: { 
+    width: wp(9), 
+    height: wp(9), 
+    borderRadius: wp(2.25), 
+    justifyContent: 'center', 
+    alignItems: 'center' 
+  },
+  queueDept: { 
+    fontSize: wp(3.2), 
+    fontWeight: '600', 
+    color: COLORS.text 
+  },
+  queueCurrent: { 
+    fontSize: wp(2.5), 
+    color: COLORS.textSecondary, 
+    marginTop: hp(0.1) 
+  },
+  queueRight: { 
+    alignItems: 'flex-end' 
+  },
+  queueWait: { 
+    fontSize: wp(2.6), 
+    color: COLORS.textSecondary, 
+    fontWeight: '500' 
+  },
+  queueTime: { 
+    fontSize: wp(2.8), 
+    fontWeight: '700' 
+  },
 
-  // Announcements
+  // ─── ANNOUNCEMENTS ──────────────────────────────────────────
   announceCard: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.white,
-    padding: wp(2.5), borderRadius: 10, marginBottom: hp(0.5),
-    borderWidth: 1, borderColor: COLORS.border,
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    backgroundColor: COLORS.white,
+    padding: wp(2.5), 
+    borderRadius: wp(2.5), 
+    marginBottom: hp(0.5),
+    borderWidth: 1, 
+    borderColor: COLORS.border,
   },
-  announceDot:  { width: 4, height: 30, borderRadius: 2, marginRight: wp(2.5) },
-  announceTitle:{ fontSize: wp(3.2), fontWeight: '600', color: COLORS.text },
-  announceSub:  { fontSize: wp(2.5), color: COLORS.textSecondary, marginTop: hp(0.05) },
+  announceDot: { 
+    width: wp(1), 
+    height: hp(4), 
+    borderRadius: wp(0.5), 
+    marginRight: wp(2.5) 
+  },
+  announceTitle: { 
+    fontSize: wp(3.2), 
+    fontWeight: '600', 
+    color: COLORS.text 
+  },
+  announceSub: { 
+    fontSize: wp(2.5), 
+    color: COLORS.textSecondary, 
+    marginTop: hp(0.05) 
+  },
 
-  // Footer
+  // ─── FOOTER ──────────────────────────────────────────────────
   footer: {
-    alignItems: 'center', paddingVertical: hp(1.5),
-    borderTopWidth: 1, borderTopColor: COLORS.border, marginHorizontal: wp(4), marginTop: hp(0.5),
+    alignItems: 'center', 
+    paddingVertical: hp(1.5),
+    borderTopWidth: 1, 
+    borderTopColor: COLORS.border, 
+    marginHorizontal: wp(4), 
+    marginTop: hp(0.5),
   },
-  footerText: { color: COLORS.primary, fontSize: wp(3), fontWeight: '600' },
-  footerSub:  { color: COLORS.textSecondary, fontSize: wp(2.3), marginTop: hp(0.1) },
+  footerText: { 
+    color: COLORS.primary, 
+    fontSize: wp(3), 
+    fontWeight: '600' 
+  },
+  footerSub: { 
+    color: COLORS.textSecondary, 
+    fontSize: wp(2.3), 
+    marginTop: hp(0.1) 
+  },
 
-  // Bottom Tab
+  // ─── BOTTOM BAR ──────────────────────────────────────────────
   bottomBar: {
-    position: 'absolute', bottom: 0, left: 0, right: 0,
-    flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.white,
-    paddingTop: hp(0.6), paddingBottom: Platform.OS === 'ios' ? hp(3) : hp(0.8),
-    paddingHorizontal: wp(1), borderTopWidth: 1, borderTopColor: COLORS.border,
-    ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: -2 }, shadowOpacity: 0.08, shadowRadius: 8 }, android: { elevation: 8 } }),
+    position: 'absolute', 
+    bottom: 0, 
+    left: 0, 
+    right: 0,
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    backgroundColor: COLORS.white,
+    paddingTop: hp(0.6), 
+    paddingBottom: Platform.OS === 'ios' ? hp(3) : hp(0.8),
+    paddingHorizontal: wp(1), 
+    borderTopWidth: 1, 
+    borderTopColor: COLORS.border,
+    ...Platform.select({ 
+      ios: { 
+        shadowColor: '#000', 
+        shadowOffset: { width: 0, height: -2 }, 
+        shadowOpacity: 0.08, 
+        shadowRadius: 8 
+      }, 
+      android: { elevation: 8 } 
+    }),
   },
-  bottomTab:      { flex: 1, alignItems: 'center', paddingVertical: hp(0.1) },
-  bottomTabCenter:{ flex: 1, alignItems: 'center', marginTop: -hp(2.5) },
-  bottomCenterBtn:{
-    width: wp(13), height: wp(13), borderRadius: wp(6.5),
-    justifyContent: 'center', alignItems: 'center',
-    borderWidth: 3, borderColor: COLORS.white,
-    ...Platform.select({ ios: { shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8 }, android: { elevation: 8 } }),
+  bottomTab: { 
+    flex: 1, 
+    alignItems: 'center', 
+    paddingVertical: hp(0.1) 
   },
-  bottomLabel:  { color: COLORS.textSecondary, fontSize: wp(2.1), marginTop: hp(0.1), fontWeight: '500' },
-  activeLabel:  { color: COLORS.primary, fontWeight: '700' },
+  bottomTabCenter: { 
+    flex: 1, 
+    alignItems: 'center', 
+    marginTop: -hp(2.5) 
+  },
+  bottomCenterBtn: {
+    width: wp(13), 
+    height: wp(13), 
+    borderRadius: wp(6.5),
+    justifyContent: 'center', 
+    alignItems: 'center',
+    borderWidth: 3, 
+    borderColor: COLORS.white,
+    ...Platform.select({ 
+      ios: { 
+        shadowColor: COLORS.primary, 
+        shadowOffset: { width: 0, height: 4 }, 
+        shadowOpacity: 0.4, 
+        shadowRadius: 8 
+      }, 
+      android: { elevation: 8 } 
+    }),
+  },
+  bottomLabel: { 
+    color: COLORS.textSecondary, 
+    fontSize: wp(2.1), 
+    marginTop: hp(0.1), 
+    fontWeight: '500' 
+  },
+  activeLabel: { 
+    color: COLORS.primary, 
+    fontWeight: '700' 
+  },
 
-  // Side Menu - Logo Circle Fixed
-  menuOverlay:    { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', flexDirection: 'row' },
-  menuContainer:  { width: width * 0.78, height: '100%', backgroundColor: COLORS.white },
-  menuBackdrop:   { flex: 1 },
+  // ─── SIDE MENU ──────────────────────────────────────────────
+  menuOverlay: { 
+    flex: 1, 
+    backgroundColor: 'rgba(0,0,0,0.55)', 
+    flexDirection: 'row' 
+  },
+  menuContainer: { 
+    width: width * 0.78, 
+    height: '100%', 
+    backgroundColor: COLORS.white 
+  },
+  menuBackdrop: { flex: 1 },
   menuHeader: {
     paddingTop: Platform.OS === 'ios' ? hp(5) : hp(3),
-    paddingBottom: hp(2), alignItems: 'center', position: 'relative',
+    paddingBottom: hp(2), 
+    alignItems: 'center', 
+    position: 'relative',
   },
   menuLogoCircle: {
     width: wp(16), 
     height: wp(16), 
-    borderRadius: wp(8), // Circle
+    borderRadius: wp(8),
     backgroundColor: 'rgba(255,255,255,0.25)', 
     justifyContent: 'center', 
     alignItems: 'center',
     marginBottom: hp(0.5), 
     borderWidth: 2, 
     borderColor: 'rgba(255,255,255,0.4)',
-    overflow: 'hidden', // Ensures image stays in circle
+    overflow: 'hidden',
   },
   menuLogo: { 
     width: wp(13), 
-    height: wp(13),
-    borderRadius: wp(7),
-    resizeMode: 'contain',
+    height: wp(13), 
+    resizeMode: 'contain' 
   },
-  menuHospital:   { color: COLORS.white, fontSize: wp(4.2), fontWeight: '800' },
-  menuAddress:    { color: COLORS.white, fontSize: wp(2.6), marginTop: hp(0.1), opacity: 0.85 },
-  closeMenuBtn:   { position: 'absolute', top: Platform.OS === 'ios' ? hp(5) : hp(3), right: wp(3) },
-  menuScroll:     { flex: 1 },
-  menuSection:    { marginBottom: hp(0.2) },
-  menuSectionTitle:{ fontSize: wp(2.8), fontWeight: '800', color: '#1E293B', paddingHorizontal: wp(4), paddingTop: hp(0.8), paddingBottom: hp(0.1), letterSpacing: 0.5 },
+  menuHospital: { 
+    color: COLORS.white, 
+    fontSize: wp(4.2), 
+    fontWeight: '800' 
+  },
+  menuAddress: { 
+    color: COLORS.white, 
+    fontSize: wp(2.6), 
+    marginTop: hp(0.1), 
+    opacity: 0.85 
+  },
+  closeMenuBtn: { 
+    position: 'absolute', 
+    top: Platform.OS === 'ios' ? hp(5) : hp(3), 
+    right: wp(3) 
+  },
+  menuScroll: { flex: 1 },
+  menuSection: { 
+    marginBottom: hp(0.2) 
+  },
+  menuSectionTitle: { 
+    fontSize: wp(2.8), 
+    fontWeight: '800', 
+    color: '#1E293B', 
+    paddingHorizontal: wp(4), 
+    paddingTop: hp(0.8), 
+    paddingBottom: hp(0.1), 
+    letterSpacing: 0.5 
+  },
   menuItem: {
-    flexDirection: 'row', alignItems: 'center', paddingVertical: hp(0.6),
-    paddingHorizontal: wp(4), borderBottomWidth: 0.5, borderBottomColor: COLORS.border, gap: wp(2.5),
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    paddingVertical: hp(0.6),
+    paddingHorizontal: wp(4), 
+    borderBottomWidth: 0.5, 
+    borderBottomColor: COLORS.border, 
+    gap: wp(2.5),
   },
-  menuItemIcon:   { width: wp(7.5), height: wp(7.5), borderRadius: 8, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.primary + '12' },
-  menuItemText:   { flex: 1, color: COLORS.text, fontSize: wp(3), fontWeight: '500' },
+  menuItemIcon: { 
+    width: wp(7.5), 
+    height: wp(7.5), 
+    borderRadius: wp(2), 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    backgroundColor: COLORS.primary + '12' 
+  },
+  menuItemText: { 
+    flex: 1, 
+    color: COLORS.text, 
+    fontSize: wp(3), 
+    fontWeight: '500' 
+  },
 
-  // Search Modal
-  searchOverlay:    { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'flex-start' },
+  // ─── SEARCH MODAL ──────────────────────────────────────────
+  searchOverlay: { 
+    flex: 1, 
+    backgroundColor: 'rgba(0,0,0,0.55)', 
+    justifyContent: 'flex-start' 
+  },
   searchModal: {
     backgroundColor: COLORS.white,
-    borderBottomLeftRadius: 20, borderBottomRightRadius: 20,
+    borderBottomLeftRadius: wp(5), 
+    borderBottomRightRadius: wp(5),
     paddingHorizontal: wp(4),
     paddingTop: Platform.OS === 'ios' ? hp(5) : hp(2.5),
-    paddingBottom: hp(2), maxHeight: height * 0.82,
+    paddingBottom: hp(2), 
+    maxHeight: height * 0.82,
   },
-  searchInputRow:   { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: hp(1) },
+  searchInputRow: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: wp(2.5), 
+    marginBottom: hp(1) 
+  },
   searchInputWrap: {
-    flex: 1, flexDirection: 'row', alignItems: 'center',
+    flex: 1, 
+    flexDirection: 'row', 
+    alignItems: 'center',
     backgroundColor: COLORS.backgroundSecondary || '#F5F6FA',
-    borderRadius: 10, paddingHorizontal: wp(2.5), gap: 6,
-    borderWidth: 1, borderColor: COLORS.border,
+    borderRadius: wp(2.5), 
+    paddingHorizontal: wp(2.5), 
+    gap: wp(1.5),
+    borderWidth: 1, 
+    borderColor: COLORS.border,
   },
-  searchInput:      { flex: 1, color: COLORS.text, fontSize: wp(3.2), paddingVertical: Platform.OS === 'ios' ? hp(0.7) : hp(0.4) },
-  searchCancel:     { color: COLORS.primary, fontSize: wp(3.2), fontWeight: '600' },
-  searchResultsList:{ maxHeight: height * 0.58 },
-  searchResultItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: hp(0.9), borderBottomWidth: 0.5, borderBottomColor: COLORS.border, gap: 12 },
-  searchResultIcon: { width: wp(9), height: wp(9), borderRadius: 9, justifyContent: 'center', alignItems: 'center' },
-  searchResultName: { flex: 1, color: COLORS.text, fontSize: wp(3.2), fontWeight: '600' },
-  searchEmpty:      { alignItems: 'center', paddingVertical: hp(4), gap: hp(0.5) },
-  searchEmptyText:  { color: COLORS.textSecondary, fontSize: wp(3.5), fontWeight: '600' },
+  searchInput: { 
+    flex: 1, 
+    color: COLORS.text, 
+    fontSize: wp(3.2), 
+    paddingVertical: Platform.OS === 'ios' ? hp(0.7) : hp(0.4) 
+  },
+  searchCancel: { 
+    color: COLORS.primary, 
+    fontSize: wp(3.2), 
+    fontWeight: '600' 
+  },
+  searchResultsList: { 
+    maxHeight: height * 0.58 
+  },
+  searchResultItem: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    paddingVertical: hp(0.9), 
+    borderBottomWidth: 0.5, 
+    borderBottomColor: COLORS.border, 
+    gap: wp(3) 
+  },
+  searchResultIcon: { 
+    width: wp(9), 
+    height: wp(9), 
+    borderRadius: wp(2.25), 
+    justifyContent: 'center', 
+    alignItems: 'center' 
+  },
+  searchResultName: { 
+    flex: 1, 
+    color: COLORS.text, 
+    fontSize: wp(3.2), 
+    fontWeight: '600' 
+  },
+  searchEmpty: { 
+    alignItems: 'center', 
+    paddingVertical: hp(4), 
+    gap: hp(0.5) 
+  },
+  searchEmptyText: { 
+    color: COLORS.textSecondary, 
+    fontSize: wp(3.5), 
+    fontWeight: '600' 
+  },
 });
 
 export default HospitalHomeScreen;

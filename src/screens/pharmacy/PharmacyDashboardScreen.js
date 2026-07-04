@@ -28,54 +28,62 @@ const { width, height } = Dimensions.get('window');
 const wp = (percentage) => (width * percentage) / 100;
 const hp = (percentage) => (height * percentage) / 100;
 
-// ─── COMPLETE LAB TESTS LIST ──────────────────────────────────────────────
-const getAllLabTests = () => [
-  // Cardiac Tests
-  { id: '1', name: 'ECG', category: 'Cardiac Tests', icon: 'heart-outline', color: '#EF4444' },
-  { id: '2', name: 'Echocardiogram', category: 'Cardiac Tests', icon: 'scan-outline', color: '#EF4444' },
-  { id: '3', name: 'Stress Test', category: 'Cardiac Tests', icon: 'fitness-outline', color: '#EF4444' },
-  { id: '4', name: 'Holter Monitoring', category: 'Cardiac Tests', icon: 'watch-outline', color: '#EF4444' },
-  { id: '5', name: 'Troponin Test', category: 'Cardiac Tests', icon: 'water-outline', color: '#EF4444' },
-  // Blood Tests
-  { id: '6', name: 'Complete Blood Count (CBC)', category: 'Blood Tests', icon: 'water-outline', color: '#F59E0B' },
-  { id: '7', name: 'Lipid Profile', category: 'Blood Tests', icon: 'heart-outline', color: '#F59E0B' },
-  { id: '8', name: 'Blood Sugar (Fasting)', category: 'Blood Tests', icon: 'pulse-outline', color: '#F59E0B' },
-  { id: '9', name: 'HbA1c', category: 'Blood Tests', icon: 'fitness-outline', color: '#F59E0B' },
-  { id: '10', name: 'Thyroid Function Test', category: 'Blood Tests', icon: 'flash-outline', color: '#F59E0B' },
-  { id: '11', name: 'Vitamin D', category: 'Blood Tests', icon: 'sunny-outline', color: '#F59E0B' },
-  { id: '12', name: 'Liver Function Tests (LFT)', category: 'Blood Tests', icon: 'leaf-outline', color: '#F59E0B' },
-  { id: '13', name: 'Kidney Function Tests (KFT)', category: 'Blood Tests', icon: 'filter-outline', color: '#F59E0B' },
-  // Hormonal Tests
-  { id: '14', name: 'TSH', category: 'Hormonal Tests', icon: 'flash-outline', color: '#8B5CF6' },
-  { id: '15', name: 'T3', category: 'Hormonal Tests', icon: 'flash-outline', color: '#8B5CF6' },
-  { id: '16', name: 'T4', category: 'Hormonal Tests', icon: 'flash-outline', color: '#8B5CF6' },
-  { id: '17', name: 'Cortisol', category: 'Hormonal Tests', icon: 'flash-outline', color: '#8B5CF6' },
-  { id: '18', name: 'Testosterone', category: 'Hormonal Tests', icon: 'flash-outline', color: '#8B5CF6' },
-  { id: '19', name: 'FSH', category: 'Hormonal Tests', icon: 'flash-outline', color: '#8B5CF6' },
-  { id: '20', name: 'LH', category: 'Hormonal Tests', icon: 'flash-outline', color: '#8B5CF6' },
-  { id: '21', name: 'Prolactin', category: 'Hormonal Tests', icon: 'flash-outline', color: '#8B5CF6' },
-  // Infectious Diseases
-  { id: '22', name: 'Hepatitis B', category: 'Infectious Diseases', icon: 'bug-outline', color: '#10B981' },
-  { id: '23', name: 'Hepatitis C', category: 'Infectious Diseases', icon: 'bug-outline', color: '#10B981' },
-  { id: '24', name: 'HIV Test', category: 'Infectious Diseases', icon: 'bug-outline', color: '#10B981' },
-  { id: '25', name: 'Dengue Test', category: 'Infectious Diseases', icon: 'bug-outline', color: '#10B981' },
-  { id: '26', name: 'Malaria Test', category: 'Infectious Diseases', icon: 'bug-outline', color: '#10B981' },
-  { id: '27', name: 'Typhoid Test', category: 'Infectious Diseases', icon: 'bug-outline', color: '#10B981' },
-  // Imaging
-  { id: '28', name: 'X-Ray (Chest)', category: 'Imaging', icon: 'scan-outline', color: '#6366F1' },
-  { id: '29', name: 'Ultrasound (Abdomen)', category: 'Imaging', icon: 'radio-outline', color: '#6366F1' },
-  { id: '30', name: 'CT Scan (Brain)', category: 'Imaging', icon: 'scan-outline', color: '#6366F1' },
-  { id: '31', name: 'MRI (Brain)', category: 'Imaging', icon: 'scan-outline', color: '#6366F1' },
-  { id: '32', name: 'MRI (Spine)', category: 'Imaging', icon: 'scan-outline', color: '#6366F1' },
-  // Other Tests
-  { id: '33', name: 'Urine Routine (R/E)', category: 'Other Tests', icon: 'flask-outline', color: '#06B6D4' },
-  { id: '34', name: 'Urine Culture', category: 'Other Tests', icon: 'bug-outline', color: '#06B6D4' },
-  { id: '35', name: 'Stool Examination', category: 'Other Tests', icon: 'flask-outline', color: '#06B6D4' },
-  { id: '36', name: 'Sputum Examination', category: 'Other Tests', icon: 'flask-outline', color: '#06B6D4' },
-  { id: '37', name: 'Pap Smear', category: 'Other Tests', icon: 'flask-outline', color: '#06B6D4' },
+// ─── COMPLETE MEDICINES LIST ──────────────────────────────────────────────
+const getAllMedicines = () => [
+  { id: '1', name: 'Metformin', category: 'Diabetes', stock: 45 },
+  { id: '2', name: 'Paracetamol', category: 'Pain Relief', stock: 120 },
+  { id: '3', name: 'Insulin', category: 'Diabetes', stock: 8 },
+  { id: '4', name: 'Vitamin D', category: 'Vitamins', stock: 65 },
+  { id: '5', name: 'Losartan', category: 'Blood Pressure', stock: 25 },
+  { id: '6', name: 'Atorvastatin', category: 'Cholesterol', stock: 15 },
+  { id: '7', name: 'Omeprazole', category: 'Acid Reflux', stock: 3 },
+  { id: '8', name: 'Amoxicillin', category: 'Antibiotic', stock: 80 },
 ];
 
-const LabDashboardScreen = ({ navigation, route }) => {
+// ─── STATUS CONFIG ──────────────────────────────────────────────────────────
+const getStatusConfig = (status) => {
+  const configs = {
+    'Confirmed': { 
+      label: 'Waiting', 
+      color: '#2ECC71', 
+      bg: '#2ECC7115',
+      icon: 'time-outline'
+    },
+    'pending': { 
+      label: 'Pending', 
+      color: '#F59E0B', 
+      bg: '#F59E0B15',
+      icon: 'time-outline'
+    },
+    'processing': { 
+      label: 'Preparing', 
+      color: '#8B5CF6', 
+      bg: '#8B5CF615',
+      icon: 'flask-outline'
+    },
+    'dispensed': { 
+      label: 'Dispensed', 
+      color: '#2ECC71', 
+      bg: '#2ECC7115',
+      icon: 'checkmark-circle-outline'
+    },
+    'completed': { 
+      label: 'Completed', 
+      color: '#2ECC71', 
+      bg: '#2ECC7115',
+      icon: 'checkmark-done-circle-outline'
+    },
+    'cancelled': { 
+      label: 'Cancelled', 
+      color: '#EF4444', 
+      bg: '#EF444415',
+      icon: 'close-circle-outline'
+    },
+  };
+  return configs[status] || configs['Confirmed'];
+};
+
+const PharmacyDashboardScreen = ({ navigation, route }) => {
   // ─── State ──────────────────────────────────────────────────────────────
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -83,42 +91,51 @@ const LabDashboardScreen = ({ navigation, route }) => {
   const [activeToken, setActiveToken] = useState(null);
   const [currentServing, setCurrentServing] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filteredTests, setFilteredTests] = useState([]);
+  const [filteredMedicines, setFilteredMedicines] = useState([]);
+  const [pharmacyAppointments, setPharmacyAppointments] = useState([]);
   
   // ─── Statistics ────────────────────────────────────────────────────────
   const [stats, setStats] = useState({
-    todayTests: 0,
+    todayDispensed: 0,
     pending: 0,
     processing: 0,
     completed: 0,
     total: 0,
-    sampleCollected: 0,
   });
   
-  // ─── Lab Tests ──────────────────────────────────────────────────────────
-  const [labTests, setLabTests] = useState([]);
+  // ─── Medicines ──────────────────────────────────────────────────────────
+  const [medicines, setMedicines] = useState([]);
   
-  // ─── Test History ──────────────────────────────────────────────────────
-  const [testHistory, setTestHistory] = useState([]);
+  // ─── Prescription History ──────────────────────────────────────────────
+  const [prescriptionHistory, setPrescriptionHistory] = useState([]);
+  
+  // ─── Repeat Prescriptions ──────────────────────────────────────────────
+  const [repeatPrescriptions, setRepeatPrescriptions] = useState([]);
   
   // ─── Notifications ──────────────────────────────────────────────────────
   const [notifications, setNotifications] = useState([]);
   
   // ─── Modals ──────────────────────────────────────────────────────────────
   const [showTokenModal, setShowTokenModal] = useState(false);
-  const [showTestModal, setShowTestModal] = useState(false);
-  const [selectedTest, setSelectedTest] = useState(null);
-  const [reportNotes, setReportNotes] = useState('');
-  const [showReportModal, setShowReportModal] = useState(false);
-  const [reportToUpload, setReportToUpload] = useState(null);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [showRepeatModal, setShowRepeatModal] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [selectedPrescription, setSelectedPrescription] = useState(null);
 
   // ─── Refs for scrolling ────────────────────────────────────────────────
   const scrollViewRef = useRef(null);
-  const testsRef = useRef(null);
+  const medicinesRef = useRef(null);
   const notificationsRef = useRef(null);
+
+  // ─── DEMO TOKEN ──────────────────────────────────────────────────────────
+  const DEMO_TOKEN = {
+    token: 'P-042',
+    patientName: 'Patient',
+    status: 'Confirmed',
+    bookedAt: new Date().toISOString(),
+    department: 'Pharmacy',
+    departmentData: { medicines: ['Metformin'], ref: 'RX-1234' }
+  };
 
   // ─── Load Data ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -136,171 +153,167 @@ const LabDashboardScreen = ({ navigation, route }) => {
       setUserData(data);
 
       const stored = await AsyncStorage.getItem('appointments');
-      let allAppts = [];
-      if (stored) allAppts = JSON.parse(stored);
+      let allAppointments = [];
+      if (stored) allAppointments = JSON.parse(stored);
 
-      // Get lab appointments
-      const labAppts = allAppts.filter(
-        app => app.department === 'Laboratory' || app.department === 'Lab'
+      const pharmacyAppts = allAppointments.filter(
+        app => app.department === 'Pharmacy' || 
+              (app.department === 'Chronic OPD' && app.departmentData?.needsPharmacy !== false)
       );
+      setPharmacyAppointments(pharmacyAppts);
 
-      // Sort by date (newest first)
-      const sortedAppts = [...labAppts].sort((a, b) => 
+      const sortedAppts = [...pharmacyAppts].sort((a, b) => 
         new Date(b.bookedAt) - new Date(a.bookedAt)
       );
 
-      // Get the latest lab token
       const latestToken = sortedAppts.length > 0 ? sortedAppts[0] : null;
 
-      // ─── SET ACTIVE TOKEN ──────────────────────────────────────────────
       if (latestToken) {
         setActiveToken(latestToken);
         const tokenNum = parseInt(latestToken.token.split('-')[1]);
         const servingNum = tokenNum + Math.floor(Math.random() * 5) + 3;
         setCurrentServing({
-          token: `L-${String(servingNum).padStart(3, '0')}`,
+          token: `P-${String(servingNum).padStart(3, '0')}`,
           position: Math.floor(Math.random() * 4) + 2,
-          waitTime: Math.floor(Math.random() * 20) + 15,
+          waitTime: Math.floor(Math.random() * 12) + 8,
         });
       } else {
-        setActiveToken(null);
+        const demoToken = { ...DEMO_TOKEN, patientName: data?.name || 'Patient' };
+        setActiveToken(demoToken);
         setCurrentServing({
-          token: 'L-036',
-          position: 0,
-          waitTime: 0,
+          token: 'P-036',
+          position: 4,
+          waitTime: 12,
         });
       }
 
       // ─── Statistics ──────────────────────────────────────────────────
       const today = new Date().toDateString();
-      const todayTests = labAppts.filter(
-        app => new Date(app.bookedAt).toDateString() === today
+      const todayDispensed = pharmacyAppts.filter(
+        app => app.dispensed && new Date(app.dispensedAt).toDateString() === today
       );
       
-      const pending = labAppts.filter(
+      const pending = pharmacyAppts.filter(
         app => app.status === 'pending' || app.status === 'Confirmed'
       );
       
-      const processing = labAppts.filter(
-        app => app.status === 'processing' || app.status === 'sample_collected'
+      const processing = pharmacyAppts.filter(
+        app => app.status === 'processing'
       );
       
-      const completed = labAppts.filter(
-        app => app.status === 'completed' || app.status === 'Report Ready'
-      );
-      
-      const sampleCollected = labAppts.filter(
-        app => app.status === 'sample_collected'
+      const completed = pharmacyAppts.filter(
+        app => app.status === 'completed' || app.status === 'dispensed'
       );
 
       setStats({
-        todayTests: todayTests.length || 5,
+        todayDispensed: todayDispensed.length || 5,
         pending: pending.length || 3,
         processing: processing.length || 2,
         completed: completed.length || 4,
-        total: labAppts.length || 0,
-        sampleCollected: sampleCollected.length || 1,
+        total: pharmacyAppts.length || 0,
       });
 
-      // ─── Lab Tests ────────────────────────────────────────────────────
-      const testsStr = await AsyncStorage.getItem('labTests');
-      let tests = [];
-      if (testsStr) {
-        tests = JSON.parse(testsStr);
+      // ─── Medicines ────────────────────────────────────────────────────
+      const medsStr = await AsyncStorage.getItem('medicines');
+      let meds = [];
+      if (medsStr) {
+        meds = JSON.parse(medsStr);
       } else {
-        tests = getAllLabTests();
-        await AsyncStorage.setItem('labTests', JSON.stringify(tests));
+        meds = getAllMedicines();
+        await AsyncStorage.setItem('medicines', JSON.stringify(meds));
       }
-      setLabTests(tests);
-      setFilteredTests(tests);
+      setMedicines(meds);
+      setFilteredMedicines(meds);
 
-      // ─── Test History ─────────────────────────────────────────────────
-      const history = labAppts
-        .filter(app => app.status === 'completed' || app.status === 'Report Ready')
+      // ─── Repeat Prescriptions ──────────────────────────────────────
+      const repeats = pharmacyAppts.filter(
+        app => app.departmentData?.repeatPrescription === true || 
+              (app.departmentData?.medicines && app.departmentData?.medicines.length > 0)
+      );
+      
+      let finalRepeats = repeats;
+      if (repeats.length === 0 && latestToken) {
+        finalRepeats = [{
+          id: 'repeat1',
+          patientName: data?.name || 'Patient',
+          date: new Date().toISOString(),
+          departmentData: { medicines: latestToken.departmentData?.medicines || ['Medicine'], ref: 'RX-1234' },
+          token: latestToken.token,
+        }];
+      } else if (repeats.length === 0) {
+        finalRepeats = [
+          {
+            id: 'repeat1',
+            patientName: data?.name || 'Patient',
+            date: new Date().toISOString(),
+            departmentData: { medicines: ['Metformin'], ref: 'RX-1234' },
+            token: 'P-042',
+          },
+        ];
+      }
+      setRepeatPrescriptions(finalRepeats);
+
+      // ─── Prescription History ──────────────────────────────────────
+      const history = pharmacyAppts
+        .filter(app => app.dispensed)
         .slice(0, 5)
         .map(app => ({
           id: app.id,
-          test: app.departmentData?.testType || 'Lab Test',
-          date: app.date,
-          status: app.status,
-          report: app.report,
-          token: app.token,
+          medicine: app.departmentData?.medicines?.[0] || 'Medicine',
+          quantity: '30 tablets',
+          date: app.dispensedAt || app.date,
+          doctor: app.departmentData?.doctor || 'Dr. Specialist',
+          dispensed: true,
         }));
       
       if (history.length === 0 && latestToken) {
-        setTestHistory([
-          { id: 'h1', test: latestToken.departmentData?.testType || 'CBC', date: new Date().toISOString(), status: 'completed', token: latestToken.token },
+        setPrescriptionHistory([
+          { 
+            id: 'h1', 
+            medicine: latestToken.departmentData?.medicines?.[0] || 'Medicine', 
+            quantity: '30 tablets', 
+            date: new Date().toISOString(), 
+            doctor: 'Dr. Sarah Ahmed' 
+          },
         ]);
       } else if (history.length === 0) {
-        setTestHistory([
-          { id: 'h1', test: 'CBC', date: new Date().toISOString(), status: 'completed', token: 'L-042' },
+        setPrescriptionHistory([
+          { id: 'h1', medicine: 'Metformin', quantity: '30 tablets', date: new Date().toISOString(), doctor: 'Dr. Sarah Ahmed' },
         ]);
       } else {
-        setTestHistory(history);
+        setPrescriptionHistory(history);
       }
 
       // ─── Notifications ──────────────────────────────────────────────
-      const tokenMsg = latestToken ? `Your token ${latestToken.token} is in queue` : 'No lab token found';
+      const tokenMsg = latestToken ? `Your token ${latestToken.token} is in queue` : 'No active token';
       setNotifications([
         { id: '1', type: 'token', message: tokenMsg },
-        { id: '2', type: 'ready', message: 'Report ready for collection - Lab 05' },
-        { id: '3', type: 'reminder', message: 'Sample collection reminder' },
+        { id: '2', type: 'ready', message: 'Medicine ready for collection - Counter 3' },
+        { id: '3', type: 'repeat', message: 'Repeat prescription due soon' },
       ]);
 
-      setStats({
-        todayTests: todayTests.length || 5,
-        pending: pending.length || 3,
-        processing: processing.length || 2,
-        completed: completed.length || 4,
-        total: labAppts.length || 0,
-        sampleCollected: sampleCollected.length || 1,
-      });
-
     } catch (error) {
-      console.log('Error loading lab data:', error);
+      console.log('Error loading pharmacy data:', error);
     }
     setLoading(false);
   };
 
   // ─── Helper Functions ──────────────────────────────────────────────────
-  const getStatusColor = (status) => {
-    switch(status) {
-      case 'Available': return '#2ECC71';
-      case 'Limited Stock': return '#F39C12';
-      case 'Out of Stock': return '#E74C3C';
-      default: return COLORS.textSecondary;
-    }
-  };
-
-  const getStatusBgColor = (status) => {
-    switch(status) {
-      case 'Available': return '#2ECC7115';
-      case 'Limited Stock': return '#F39C1215';
-      case 'Out of Stock': return '#E74C3C15';
-      default: return COLORS.border;
-    }
-  };
-
-  const getStatusIcon = (status) => {
-    switch(status) {
-      case 'Available': return 'checkmark-circle';
-      case 'Limited Stock': return 'alert-circle';
-      case 'Out of Stock': return 'close-circle';
-      default: return 'ellipse-outline';
-    }
-  };
+  const getStatusColor = (status) => getStatusConfig(status).color;
+  const getStatusBgColor = (status) => getStatusConfig(status).bg;
+  const getStatusIcon = (status) => getStatusConfig(status).icon;
 
   // ─── Search Function ──────────────────────────────────────────────────
   const handleSearch = (query) => {
     setSearchQuery(query);
     if (query.trim() === '') {
-      setFilteredTests(labTests);
+      setFilteredMedicines(medicines);
     } else {
-      const filtered = labTests.filter(t =>
-        t.name.toLowerCase().includes(query.toLowerCase()) ||
-        t.category.toLowerCase().includes(query.toLowerCase())
+      const filtered = medicines.filter(m =>
+        m.name.toLowerCase().includes(query.toLowerCase()) ||
+        m.category.toLowerCase().includes(query.toLowerCase())
       );
-      setFilteredTests(filtered);
+      setFilteredMedicines(filtered);
     }
   };
 
@@ -312,114 +325,55 @@ const LabDashboardScreen = ({ navigation, route }) => {
   };
 
   const handleShareToken = async () => {
-    if (!activeToken) {
-      Alert.alert('No Token', 'You don\'t have any active lab token.');
-      return;
-    }
+    if (!activeToken) return;
     try {
       const msg = 
-        `CDA Hospital - Laboratory Token\n` +
+        `💊 Pharmacy Token\n` +
         `━━━━━━━━━━━━━━━━━━━━━\n` +
-        `Token: ${activeToken.token}\n` +
+        `Token: ${activeToken.token || 'P-042'}\n` +
         `Patient: ${activeToken.patientName || userData?.name || 'Patient'}\n` +
         `Position: ${currentServing?.position || 'N/A'}\n` +
         `Wait Time: ${currentServing?.waitTime || 'N/A'} mins\n` +
-        `Test: ${activeToken.departmentData?.testType || 'Lab Test'}\n` +
+        `Medicine: ${activeToken.departmentData?.medicines?.join(', ') || 'N/A'}\n` +
         `━━━━━━━━━━━━━━━━━━━━━\n` +
         `CDA Hospital Islamabad\n` +
-        `SehatLine - Digital Laboratory`;
-      await Share.share({ message: msg, title: 'Laboratory Token' });
+        `SehatLine - Digital Pharmacy`;
+      await Share.share({ message: msg, title: 'Pharmacy Token' });
     } catch (e) {
       Alert.alert('Error', 'Unable to share token');
     }
   };
 
   const handleDownloadToken = () => {
-    if (!activeToken) {
-      Alert.alert('No Token', 'You don\'t have any active lab token.');
-      return;
-    }
-    Alert.alert('Download Token', `Token ${activeToken.token} PDF would download here`);
+    Alert.alert('Download Token', 'Token PDF would download here');
   };
 
   const handleGenerateToken = () => {
     navigation.navigate('GenerateTokenScreen', { 
       userData,
-      defaultDepartment: 'Laboratory Token'
+      defaultDepartment: 'Pharmacy Token'
     });
   };
 
   const handleViewQueue = () => {
     navigation.navigate('LiveTokenQueueScreen', { 
       userData,
-      department: 'Laboratory'
+      department: 'Pharmacy'
     });
   };
 
-  const handleTestTypes = () => {
-    navigation.navigate('LabTestsPriceScreen', { userData });
+  const handleMedicineHistory = () => {
+    setShowHistoryModal(true);
   };
 
-  const handleUploadReport = async () => {
-    if (!reportToUpload || !reportNotes.trim()) {
-      Alert.alert('Missing Info', 'Please add report notes.');
-      return;
-    }
-
-    try {
-      const stored = await AsyncStorage.getItem('appointments');
-      if (stored) {
-        const allAppointments = JSON.parse(stored);
-        const index = allAppointments.findIndex(a => a.id === reportToUpload.id);
-        if (index !== -1) {
-          allAppointments[index].report = {
-            notes: reportNotes,
-            uploadedAt: new Date().toISOString(),
-            status: 'uploaded'
-          };
-          allAppointments[index].status = 'Report Ready';
-          
-          await AsyncStorage.setItem('appointments', JSON.stringify(allAppointments));
-          
-          Alert.alert('Success', 'Report uploaded successfully!');
-          setShowReportModal(false);
-          setReportNotes('');
-          setReportToUpload(null);
-          loadAllData();
-        }
-      }
-    } catch (error) {
-      console.log('Error uploading report:', error);
-      Alert.alert('Error', 'Failed to upload report');
-    }
+  const handleRepeatPrescription = (prescription) => {
+    setSelectedPrescription(prescription);
+    setShowRepeatModal(true);
   };
 
-  const handleShareReport = async (item) => {
-    if (!item.report) {
-      Alert.alert('No Report', 'Report has not been uploaded yet.');
-      return;
-    }
-    
-    try {
-      const message = 
-        `LABORATORY REPORT\n` +
-        `━━━━━━━━━━━━━━━━━━━━━\n` +
-        `CDA Hospital Islamabad\n` +
-        `Patient: ${item.patientName}\n` +
-        `Token: ${item.token}\n` +
-        `Date: ${item.date}\n` +
-        `Test: ${item.departmentData?.testType || 'Lab Test'}\n` +
-        `Notes: ${item.report.notes}\n` +
-        `━━━━━━━━━━━━━━━━━━━━━\n` +
-        `Status: Report Ready`;
-      
-      await Share.share({
-        message: message,
-        title: 'Lab Report',
-      });
-    } catch (error) {
-      Alert.alert('Error', 'Unable to share report');
-    }
+  const handleRequestRefill = (prescription) => {
+    Alert.alert('Success', `Refill requested for ${prescription.departmentData?.medicines?.[0] || 'medicine'}`);
+    setShowRepeatModal(false);
   };
 
   const handleNotificationPress = (notification) => {
@@ -427,9 +381,9 @@ const LabDashboardScreen = ({ navigation, route }) => {
   };
 
   // ─── Scroll to sections ──────────────────────────────────────────────
-  const scrollToTests = () => {
-    if (testsRef.current) {
-      testsRef.current.measureLayout(scrollViewRef.current, (x, y) => {
+  const scrollToMedicines = () => {
+    if (medicinesRef.current) {
+      medicinesRef.current.measureLayout(scrollViewRef.current, (x, y) => {
         scrollViewRef.current.scrollTo({ y, animated: true });
       });
     }
@@ -445,11 +399,16 @@ const LabDashboardScreen = ({ navigation, route }) => {
 
   // ─── Render Header ────────────────────────────────────────────────────
   const renderHeader = () => (
-    <View style={styles.headerContainer}>
+    <LinearGradient
+      colors={[COLORS.primary, COLORS.secondary]}
+      style={styles.headerGradient}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 0 }}
+    >
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.headerBtn}
-          onPress={() => navigation.goBack()}
+          onPress={() => navigation.navigate('HomeScreen')}
         >
           <Ionicons name="arrow-back" size={24} color={COLORS.white} />
         </TouchableOpacity>
@@ -464,7 +423,7 @@ const LabDashboardScreen = ({ navigation, route }) => {
           </View>
           <View style={styles.headerTitles}>
             <Text style={styles.headerTitle}>SehatLine</Text>
-            <Text style={styles.headerSubtitle}>Laboratory Dashboard</Text>
+            <Text style={styles.headerSubtitle}>Pharmacy Dashboard</Text>
           </View>
         </View>
 
@@ -475,66 +434,41 @@ const LabDashboardScreen = ({ navigation, route }) => {
           <Ionicons name="person-circle-outline" size={28} color={COLORS.white} />
         </TouchableOpacity>
       </View>
-    </View>
+
+      <Text style={styles.hospitalName}>CDA Hospital Islamabad</Text>
+    </LinearGradient>
   );
 
   // ─── Render Current Token ──────────────────────────────────────────────
   const renderCurrentToken = () => {
-    const tokenNumber = activeToken?.token || 'No Token';
+    const tokenNumber = activeToken?.token || 'P-042';
     const waitTime = currentServing?.waitTime || 'N/A';
     const position = currentServing?.position || 'N/A';
-    const hasToken = !!activeToken;
-
-    if (!hasToken) {
-      return (
-        <View style={styles.noTokenCard}>
-          <View style={styles.noTokenContent}>
-            <Ionicons name="ticket-outline" size={48} color={COLORS.textLight} />
-            <Text style={styles.noTokenTitle}>No Laboratory Token</Text>
-            <Text style={styles.noTokenSubtitle}>Generate a token to get started</Text>
-            <TouchableOpacity 
-              style={styles.noTokenBtn}
-              onPress={handleGenerateToken}
-            >
-              <LinearGradient
-                colors={['#F59E0B', '#D97706']}
-                style={styles.noTokenBtnGradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-              >
-                <Ionicons name="add-circle-outline" size={20} color={COLORS.white} />
-                <Text style={styles.noTokenBtnText}>Generate Token</Text>
-              </LinearGradient>
-            </TouchableOpacity>
-          </View>
-        </View>
-      );
-    }
 
     return (
       <View style={styles.tokenCard}>
         <LinearGradient
-          colors={['#F59E0B', '#D97706']}
+          colors={['#2ECC71', '#27AE60']}
           style={styles.tokenCardOutline}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
         >
           <View style={styles.tokenCardInner}>
-            <Text style={styles.tokenCardLabel}>Your Laboratory Token</Text>
+            <Text style={styles.tokenCardLabel}>Your Pharmacy Token</Text>
             <Text style={styles.tokenCardNumber}>{tokenNumber}</Text>
             
             <View style={styles.waitTimeContainer}>
-              <Ionicons name="time-outline" size={24} color="#F59E0B" />
+              <Ionicons name="time-outline" size={24} color="#2ECC71" />
               <Text style={styles.waitTimeLabel}>Estimated Wait</Text>
-              <Text style={styles.waitTimeValue}>{waitTime} mins</Text>
+              <Text style={[styles.waitTimeValue, { color: '#2ECC71' }]}>{waitTime} mins</Text>
             </View>
 
             <View style={styles.tokenCardRow}>
               <View style={styles.tokenCardStatus}>
                 <Text style={styles.tokenCardStatusLabel}>Status</Text>
                 <View style={styles.statusBadge}>
-                  <View style={styles.statusDot} />
-                  <Text style={[styles.tokenCardStatusValue, { color: '#F59E0B' }]}>Waiting</Text>
+                  <View style={[styles.statusDot, { backgroundColor: '#2ECC71' }]} />
+                  <Text style={[styles.tokenCardStatusValue, { color: '#2ECC71' }]}>Waiting</Text>
                 </View>
               </View>
               <View style={styles.tokenDivider} />
@@ -545,14 +479,14 @@ const LabDashboardScreen = ({ navigation, route }) => {
               <View style={styles.tokenDivider} />
               <View style={styles.tokenCardStatus}>
                 <Text style={styles.tokenCardStatusLabel}>Serving</Text>
-                <Text style={styles.tokenCardStatusValue}>{currentServing?.token || 'L-036'}</Text>
+                <Text style={styles.tokenCardStatusValue}>{currentServing?.token || 'P-036'}</Text>
               </View>
             </View>
 
             <View style={styles.tokenCardActions}>
               <TouchableOpacity style={styles.tokenActionBtn} onPress={handleShareToken}>
-                <Ionicons name="share-outline" size={18} color="#F59E0B" />
-                <Text style={[styles.tokenActionText, { color: '#F59E0B' }]}>Share</Text>
+                <Ionicons name="share-outline" size={18} color="#2ECC71" />
+                <Text style={[styles.tokenActionText, { color: '#2ECC71' }]}>Share</Text>
               </TouchableOpacity>
               <TouchableOpacity style={[styles.tokenActionBtn, styles.tokenActionPrimary]} onPress={handleDownloadToken}>
                 <Ionicons name="download-outline" size={18} color={COLORS.white} />
@@ -570,296 +504,53 @@ const LabDashboardScreen = ({ navigation, route }) => {
   };
 
   // ─── Render Queue Status ──────────────────────────────────────────────
-  const renderQueueStatus = () => {
-    const hasToken = !!activeToken;
-    
-    return (
-      <View style={styles.queueCard}>
-        <Text style={styles.cardTitle}>Live Queue Status</Text>
-        <View style={styles.queueRow}>
-          <View style={styles.queueItem}>
-            <Text style={styles.queueLabel}>Currently Serving</Text>
-            <Text style={[styles.queueValue, { color: '#F39C12' }]}>{currentServing?.token || 'L-036'}</Text>
-          </View>
-          <View style={styles.queueDivider} />
-          <View style={styles.queueItem}>
-            <Text style={styles.queueLabel}>Your Token</Text>
-            <Text style={[styles.queueValue, { color: hasToken ? '#F59E0B' : COLORS.textLight }]}>
-              {activeToken?.token || 'No Token'}
-            </Text>
-          </View>
-          <View style={styles.queueDivider} />
-          <View style={styles.queueItem}>
-            <Text style={styles.queueLabel}>People Before</Text>
-            <Text style={styles.queueValue}>{hasToken ? (currentServing?.position || '0') : 'N/A'}</Text>
-          </View>
+  const renderQueueStatus = () => (
+    <View style={styles.queueCard}>
+      <Text style={styles.cardTitle}>Live Queue Status</Text>
+      <View style={styles.queueRow}>
+        <View style={styles.queueItem}>
+          <Text style={styles.queueLabel}>Currently Serving</Text>
+          <Text style={[styles.queueValue, { color: '#2ECC71' }]}>{currentServing?.token || 'P-036'}</Text>
         </View>
-        {hasToken && (
-          <View style={styles.progressContainer}>
-            <View style={styles.progressBar}>
-              <View 
-                style={[styles.progressFill, { 
-                  width: `${Math.min(100, (1 / (currentServing?.position || 1)) * 100)}%` 
-                }]} 
-              />
-            </View>
-            <Text style={styles.progressText}>
-              {`${Math.min(100, Math.floor((1 / (currentServing?.position || 1)) * 100))}% complete`}
-            </Text>
-          </View>
-        )}
-      </View>
-    );
-  };
-
-  // ─── Render Quick Actions ──────────────────────────────────────────────
-  const renderQuickActions = () => (
-    <View style={styles.actionsContainer}>
-      <Text style={styles.sectionTitle}>Quick Actions</Text>
-      <View style={styles.actionGrid}>
-        <TouchableOpacity
-          style={[styles.actionCard, { borderColor: '#F59E0B40' }]}
-          onPress={handleGenerateToken}
-          activeOpacity={0.7}
-        >
-          <View style={[styles.actionIcon, { backgroundColor: '#F59E0B10' }]}>
-            <Ionicons name="add-circle-outline" size={24} color="#F59E0B" />
-          </View>
-          <Text style={styles.actionLabel}>Generate Token</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.actionCard, { borderColor: '#F59E0B40' }]}
-          onPress={() => setShowTokenModal(true)}
-          activeOpacity={0.7}
-        >
-          <View style={[styles.actionIcon, { backgroundColor: '#F59E0B10' }]}>
-            <Ionicons name="ticket-outline" size={24} color="#F59E0B" />
-          </View>
-          <Text style={styles.actionLabel}>My Token</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.actionCard, { borderColor: '#F59E0B40' }]}
-          onPress={handleViewQueue}
-          activeOpacity={0.7}
-        >
-          <View style={[styles.actionIcon, { backgroundColor: '#F59E0B10' }]}>
-            <Ionicons name="timer-outline" size={24} color="#F59E0B" />
-          </View>
-          <Text style={styles.actionLabel}>Queue Status</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.actionCard, { borderColor: '#F59E0B40' }]}
-          onPress={() => setShowHistoryModal(true)}
-          activeOpacity={0.7}
-        >
-          <View style={[styles.actionIcon, { backgroundColor: '#F59E0B10' }]}>
-            <Ionicons name="document-text-outline" size={24} color="#F59E0B" />
-          </View>
-          <Text style={styles.actionLabel}>Test History</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.actionCard, { borderColor: '#F59E0B40' }]}
-          onPress={handleTestTypes}
-          activeOpacity={0.7}
-        >
-          <View style={[styles.actionIcon, { backgroundColor: '#F59E0B10' }]}>
-            <Ionicons name="list-outline" size={24} color="#F59E0B" />
-          </View>
-          <Text style={styles.actionLabel}>Test Types</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.actionCard, { borderColor: '#F59E0B40' }]}
-          onPress={scrollToTests}
-          activeOpacity={0.7}
-        >
-          <View style={[styles.actionIcon, { backgroundColor: '#F59E0B10' }]}>
-            <Ionicons name="flask-outline" size={24} color="#F59E0B" />
-          </View>
-          <Text style={styles.actionLabel}>Available Tests</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.actionCard, { borderColor: '#F59E0B40' }]}
-          onPress={scrollToNotifications}
-          activeOpacity={0.7}
-        >
-          <View style={[styles.actionIcon, { backgroundColor: '#F59E0B10' }]}>
-            <Ionicons name="notifications-outline" size={24} color="#F59E0B" />
-          </View>
-          <Text style={styles.actionLabel}>Alerts</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.actionCard, { borderColor: '#F59E0B40' }]}
-          onPress={() => setShowHelpModal(true)}
-          activeOpacity={0.7}
-        >
-          <View style={[styles.actionIcon, { backgroundColor: '#F59E0B10' }]}>
-            <Ionicons name="help-circle-outline" size={24} color="#F59E0B" />
-          </View>
-          <Text style={styles.actionLabel}>Help</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-
-  // ─── Render Workflow ──────────────────────────────────────────────────
-  const renderWorkflow = () => {
-    const steps = [
-      { id: 'registered', label: 'Registered', icon: 'file-tray-outline', active: true },
-      { id: 'sample', label: 'Sample Collected', icon: 'flask-outline', active: true },
-      { id: 'processing', label: 'Processing', icon: 'time-outline', active: false },
-      { id: 'ready', label: 'Report Ready', icon: 'checkmark-done-circle-outline', active: false },
-    ];
-
-    return (
-      <View style={styles.workflowContainer}>
-        <Text style={styles.cardTitle}>Test Status</Text>
-        <View style={styles.workflowSteps}>
-          {steps.map((step, index) => (
-            <View key={step.id} style={styles.workflowStep}>
-              <View style={[styles.workflowIcon, step.active && styles.workflowIconActive]}>
-                <Ionicons 
-                  name={step.icon} 
-                  size={20} 
-                  color={step.active ? COLORS.white : COLORS.textLight} 
-                />
-              </View>
-              {index < steps.length - 1 && (
-                <View style={[styles.workflowLine, step.active && styles.workflowLineActive]} />
-              )}
-              <Text style={[styles.workflowLabel, step.active && styles.workflowLabelActive]}>
-                {step.label}
-              </Text>
-            </View>
-          ))}
+        <View style={styles.queueDivider} />
+        <View style={styles.queueItem}>
+          <Text style={styles.queueLabel}>Your Token</Text>
+          <Text style={[styles.queueValue, { color: '#2ECC71' }]}>
+            {activeToken?.token || 'P-042'}
+          </Text>
+        </View>
+        <View style={styles.queueDivider} />
+        <View style={styles.queueItem}>
+          <Text style={styles.queueLabel}>People Before</Text>
+          <Text style={styles.queueValue}>{currentServing?.position || '0'}</Text>
         </View>
       </View>
-    );
-  };
-
-  // ─── Render Available Tests ──────────────────────────────────────────
-  const renderAvailableTests = () => {
-    const displayData = searchQuery.trim() ? filteredTests : labTests;
-    
-    return (
-      <View 
-        style={styles.testsContainer}
-        ref={testsRef}
-        collapsable={false}
-      >
-        <Text style={styles.cardTitle}>Available Tests</Text>
-        <View style={styles.searchBar}>
-          <Ionicons name="search-outline" size={20} color={COLORS.textLight} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search tests..."
-            placeholderTextColor={COLORS.textLight}
-            value={searchQuery}
-            onChangeText={handleSearch}
+      <View style={styles.progressContainer}>
+        <View style={styles.progressBar}>
+          <View 
+            style={[styles.progressFill, { 
+              width: activeToken ? `${Math.min(100, (1 / (currentServing?.position || 1)) * 100)}%` : '0%' 
+            }]} 
           />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => handleSearch('')}>
-              <Ionicons name="close-circle" size={20} color={COLORS.textLight} />
-            </TouchableOpacity>
-          )}
         </View>
-        {displayData.length === 0 ? (
-          <View style={styles.noResultsContainer}>
-            <Ionicons name="search-outline" size={40} color={COLORS.textLight} />
-            <Text style={styles.noResultsText}>No tests found</Text>
-          </View>
-        ) : (
-          displayData.slice(0, 5).map((item) => (
-            <View key={item.id} style={styles.testItem}>
-              <View style={styles.testInfo}>
-                <Text style={styles.testName}>{item.name}</Text>
-                <Text style={styles.testCategory}>{item.category}</Text>
-              </View>
-              <TouchableOpacity 
-                style={[styles.testActionBtn, { backgroundColor: '#F59E0B' }]}
-                onPress={handleGenerateToken}
-              >
-                <Text style={styles.testActionText}>Book</Text>
-              </TouchableOpacity>
-            </View>
-          ))
-        )}
+        <Text style={styles.progressText}>
+          {activeToken ? `${Math.min(100, Math.floor((1 / (currentServing?.position || 1)) * 100))}% complete` : 'No active token'}
+        </Text>
       </View>
-    );
-  };
-
-  // ─── Render Test History ──────────────────────────────────────────────
-  const renderTestHistory = () => (
-    <View style={styles.historyContainer}>
-      <Text style={styles.cardTitle}>Test History</Text>
-      {testHistory.length === 0 ? (
-        <View style={styles.noResultsContainer}>
-          <Ionicons name="document-text-outline" size={40} color={COLORS.textLight} />
-          <Text style={styles.noResultsText}>No test history</Text>
-        </View>
-      ) : (
-        testHistory.slice(0, 2).map((item) => (
-          <View key={item.id} style={styles.historyCard}>
-            <View style={styles.historyHeader}>
-              <Text style={styles.historyTest}>
-                {item.test}
-              </Text>
-              <View style={[styles.historyBadge, { backgroundColor: item.status === 'Report Ready' ? '#2ECC7115' : '#F59E0B15' }]}>
-                <Text style={[styles.historyBadgeText, { color: item.status === 'Report Ready' ? '#2ECC71' : '#F59E0B' }]}>
-                  {item.status === 'Report Ready' ? 'Ready' : 'Pending'}
-                </Text>
-              </View>
-            </View>
-            <View style={styles.historyDetails}>
-              <View style={styles.historyDetail}>
-                <Text style={styles.historyLabel}>Date</Text>
-                <Text style={styles.historyValue}>{item.date}</Text>
-              </View>
-              <View style={styles.historyDetail}>
-                <Text style={styles.historyLabel}>Token</Text>
-                <Text style={styles.historyValue}>{item.token}</Text>
-              </View>
-            </View>
-            <TouchableOpacity 
-              style={styles.historyBtn}
-              onPress={() => {
-                setSelectedTest(item);
-                setShowTestModal(true);
-              }}
-            >
-              <LinearGradient
-                colors={['#F59E0B', '#D97706']}
-                style={styles.historyBtnGradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-              >
-                <Ionicons name="document-text-outline" size={18} color={COLORS.white} />
-                <Text style={styles.historyBtnText}>View Report</Text>
-              </LinearGradient>
-            </TouchableOpacity>
-          </View>
-        ))
-      )}
     </View>
   );
 
-  // ─── Render Statistics ──────────────────────────────────────────────────
-  const renderStatistics = () => (
+  // ─── Render Stats ──────────────────────────────────────────────────────
+  const renderStats = () => (
     <View style={styles.statsContainer}>
-      <Text style={styles.cardTitle}>Test Statistics</Text>
+      <Text style={styles.cardTitle}>Dispensing Statistics</Text>
       <View style={styles.statsGrid}>
-        <View style={[styles.statItem, { borderColor: '#F59E0B' }]}>
-          <Text style={styles.statNumber}>{stats.todayTests}</Text>
+        <View style={[styles.statItem, { borderColor: '#2ECC71' }]}>
+          <Text style={[styles.statNumber, { color: '#2ECC71' }]}>{stats.todayDispensed}</Text>
           <Text style={styles.statLabel}>Today</Text>
         </View>
-        <View style={[styles.statItem, { borderColor: '#3498DB' }]}>
-          <Text style={[styles.statNumber, { color: '#3498DB' }]}>{stats.pending}</Text>
+        <View style={[styles.statItem, { borderColor: '#F59E0B' }]}>
+          <Text style={[styles.statNumber, { color: '#F59E0B' }]}>{stats.pending}</Text>
           <Text style={styles.statLabel}>Pending</Text>
         </View>
         <View style={[styles.statItem, { borderColor: '#8B5CF6' }]}>
@@ -874,6 +565,216 @@ const LabDashboardScreen = ({ navigation, route }) => {
     </View>
   );
 
+  // ─── Render Quick Actions ──────────────────────────────────────────────
+  const renderQuickActions = () => (
+    <View style={styles.actionsContainer}>
+      <Text style={styles.sectionTitle}>Quick Actions</Text>
+      <View style={styles.actionGrid}>
+        <TouchableOpacity
+          style={[styles.actionCard, { borderColor: '#2ECC7140' }]}
+          onPress={handleGenerateToken}
+          activeOpacity={0.7}
+        >
+          <View style={[styles.actionIcon, { backgroundColor: '#2ECC7110' }]}>
+            <Ionicons name="add-circle-outline" size={24} color="#2ECC71" />
+          </View>
+          <Text style={styles.actionLabel}>Generate Token</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.actionCard, { borderColor: '#2ECC7140' }]}
+          onPress={() => setShowTokenModal(true)}
+          activeOpacity={0.7}
+        >
+          <View style={[styles.actionIcon, { backgroundColor: '#2ECC7110' }]}>
+            <Ionicons name="ticket-outline" size={24} color="#2ECC71" />
+          </View>
+          <Text style={styles.actionLabel}>My Token</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.actionCard, { borderColor: '#2ECC7140' }]}
+          onPress={handleViewQueue}
+          activeOpacity={0.7}
+        >
+          <View style={[styles.actionIcon, { backgroundColor: '#2ECC7110' }]}>
+            <Ionicons name="timer-outline" size={24} color="#2ECC71" />
+          </View>
+          <Text style={styles.actionLabel}>Queue Status</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.actionCard, { borderColor: '#2ECC7140' }]}
+          onPress={() => setShowHistoryModal(true)}
+          activeOpacity={0.7}
+        >
+          <View style={[styles.actionIcon, { backgroundColor: '#2ECC7110' }]}>
+            <Ionicons name="document-text-outline" size={24} color="#2ECC71" />
+          </View>
+          <Text style={styles.actionLabel}>Medicine History</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.actionCard, { borderColor: '#2ECC7140' }]}
+          onPress={() => setShowRepeatModal(true)}
+          activeOpacity={0.7}
+        >
+          <View style={[styles.actionIcon, { backgroundColor: '#2ECC7110' }]}>
+            <Ionicons name="repeat-outline" size={24} color="#2ECC71" />
+          </View>
+          <Text style={styles.actionLabel}>Repeat Meds</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.actionCard, { borderColor: '#2ECC7140' }]}
+          onPress={scrollToMedicines}
+          activeOpacity={0.7}
+        >
+          <View style={[styles.actionIcon, { backgroundColor: '#2ECC7110' }]}>
+            <Ionicons name="medkit-outline" size={24} color="#2ECC71" />
+          </View>
+          <Text style={styles.actionLabel}>Availability</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.actionCard, { borderColor: '#2ECC7140' }]}
+          onPress={scrollToNotifications}
+          activeOpacity={0.7}
+        >
+          <View style={[styles.actionIcon, { backgroundColor: '#2ECC7110' }]}>
+            <Ionicons name="notifications-outline" size={24} color="#2ECC71" />
+          </View>
+          <Text style={styles.actionLabel}>Alerts</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.actionCard, { borderColor: '#2ECC7140' }]}
+          onPress={() => setShowHelpModal(true)}
+          activeOpacity={0.7}
+        >
+          <View style={[styles.actionIcon, { backgroundColor: '#2ECC7110' }]}>
+            <Ionicons name="help-circle-outline" size={24} color="#2ECC71" />
+          </View>
+          <Text style={styles.actionLabel}>Help</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  // ─── Render Available Medicines ──────────────────────────────────────────
+  const renderAvailableMedicines = () => {
+    const displayData = searchQuery.trim() ? filteredMedicines : medicines;
+    
+    return (
+      <View 
+        style={styles.medicinesContainer}
+        ref={medicinesRef}
+        collapsable={false}
+      >
+        <Text style={styles.cardTitle}>Medicine Availability</Text>
+        <View style={styles.searchBar}>
+          <Ionicons name="search-outline" size={20} color={COLORS.textLight} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search medicines..."
+            placeholderTextColor={COLORS.textLight}
+            value={searchQuery}
+            onChangeText={handleSearch}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => handleSearch('')}>
+              <Ionicons name="close-circle" size={20} color={COLORS.textLight} />
+            </TouchableOpacity>
+          )}
+        </View>
+        {displayData.length === 0 ? (
+          <View style={styles.noResultsContainer}>
+            <Ionicons name="search-outline" size={40} color={COLORS.textLight} />
+            <Text style={styles.noResultsText}>No medicines found</Text>
+          </View>
+        ) : (
+          displayData.slice(0, 5).map((item) => {
+            const status = item.stock > 50 ? 'Available' : item.stock > 10 ? 'Limited' : 'Out of Stock';
+            const statusColor = item.stock > 50 ? '#2ECC71' : item.stock > 10 ? '#F59E0B' : '#EF4444';
+            const statusBg = item.stock > 50 ? '#2ECC7115' : item.stock > 10 ? '#F59E0B15' : '#EF444415';
+            
+            return (
+              <View key={item.id} style={styles.medicineItem}>
+                <View style={styles.medicineInfo}>
+                  <Text style={styles.medicineName}>{item.name}</Text>
+                  <Text style={styles.medicineCategory}>{item.category}</Text>
+                </View>
+                <View style={[styles.medicineStatus, { backgroundColor: statusBg }]}>
+                  <Text style={[styles.medicineStatusText, { color: statusColor }]}>
+                    {status}
+                  </Text>
+                </View>
+              </View>
+            );
+          })
+        )}
+        <TouchableOpacity style={styles.viewAllBtn} onPress={handleMedicineHistory}>
+          <Text style={[styles.viewAllBtnText, { color: '#2ECC71' }]}>View All Medicines</Text>
+          <Ionicons name="arrow-forward" size={16} color="#2ECC71" />
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
+  // ─── Render Repeat Prescriptions ──────────────────────────────────────
+  const renderRepeatPrescriptions = () => (
+    <View style={styles.repeatContainer}>
+      <Text style={styles.cardTitle}>Repeat Prescriptions</Text>
+      {repeatPrescriptions.length === 0 ? (
+        <View style={styles.noResultsContainer}>
+          <Ionicons name="repeat-outline" size={40} color={COLORS.textLight} />
+          <Text style={styles.noResultsText}>No repeat prescriptions</Text>
+        </View>
+      ) : (
+        repeatPrescriptions.slice(0, 2).map((item) => (
+          <View key={item.id} style={styles.repeatCard}>
+            <View style={styles.repeatHeader}>
+              <Text style={styles.repeatMedicine}>
+                {item.departmentData?.medicines?.[0] || 'Medicine'}
+              </Text>
+              <View style={[styles.repeatBadge, { backgroundColor: '#2ECC7115' }]}>
+                <Text style={[styles.repeatBadgeText, { color: '#2ECC71' }]}>Auto Refill</Text>
+              </View>
+            </View>
+            <View style={styles.repeatDetails}>
+              <View style={styles.repeatDetail}>
+                <Text style={styles.repeatLabel}>Next Refill</Text>
+                <Text style={styles.repeatValue}>
+                  {new Date(new Date(item.date).setDate(new Date(item.date).getDate() + 30)).toLocaleDateString()}
+                </Text>
+              </View>
+              <View style={styles.repeatDetail}>
+                <Text style={styles.repeatLabel}>Remaining Days</Text>
+                <Text style={styles.repeatValue}>
+                  {Math.max(0, Math.floor((new Date(new Date(item.date).setDate(new Date(item.date).getDate() + 30)) - new Date()) / (1000 * 60 * 60 * 24)))}
+                </Text>
+              </View>
+            </View>
+            <TouchableOpacity 
+              style={styles.repeatBtn}
+              onPress={() => handleRepeatPrescription(item)}
+            >
+              <LinearGradient
+                colors={['#2ECC71', '#27AE60']}
+                style={styles.repeatBtnGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+              >
+                <Ionicons name="refresh-circle-outline" size={18} color={COLORS.white} />
+                <Text style={styles.repeatBtnText}>Request Refill</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        ))
+      )}
+    </View>
+  );
+
   // ─── Render Notifications ──────────────────────────────────────────────
   const renderNotifications = () => (
     <View 
@@ -885,14 +786,14 @@ const LabDashboardScreen = ({ navigation, route }) => {
       {notifications.slice(0, 3).map((item) => (
         <TouchableOpacity
           key={item.id}
-          style={[styles.notificationItem, { borderLeftColor: '#F59E0B' }]}
+          style={[styles.notificationItem, { borderLeftColor: '#2ECC71' }]}
           onPress={() => handleNotificationPress(item)}
         >
-          <View style={styles.notificationIcon}>
+          <View style={[styles.notificationIcon, { backgroundColor: '#2ECC7110' }]}>
             <Ionicons 
               name={item.type === 'token' ? 'timer-outline' : item.type === 'ready' ? 'checkmark-circle-outline' : 'repeat-outline'} 
               size={20} 
-              color="#F59E0B" 
+              color="#2ECC71" 
             />
           </View>
           <Text style={styles.notificationMessage}>{item.message}</Text>
@@ -901,47 +802,47 @@ const LabDashboardScreen = ({ navigation, route }) => {
     </View>
   );
 
-  // ─── Render Help Section ──────────────────────────────────────────────
+  // ─── Render Help ──────────────────────────────────────────────────────
   const renderHelp = () => (
     <View style={styles.helpContainer}>
       <Text style={styles.cardTitle}>Need Help?</Text>
       <View style={styles.helpGrid}>
         <TouchableOpacity
-          style={[styles.helpItem, { borderColor: '#F59E0B40' }]}
-          onPress={() => Alert.alert('Lost Token', 'Go to "My Token" section to view your current token. You can also download or share it.')}
+          style={[styles.helpItem, { borderColor: '#2ECC7140' }]}
+          onPress={() => Alert.alert('Lost Token', 'Go to "My Token" section to view your current token.')}
         >
-          <View style={[styles.helpIcon, { backgroundColor: '#F59E0B10' }]}>
-            <Ionicons name="help-circle-outline" size={22} color="#F59E0B" />
+          <View style={[styles.helpIcon, { backgroundColor: '#2ECC7110' }]}>
+            <Ionicons name="help-circle-outline" size={22} color="#2ECC71" />
           </View>
           <Text style={styles.helpLabel}>Lost Token</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.helpItem, { borderColor: '#F59E0B40' }]}
-          onPress={() => Alert.alert('Test Unavailable', 'Check "Available Tests" section to see current test listings. Contact lab for alternatives.')}
+          style={[styles.helpItem, { borderColor: '#2ECC7140' }]}
+          onPress={() => Alert.alert('Medicine Unavailable', 'Check "Medicine Availability" section for current stock status.')}
         >
-          <View style={[styles.helpIcon, { backgroundColor: '#F59E0B10' }]}>
-            <Ionicons name="alert-circle-outline" size={22} color="#F59E0B" />
+          <View style={[styles.helpIcon, { backgroundColor: '#2ECC7110' }]}>
+            <Ionicons name="alert-circle-outline" size={22} color="#2ECC71" />
           </View>
-          <Text style={styles.helpLabel}>Test Unavailable</Text>
+          <Text style={styles.helpLabel}>Med Unavailable</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.helpItem, { borderColor: '#F59E0B40' }]}
-          onPress={() => Alert.alert('Contact Lab', 'Visit the laboratory counter at CDA Hospital or call 051-1234567 during working hours (8:00 AM - 4:00 PM).')}
+          style={[styles.helpItem, { borderColor: '#2ECC7140' }]}
+          onPress={() => Alert.alert('Contact Pharmacy', 'Visit the pharmacy counter at CDA Hospital or call 051-1234567 during working hours.')}
         >
-          <View style={[styles.helpIcon, { backgroundColor: '#F59E0B10' }]}>
-            <Ionicons name="call-outline" size={22} color="#F59E0B" />
+          <View style={[styles.helpIcon, { backgroundColor: '#2ECC7110' }]}>
+            <Ionicons name="call-outline" size={22} color="#2ECC71" />
           </View>
-          <Text style={styles.helpLabel}>Contact Lab</Text>
+          <Text style={styles.helpLabel}>Contact Pharmacy</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.helpItem, { borderColor: '#F59E0B40' }]}
+          style={[styles.helpItem, { borderColor: '#2ECC7140' }]}
           onPress={() => setShowHelpModal(true)}
         >
-          <View style={[styles.helpIcon, { backgroundColor: '#F59E0B10' }]}>
-            <Ionicons name="document-text-outline" size={22} color="#F59E0B" />
+          <View style={[styles.helpIcon, { backgroundColor: '#2ECC7110' }]}>
+            <Ionicons name="document-text-outline" size={22} color="#2ECC71" />
           </View>
           <Text style={styles.helpLabel}>FAQ</Text>
         </TouchableOpacity>
@@ -949,17 +850,10 @@ const LabDashboardScreen = ({ navigation, route }) => {
     </View>
   );
 
-  // ─── TOKEN MODAL ──────────────────────────────────────────────────────
+  // ─── Token Modal ──────────────────────────────────────────────────────
   const renderTokenModal = () => {
     const tokenToShow = activeToken;
-    const hasToken = !!tokenToShow;
-    const tokenNumber = tokenToShow?.token || 'No Token';
-    const patientName = tokenToShow?.patientName || userData?.name || 'Patient';
-    const waitTime = currentServing?.waitTime || 'N/A';
-    const position = currentServing?.position || 'N/A';
-    const testType = tokenToShow?.departmentData?.testType || 'Lab Test';
-    const sampleType = tokenToShow?.departmentData?.sampleType || 'N/A';
-
+    
     return (
       <Modal 
         visible={showTokenModal} 
@@ -977,163 +871,69 @@ const LabDashboardScreen = ({ navigation, route }) => {
             </View>
             
             <View style={styles.tokenModalContent}>
-              {!hasToken ? (
-                <View style={styles.noTokenModalContent}>
-                  <Ionicons name="ticket-outline" size={64} color={COLORS.textLight} />
-                  <Text style={styles.noTokenModalTitle}>No Token Found</Text>
-                  <Text style={styles.noTokenModalSubtitle}>You don't have any active laboratory token.</Text>
-                  <TouchableOpacity 
-                    style={styles.noTokenModalBtn}
-                    onPress={() => {
-                      setShowTokenModal(false);
-                      handleGenerateToken();
-                    }}
-                  >
-                    <LinearGradient
-                      colors={['#F59E0B', '#D97706']}
-                      style={styles.noTokenModalBtnGradient}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 0 }}
-                    >
-                      <Ionicons name="add-circle-outline" size={20} color={COLORS.white} />
-                      <Text style={styles.noTokenModalBtnText}>Generate Token</Text>
-                    </LinearGradient>
-                  </TouchableOpacity>
+              <LinearGradient
+                colors={['#2ECC71', '#27AE60']}
+                style={styles.tokenModalCard}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+              >
+                <Text style={styles.tokenModalLabel}>CDA HOSPITAL</Text>
+                <Text style={styles.tokenModalNumber}>{tokenToShow?.token || 'P-042'}</Text>
+                
+                <View style={styles.tokenModalQR}>
+                  <Ionicons name="qr-code" size={80} color={COLORS.white} />
+                  <Text style={styles.tokenModalQrText}>Scan at pharmacy</Text>
                 </View>
-              ) : (
-                <>
-                  <LinearGradient
-                    colors={['#F59E0B', '#D97706']}
-                    style={styles.tokenModalCard}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                  >
-                    <Text style={styles.tokenModalLabel}>CDA HOSPITAL</Text>
-                    <Text style={styles.tokenModalNumber}>{tokenNumber}</Text>
-                    
-                    <View style={styles.tokenModalQR}>
-                      <Ionicons name="qr-code" size={80} color={COLORS.white} />
-                      <Text style={styles.tokenModalQrText}>Scan at laboratory</Text>
-                    </View>
-                    
-                    <View style={styles.tokenModalWaitTime}>
-                      <Ionicons name="time-outline" size={24} color={COLORS.white} />
-                      <Text style={styles.tokenModalWaitLabel}>Wait Time</Text>
-                      <Text style={styles.tokenModalWaitValue}>{waitTime} mins</Text>
-                    </View>
-                    
-                    <View style={styles.tokenModalDetails}>
-                      <View style={styles.tokenModalRow}>
-                        <Text style={styles.tokenModalLabel}>Patient</Text>
-                        <Text style={styles.tokenModalValue}>{patientName}</Text>
-                      </View>
-                      <View style={styles.tokenModalRow}>
-                        <Text style={styles.tokenModalLabel}>Status</Text>
-                        <Text style={[styles.tokenModalValue, { color: '#F59E0B' }]}>Waiting</Text>
-                      </View>
-                      <View style={styles.tokenModalRow}>
-                        <Text style={styles.tokenModalLabel}>Position</Text>
-                        <Text style={styles.tokenModalValue}>#{position}</Text>
-                      </View>
-                      <View style={styles.tokenModalRow}>
-                        <Text style={styles.tokenModalLabel}>Currently Serving</Text>
-                        <Text style={styles.tokenModalValue}>{currentServing?.token || 'L-036'}</Text>
-                      </View>
-                      <View style={styles.tokenModalRow}>
-                        <Text style={styles.tokenModalLabel}>Test</Text>
-                        <Text style={styles.tokenModalValue}>{testType}</Text>
-                      </View>
-                      <View style={styles.tokenModalRow}>
-                        <Text style={styles.tokenModalLabel}>Sample</Text>
-                        <Text style={styles.tokenModalValue}>{sampleType}</Text>
-                      </View>
-                    </View>
-                  </LinearGradient>
-                  
-                  <View style={styles.tokenModalActions}>
-                    <TouchableOpacity 
-                      style={[styles.tokenModalBtn, { borderColor: '#F59E0B' }]} 
-                      onPress={handleShareToken}
-                    >
-                      <Ionicons name="share-outline" size={20} color="#F59E0B" />
-                      <Text style={[styles.tokenModalBtnText, { color: '#F59E0B' }]}>Share</Text>
-                    </TouchableOpacity>
-                    
-                    <TouchableOpacity 
-                      style={[styles.tokenModalBtn, { backgroundColor: '#F59E0B', borderColor: '#F59E0B' }]} 
-                      onPress={handleDownloadToken}
-                    >
-                      <Ionicons name="download-outline" size={20} color={COLORS.white} />
-                      <Text style={[styles.tokenModalBtnText, { color: COLORS.white }]}>Download</Text>
-                    </TouchableOpacity>
+                
+                <View style={[styles.tokenModalWaitTime, { borderColor: '#2ECC71' }]}>
+                  <Ionicons name="time-outline" size={24} color={COLORS.white} />
+                  <Text style={styles.tokenModalWaitLabel}>Wait Time</Text>
+                  <Text style={styles.tokenModalWaitValue}>{currentServing?.waitTime || 'N/A'} mins</Text>
+                </View>
+                
+                <View style={styles.tokenModalDetails}>
+                  <View style={styles.tokenModalRow}>
+                    <Text style={styles.tokenModalLabel}>Patient</Text>
+                    <Text style={styles.tokenModalValue}>{tokenToShow?.patientName || userData?.name || 'Patient'}</Text>
                   </View>
-                </>
-              )}
-            </View>
-          </View>
-        </View>
-      </Modal>
-    );
-  };
-
-  // ─── Other Modals ──────────────────────────────────────────────────────
-  const renderTestModal = () => {
-    if (!selectedTest) return null;
-    
-    return (
-      <Modal visible={showTestModal} transparent animationType="slide" onRequestClose={() => setShowTestModal(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Test Details</Text>
-              <TouchableOpacity onPress={() => setShowTestModal(false)}>
-                <Ionicons name="close" size={24} color={COLORS.text} />
-              </TouchableOpacity>
-            </View>
-            <View style={styles.modalContent}>
-              <View style={styles.testDetailCard}>
-                <View style={styles.testDetailRow}>
-                  <Text style={styles.testDetailLabel}>Test</Text>
-                  <Text style={styles.testDetailValue}>{selectedTest.test}</Text>
-                </View>
-                <View style={styles.testDetailRow}>
-                  <Text style={styles.testDetailLabel}>Date</Text>
-                  <Text style={styles.testDetailValue}>{selectedTest.date}</Text>
-                </View>
-                <View style={styles.testDetailRow}>
-                  <Text style={styles.testDetailLabel}>Token</Text>
-                  <Text style={[styles.testDetailValue, { color: '#F59E0B', fontWeight: 'bold' }]}>{selectedTest.token}</Text>
-                </View>
-                <View style={styles.testDetailRow}>
-                  <Text style={styles.testDetailLabel}>Status</Text>
-                  <Text style={[styles.testDetailValue, { color: selectedTest.status === 'Report Ready' ? '#2ECC71' : '#F59E0B' }]}>
-                    {selectedTest.status === 'Report Ready' ? 'Ready' : 'Pending'}
-                  </Text>
-                </View>
-                {selectedTest.report && (
-                  <View style={styles.testDetailRow}>
-                    <Text style={styles.testDetailLabel}>Report Notes</Text>
-                    <Text style={styles.testDetailValue}>{selectedTest.report.notes}</Text>
+                  <View style={styles.tokenModalRow}>
+                    <Text style={styles.tokenModalLabel}>Status</Text>
+                    <Text style={[styles.tokenModalValue, { color: '#2ECC71' }]}>Waiting</Text>
                   </View>
-                )}
-              </View>
+                  <View style={styles.tokenModalRow}>
+                    <Text style={styles.tokenModalLabel}>Position</Text>
+                    <Text style={styles.tokenModalValue}>#{currentServing?.position || 'N/A'}</Text>
+                  </View>
+                  <View style={styles.tokenModalRow}>
+                    <Text style={styles.tokenModalLabel}>Medicine</Text>
+                    <Text style={styles.tokenModalValue}>
+                      {tokenToShow?.departmentData?.medicines?.join(', ') || 'N/A'}
+                    </Text>
+                  </View>
+                  <View style={styles.tokenModalRow}>
+                    <Text style={styles.tokenModalLabel}>Prescription</Text>
+                    <Text style={styles.tokenModalValue}>{tokenToShow?.departmentData?.ref || 'N/A'}</Text>
+                  </View>
+                </View>
+              </LinearGradient>
               
-              {selectedTest.report && (
+              <View style={styles.tokenModalActions}>
                 <TouchableOpacity 
-                  style={styles.shareReportBtn}
-                  onPress={() => handleShareReport(selectedTest)}
+                  style={[styles.tokenModalBtn, { borderColor: '#2ECC71' }]} 
+                  onPress={handleShareToken}
                 >
-                  <LinearGradient
-                    colors={['#2ECC71', '#27AE60']}
-                    style={styles.shareReportGradient}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                  >
-                    <Ionicons name="share-outline" size={18} color={COLORS.white} />
-                    <Text style={styles.shareReportText}>Share Report</Text>
-                  </LinearGradient>
+                  <Ionicons name="share-outline" size={20} color="#2ECC71" />
+                  <Text style={[styles.tokenModalBtnText, { color: '#2ECC71' }]}>Share</Text>
                 </TouchableOpacity>
-              )}
+                
+                <TouchableOpacity 
+                  style={[styles.tokenModalBtn, { backgroundColor: '#2ECC71', borderColor: '#2ECC71' }]} 
+                  onPress={handleDownloadToken}
+                >
+                  <Ionicons name="download-outline" size={20} color={COLORS.white} />
+                  <Text style={[styles.tokenModalBtnText, { color: COLORS.white }]}>Download</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         </View>
@@ -1141,27 +941,30 @@ const LabDashboardScreen = ({ navigation, route }) => {
     );
   };
 
+  // ─── History Modal ──────────────────────────────────────────────────────
   const renderHistoryModal = () => (
     <Modal visible={showHistoryModal} transparent animationType="slide" onRequestClose={() => setShowHistoryModal(false)}>
       <View style={styles.modalOverlay}>
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Test History</Text>
+            <Text style={styles.modalTitle}>Medicine History</Text>
             <TouchableOpacity onPress={() => setShowHistoryModal(false)}>
               <Ionicons name="close" size={24} color={COLORS.text} />
             </TouchableOpacity>
           </View>
           <ScrollView style={styles.modalContent}>
-            {testHistory.map((item) => (
-              <View key={item.id} style={styles.historyModalCard}>
-                <Text style={styles.historyModalTest}>{item.test}</Text>
-                <Text style={styles.historyModalDate}>{item.date}</Text>
-                <Text style={styles.historyModalToken}>Token: {item.token}</Text>
-                <View style={[styles.historyModalBadge, { backgroundColor: item.status === 'Report Ready' ? '#2ECC7115' : '#F59E0B15' }]}>
-                  <Text style={[styles.historyModalBadgeText, { color: item.status === 'Report Ready' ? '#2ECC71' : '#F59E0B' }]}>
-                    {item.status === 'Report Ready' ? 'Ready' : 'Pending'}
-                  </Text>
+            {prescriptionHistory.map((item) => (
+              <View key={item.id} style={styles.historyCard}>
+                <View style={styles.historyHeader}>
+                  <Text style={styles.historyMedicine}>{item.medicine}</Text>
+                  <Text style={styles.historyQuantity}>{item.quantity}</Text>
                 </View>
+                <Text style={styles.historyDoctor}>👨‍⚕️ {item.doctor}</Text>
+                <Text style={styles.historyDate}>📅 {new Date(item.date).toLocaleDateString()}</Text>
+                <TouchableOpacity style={styles.historyDownloadBtn}>
+                  <Ionicons name="download-outline" size={16} color="#2ECC71" />
+                  <Text style={[styles.historyDownloadText, { color: '#2ECC71' }]}>Download Prescription</Text>
+                </TouchableOpacity>
               </View>
             ))}
           </ScrollView>
@@ -1170,6 +973,51 @@ const LabDashboardScreen = ({ navigation, route }) => {
     </Modal>
   );
 
+  // ─── Repeat Modal ──────────────────────────────────────────────────────
+  const renderRepeatModal = () => (
+    <Modal visible={showRepeatModal} transparent animationType="slide" onRequestClose={() => setShowRepeatModal(false)}>
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Repeat Prescriptions</Text>
+            <TouchableOpacity onPress={() => setShowRepeatModal(false)}>
+              <Ionicons name="close" size={24} color={COLORS.text} />
+            </TouchableOpacity>
+          </View>
+          <ScrollView style={styles.modalContent}>
+            {repeatPrescriptions.map((item) => (
+              <View key={item.id} style={styles.repeatModalCard}>
+                <Text style={styles.repeatModalMedicine}>
+                  {item.departmentData?.medicines?.[0] || 'Medicine'}
+                </Text>
+                <View style={styles.repeatModalDetails}>
+                  <Text style={styles.repeatModalLabel}>Next Refill: </Text>
+                  <Text style={styles.repeatModalValue}>
+                    {new Date(new Date(item.date).setDate(new Date(item.date).getDate() + 30)).toLocaleDateString()}
+                  </Text>
+                </View>
+                <TouchableOpacity 
+                  style={styles.repeatModalBtn}
+                  onPress={() => handleRequestRefill(item)}
+                >
+                  <LinearGradient
+                    colors={['#2ECC71', '#27AE60']}
+                    style={styles.repeatModalGradient}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                  >
+                    <Text style={styles.repeatModalBtnText}>Request Refill</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+  );
+
+  // ─── Help Modal ──────────────────────────────────────────────────────
   const renderHelpModal = () => (
     <Modal visible={showHelpModal} transparent animationType="slide" onRequestClose={() => setShowHelpModal(false)}>
       <View style={styles.modalOverlay}>
@@ -1182,7 +1030,7 @@ const LabDashboardScreen = ({ navigation, route }) => {
           </View>
           <ScrollView style={styles.modalContent}>
             <View style={styles.faqItem}>
-              <Text style={styles.faqQuestion}>How to get a lab token?</Text>
+              <Text style={styles.faqQuestion}>How to get a pharmacy token?</Text>
               <Text style={styles.faqAnswer}>Go to "Generate Token" in Quick Actions.</Text>
             </View>
             <View style={styles.faqItem}>
@@ -1190,16 +1038,16 @@ const LabDashboardScreen = ({ navigation, route }) => {
               <Text style={styles.faqAnswer}>Go to "My Token" section to view your token.</Text>
             </View>
             <View style={styles.faqItem}>
-              <Text style={styles.faqQuestion}>How to check test availability?</Text>
-              <Text style={styles.faqAnswer}>Click "Available Tests" in Quick Actions.</Text>
+              <Text style={styles.faqQuestion}>How to check medicine availability?</Text>
+              <Text style={styles.faqAnswer}>Click "Availability" in Quick Actions.</Text>
             </View>
             <View style={styles.faqItem}>
-              <Text style={styles.faqQuestion}>How to view test history?</Text>
-              <Text style={styles.faqAnswer}>Go to "Test History" section.</Text>
+              <Text style={styles.faqQuestion}>How to request a refill?</Text>
+              <Text style={styles.faqAnswer}>Go to "Repeat Prescriptions" section.</Text>
             </View>
             <View style={styles.faqItem}>
-              <Text style={styles.faqQuestion}>How to contact lab?</Text>
-              <Text style={styles.faqAnswer}>Visit lab counter or call 051-1234567.</Text>
+              <Text style={styles.faqQuestion}>How to contact pharmacy?</Text>
+              <Text style={styles.faqAnswer}>Visit pharmacy counter or call 051-1234567.</Text>
             </View>
           </ScrollView>
         </View>
@@ -1211,57 +1059,54 @@ const LabDashboardScreen = ({ navigation, route }) => {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#F59E0B" />
-        <Text style={styles.loadingText}>Loading laboratory dashboard...</Text>
+        <ActivityIndicator size="large" color="#2ECC71" />
+        <Text style={styles.loadingText}>Loading pharmacy data...</Text>
       </View>
     );
   }
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <View style={styles.container}>
-        <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
         
-        <LinearGradient
-          colors={[COLORS.primary, COLORS.secondary]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 0, y: 0.4 }}
-          style={styles.gradientBackground}
-        />
+        {renderHeader()}
 
-        <SafeAreaView style={styles.safeArea}>
-          {renderHeader()}
-
-          <ScrollView
-            ref={scrollViewRef}
-            style={styles.content}
-            showsVerticalScrollIndicator={false}
-            refreshControl={
-              <RefreshControl 
-                refreshing={refreshing} 
-                onRefresh={handleRefresh}
-                colors={['#F59E0B']}
-                tintColor="#F59E0B"
-              />
-            }
-          >
-            {renderCurrentToken()}
-            {renderQueueStatus()}
-            {renderQuickActions()}
-            {renderWorkflow()}
-            {renderAvailableTests()}
-            {renderTestHistory()}
-            {renderStatistics()}
-            {renderNotifications()}
-            {renderHelp()}
-          </ScrollView>
-        </SafeAreaView>
+        <ScrollView
+          ref={scrollViewRef}
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl 
+              refreshing={refreshing} 
+              onRefresh={handleRefresh}
+              colors={['#2ECC71']}
+              tintColor="#2ECC71"
+            />
+          }
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          {renderCurrentToken()}
+          {renderQueueStatus()}
+          {renderStats()}
+          {renderQuickActions()}
+          {renderAvailableMedicines()}
+          {renderRepeatPrescriptions()}
+          {renderNotifications()}
+          {renderHelp()}
+          
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>CDA Hospital Islamabad</Text>
+            <Text style={styles.footerSubtext}>SehatLine - Pharmacy Management</Text>
+          </View>
+        </ScrollView>
 
         {renderTokenModal()}
-        {renderTestModal()}
         {renderHistoryModal()}
+        {renderRepeatModal()}
         {renderHelpModal()}
-      </View>
+      </SafeAreaView>
     </TouchableWithoutFeedback>
   );
 };
@@ -1271,18 +1116,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
-  },
-
-  gradientBackground: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: hp(22),
-  },
-
-  safeArea: {
-    flex: 1,
   },
 
   loadingContainer: {
@@ -1297,18 +1130,14 @@ const styles = StyleSheet.create({
     fontSize: wp(3.5),
   },
 
-  content: {
-    flex: 1,
-    paddingHorizontal: wp(4),
-    paddingTop: hp(1),
-    paddingBottom: hp(2),
-  },
-
   // ─── Header ────────────────────────────────────────────────────────────
-  headerContainer: {
+  headerGradient: {
     paddingHorizontal: wp(4),
-    paddingTop: Platform.OS === 'ios' ? hp(1) : hp(1.5),
+    paddingTop: Platform.OS === 'ios' ? hp(1.5) : hp(1),
     paddingBottom: hp(1.5),
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+    ...SHADOWS.medium,
   },
   header: {
     flexDirection: 'row',
@@ -1319,7 +1148,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: 'rgba(255,255,255,0.15)',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
@@ -1355,6 +1184,23 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontSize: wp(2.8),
   },
+  hospitalName: {
+    color: COLORS.white + '70',
+    fontSize: wp(2.8),
+    textAlign: 'center',
+    marginTop: hp(0.3),
+  },
+
+  // ─── ScrollView ──────────────────────────────────────────────────────
+  scrollView: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  scrollContent: {
+    paddingHorizontal: wp(4),
+    paddingTop: hp(1),
+    paddingBottom: hp(6),
+  },
 
   cardTitle: {
     fontSize: wp(4.2),
@@ -1368,50 +1214,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: COLORS.text,
     marginBottom: hp(1.2),
-  },
-
-  // ─── No Token Card ──────────────────────────────────────────────────
-  noTokenCard: {
-    backgroundColor: COLORS.white,
-    borderRadius: 16,
-    padding: wp(6),
-    marginBottom: hp(1.8),
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#F59E0B40',
-    borderStyle: 'dashed',
-    ...SHADOWS.small,
-  },
-  noTokenContent: {
-    alignItems: 'center',
-  },
-  noTokenTitle: {
-    fontSize: wp(4.5),
-    fontWeight: '700',
-    color: COLORS.text,
-    marginTop: hp(1),
-  },
-  noTokenSubtitle: {
-    fontSize: wp(3.5),
-    color: COLORS.textSecondary,
-    marginTop: hp(0.5),
-    marginBottom: hp(1.5),
-  },
-  noTokenBtn: {
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  noTokenBtnGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: wp(6),
-    paddingVertical: hp(1),
-    gap: 8,
-  },
-  noTokenBtnText: {
-    color: COLORS.white,
-    fontSize: wp(3.5),
-    fontWeight: '600',
   },
 
   // ─── Token Card ──────────────────────────────────────────────────────────
@@ -1447,13 +1249,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F59E0B15',
+    backgroundColor: '#2ECC7115',
     borderRadius: 12,
     padding: hp(0.8),
     marginVertical: hp(0.5),
     gap: 8,
     borderWidth: 1,
-    borderColor: '#F59E0B40',
+    borderColor: '#2ECC7140',
   },
   waitTimeLabel: {
     fontSize: wp(3),
@@ -1462,7 +1264,6 @@ const styles = StyleSheet.create({
   waitTimeValue: {
     fontSize: wp(5.5),
     fontWeight: 'bold',
-    color: '#F59E0B',
   },
 
   tokenCardRow: {
@@ -1497,7 +1298,6 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#F59E0B',
   },
   tokenDivider: {
     width: 1,
@@ -1519,12 +1319,12 @@ const styles = StyleSheet.create({
     paddingVertical: hp(0.6),
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#F59E0B',
+    borderColor: '#2ECC71',
     backgroundColor: COLORS.white,
   },
   tokenActionPrimary: {
-    backgroundColor: '#F59E0B',
-    borderColor: '#F59E0B',
+    backgroundColor: '#2ECC71',
+    borderColor: '#2ECC71',
   },
   tokenActionText: {
     fontSize: wp(2.8),
@@ -1538,7 +1338,7 @@ const styles = StyleSheet.create({
     padding: wp(4),
     marginBottom: hp(1.8),
     borderWidth: 1,
-    borderColor: '#F59E0B40',
+    borderColor: '#2ECC7140',
     ...SHADOWS.small,
   },
   queueRow: {
@@ -1571,13 +1371,13 @@ const styles = StyleSheet.create({
   },
   progressBar: {
     height: 6,
-    backgroundColor: '#F59E0B20',
+    backgroundColor: '#2ECC7120',
     borderRadius: 3,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#F59E0B',
+    backgroundColor: '#2ECC71',
     borderRadius: 3,
   },
   progressText: {
@@ -1585,6 +1385,40 @@ const styles = StyleSheet.create({
     fontSize: wp(2.8),
     marginTop: hp(0.3),
     textAlign: 'center',
+  },
+
+  // ─── Stats ──────────────────────────────────────────────────────────────
+  statsContainer: {
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    padding: wp(4),
+    marginBottom: hp(1.8),
+    borderWidth: 1,
+    borderColor: '#2ECC7140',
+    ...SHADOWS.small,
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  statItem: {
+    flex: 1,
+    minWidth: (width - wp(8) - 30) / 2,
+    backgroundColor: COLORS.backgroundSecondary,
+    borderRadius: 12,
+    padding: wp(3),
+    alignItems: 'center',
+    borderWidth: 1,
+  },
+  statNumber: {
+    fontSize: wp(5.5),
+    fontWeight: 'bold',
+  },
+  statLabel: {
+    fontSize: wp(2.8),
+    color: COLORS.textSecondary,
+    marginTop: 2,
   },
 
   // ─── Quick Actions ──────────────────────────────────────────────────
@@ -1603,7 +1437,6 @@ const styles = StyleSheet.create({
     padding: wp(2.5),
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#F59E0B40',
     ...SHADOWS.small,
   },
   actionIcon: {
@@ -1621,66 +1454,14 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 
-  // ─── Workflow ────────────────────────────────────────────────────────
-  workflowContainer: {
+  // ─── Medicines ──────────────────────────────────────────────────────────
+  medicinesContainer: {
     backgroundColor: COLORS.white,
     borderRadius: 16,
     padding: wp(4),
     marginBottom: hp(1.8),
     borderWidth: 1,
-    borderColor: '#F59E0B40',
-    ...SHADOWS.small,
-  },
-  workflowSteps: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  workflowStep: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  workflowIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: COLORS.backgroundSecondary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  workflowIconActive: {
-    backgroundColor: '#F59E0B',
-  },
-  workflowLine: {
-    width: 20,
-    height: 2,
-    backgroundColor: COLORS.border,
-    position: 'absolute',
-    top: 18,
-    left: '60%',
-  },
-  workflowLineActive: {
-    backgroundColor: '#F59E0B',
-  },
-  workflowLabel: {
-    fontSize: wp(2.4),
-    color: COLORS.textLight,
-    textAlign: 'center',
-    marginTop: hp(0.3),
-  },
-  workflowLabelActive: {
-    color: COLORS.text,
-    fontWeight: '600',
-  },
-
-  // ─── Available Tests ──────────────────────────────────────────────────
-  testsContainer: {
-    backgroundColor: COLORS.white,
-    borderRadius: 16,
-    padding: wp(4),
-    marginBottom: hp(1.8),
-    borderWidth: 1,
-    borderColor: '#F59E0B40',
+    borderColor: '#2ECC7140',
     ...SHADOWS.small,
   },
   searchBar: {
@@ -1698,7 +1479,7 @@ const styles = StyleSheet.create({
     fontSize: wp(3.5),
     paddingVertical: hp(0.6),
   },
-  testItem: {
+  medicineItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -1706,26 +1487,38 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
-  testInfo: {
+  medicineInfo: {
     flex: 1,
   },
-  testName: {
+  medicineName: {
     fontSize: wp(3.6),
     fontWeight: '600',
     color: COLORS.text,
   },
-  testCategory: {
+  medicineCategory: {
     fontSize: wp(2.8),
     color: COLORS.textSecondary,
   },
-  testActionBtn: {
-    paddingHorizontal: wp(3),
-    paddingVertical: hp(0.3),
-    borderRadius: 6,
+  medicineStatus: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
   },
-  testActionText: {
-    color: COLORS.white,
+  medicineStatusText: {
     fontSize: wp(2.6),
+    fontWeight: '600',
+  },
+
+  viewAllBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: hp(0.6),
+    marginTop: hp(0.5),
+  },
+  viewAllBtnText: {
+    fontSize: wp(3.2),
     fontWeight: '600',
   },
 
@@ -1739,111 +1532,75 @@ const styles = StyleSheet.create({
     marginTop: hp(0.5),
   },
 
-  // ─── Test History ──────────────────────────────────────────────────────
-  historyContainer: {
+  // ─── Repeat Prescriptions ────────────────────────────────────────────
+  repeatContainer: {
     backgroundColor: COLORS.white,
     borderRadius: 16,
     padding: wp(4),
     marginBottom: hp(1.8),
     borderWidth: 1,
-    borderColor: '#F59E0B40',
+    borderColor: '#2ECC7140',
     ...SHADOWS.small,
   },
-  historyCard: {
+  repeatCard: {
     backgroundColor: COLORS.backgroundSecondary,
     borderRadius: 12,
     padding: wp(3),
     marginBottom: hp(1),
   },
-  historyHeader: {
+  repeatHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: hp(0.5),
   },
-  historyTest: {
+  repeatMedicine: {
     fontSize: wp(3.8),
     fontWeight: '600',
     color: COLORS.text,
   },
-  historyBadge: {
+  repeatBadge: {
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
   },
-  historyBadgeText: {
+  repeatBadgeText: {
     fontSize: wp(2.6),
     fontWeight: '600',
   },
-  historyDetails: {
+  repeatDetails: {
     flexDirection: 'row',
     gap: 20,
     marginBottom: hp(0.8),
   },
-  historyDetail: {
+  repeatDetail: {
     flex: 1,
   },
-  historyLabel: {
+  repeatLabel: {
     fontSize: wp(2.8),
     color: COLORS.textSecondary,
   },
-  historyValue: {
+  repeatValue: {
     fontSize: wp(3.2),
     fontWeight: '600',
     color: COLORS.text,
     marginTop: 2,
   },
-  historyBtn: {
+  repeatBtn: {
     borderRadius: 10,
     overflow: 'hidden',
   },
-  historyBtnGradient: {
+  repeatBtnGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: hp(0.6),
     gap: 8,
   },
-  historyBtnText: {
+  repeatBtnText: {
     color: COLORS.white,
     fontSize: wp(3),
     fontWeight: '600',
-  },
-
-  // ─── Statistics ──────────────────────────────────────────────────────
-  statsContainer: {
-    backgroundColor: COLORS.white,
-    borderRadius: 16,
-    padding: wp(4),
-    marginBottom: hp(1.8),
-    borderWidth: 1,
-    borderColor: '#F59E0B40',
-    ...SHADOWS.small,
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  statItem: {
-    flex: 1,
-    minWidth: (width - wp(8) - 30) / 2,
-    backgroundColor: COLORS.backgroundSecondary,
-    borderRadius: 12,
-    padding: wp(3),
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#F59E0B40',
-  },
-  statNumber: {
-    fontSize: wp(5.5),
-    fontWeight: 'bold',
-    color: '#F59E0B',
-  },
-  statLabel: {
-    fontSize: wp(2.8),
-    color: COLORS.textSecondary,
-    marginTop: 2,
   },
 
   // ─── Notifications ──────────────────────────────────────────────────
@@ -1853,7 +1610,7 @@ const styles = StyleSheet.create({
     padding: wp(4),
     marginBottom: hp(1.8),
     borderWidth: 1,
-    borderColor: '#F59E0B40',
+    borderColor: '#2ECC7140',
     ...SHADOWS.small,
   },
   notificationItem: {
@@ -1870,7 +1627,6 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#F59E0B10',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1887,7 +1643,7 @@ const styles = StyleSheet.create({
     padding: wp(4),
     marginBottom: hp(1.8),
     borderWidth: 1,
-    borderColor: '#F59E0B40',
+    borderColor: '#2ECC7140',
     ...SHADOWS.small,
   },
   helpGrid: {
@@ -1903,7 +1659,6 @@ const styles = StyleSheet.create({
     padding: wp(2.5),
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#F59E0B40',
   },
   helpIcon: {
     width: 40,
@@ -1918,6 +1673,23 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     textAlign: 'center',
     fontWeight: '500',
+  },
+
+  // ─── Footer ─────────────────────────────────────────────────────────
+  footer: {
+    marginTop: hp(2),
+    marginBottom: hp(1),
+    alignItems: 'center',
+  },
+  footerText: {
+    fontSize: wp(3.5),
+    color: COLORS.textLight,
+    fontWeight: '600',
+  },
+  footerSubtext: {
+    fontSize: wp(2.8),
+    color: COLORS.textLight,
+    marginTop: 2,
   },
 
   // ─── Modals ─────────────────────────────────────────────────────────
@@ -1948,41 +1720,6 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     maxHeight: height * 0.7,
-  },
-
-  // ─── No Token Modal ──────────────────────────────────────────────
-  noTokenModalContent: {
-    alignItems: 'center',
-    paddingVertical: hp(2),
-  },
-  noTokenModalTitle: {
-    fontSize: wp(4.5),
-    fontWeight: '700',
-    color: COLORS.text,
-    marginTop: hp(1),
-  },
-  noTokenModalSubtitle: {
-    fontSize: wp(3.5),
-    color: COLORS.textSecondary,
-    marginTop: hp(0.5),
-    marginBottom: hp(1.5),
-    textAlign: 'center',
-  },
-  noTokenModalBtn: {
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  noTokenModalBtnGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: wp(6),
-    paddingVertical: hp(1),
-    gap: 8,
-  },
-  noTokenModalBtnText: {
-    color: COLORS.white,
-    fontSize: wp(3.5),
-    fontWeight: '600',
   },
 
   // ─── Token Modal ────────────────────────────────────────────────────
@@ -2027,6 +1764,7 @@ const styles = StyleSheet.create({
     width: '100%',
     justifyContent: 'center',
     marginBottom: hp(1),
+    borderWidth: 1,
   },
   tokenModalWaitLabel: {
     color: COLORS.white,
@@ -2068,84 +1806,94 @@ const styles = StyleSheet.create({
     paddingVertical: hp(1),
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#F59E0B',
   },
   tokenModalBtnText: {
     fontSize: wp(3.5),
     fontWeight: '600',
   },
 
-  // ─── Test Detail Modal ──────────────────────────────────────────────
-  testDetailCard: {
-    backgroundColor: COLORS.backgroundSecondary,
-    borderRadius: 12,
-    padding: wp(3),
-  },
-  testDetailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: hp(0.4),
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  testDetailLabel: {
-    fontSize: wp(3.2),
-    color: COLORS.textSecondary,
-  },
-  testDetailValue: {
-    fontSize: wp(3.2),
-    fontWeight: '500',
-    color: COLORS.text,
-  },
-  shareReportBtn: {
-    marginTop: hp(1),
-    borderRadius: 10,
-    overflow: 'hidden',
-  },
-  shareReportGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: hp(0.8),
-    gap: 8,
-  },
-  shareReportText: {
-    color: COLORS.white,
-    fontSize: wp(3.2),
-    fontWeight: '600',
-  },
-
   // ─── History Modal ──────────────────────────────────────────────────
-  historyModalCard: {
+  historyCard: {
     backgroundColor: COLORS.backgroundSecondary,
     borderRadius: 12,
     padding: wp(3),
     marginBottom: hp(1),
   },
-  historyModalTest: {
-    fontSize: wp(4),
+  historyHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: hp(0.3),
+  },
+  historyMedicine: {
+    fontSize: wp(3.8),
     fontWeight: '600',
     color: COLORS.text,
   },
-  historyModalDate: {
+  historyQuantity: {
+    fontSize: wp(3.2),
+    color: COLORS.textSecondary,
+  },
+  historyDoctor: {
     fontSize: wp(3),
     color: COLORS.textSecondary,
-    marginTop: hp(0.1),
+    marginBottom: hp(0.2),
   },
-  historyModalToken: {
+  historyDate: {
     fontSize: wp(3),
     color: COLORS.textSecondary,
-    marginTop: hp(0.05),
+    marginBottom: hp(0.5),
   },
-  historyModalBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+  historyDownloadBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: hp(0.3),
+  },
+  historyDownloadText: {
+    fontSize: wp(3),
+    fontWeight: '500',
+  },
+
+  // ─── Repeat Modal ──────────────────────────────────────────────────
+  repeatModalCard: {
+    backgroundColor: COLORS.backgroundSecondary,
     borderRadius: 12,
-    marginTop: hp(0.3),
-    alignSelf: 'flex-start',
+    padding: wp(3),
+    marginBottom: hp(1),
   },
-  historyModalBadgeText: {
-    fontSize: wp(2.6),
+  repeatModalMedicine: {
+    fontSize: wp(4),
+    fontWeight: '600',
+    color: COLORS.text,
+    marginBottom: hp(0.3),
+  },
+  repeatModalDetails: {
+    flexDirection: 'row',
+    marginBottom: hp(0.8),
+  },
+  repeatModalLabel: {
+    fontSize: wp(3.2),
+    color: COLORS.textSecondary,
+  },
+  repeatModalValue: {
+    fontSize: wp(3.2),
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  repeatModalBtn: {
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+  repeatModalGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: hp(0.8),
+  },
+  repeatModalBtnText: {
+    color: COLORS.white,
+    fontSize: wp(3.2),
     fontWeight: '600',
   },
 
@@ -2169,4 +1917,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default LabDashboardScreen;
+export default PharmacyDashboardScreen;
