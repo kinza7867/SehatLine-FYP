@@ -26,6 +26,9 @@ const COLORS_CUSTOM = {
   labOrange: '#F39C12',
   labLight: '#FEF5E7',
   labDark: '#D68910',
+  chronicBlue: '#3B82F6',
+  chronicLight: '#EAF2FE',
+  chronicDark: '#1D4ED8',
   primary: '#20D3C2',
   secondary: '#0EA5A4',
   accent: '#5EEAD4',
@@ -143,6 +146,10 @@ const GenerateTokenScreen = ({ navigation, route }) => {
   const [testType, setTestType] = useState('');
   const [sampleType, setSampleType] = useState('');
 
+  // Chronic OPD fields
+  const [chronicDoctor, setChronicDoctor] = useState('');
+  const [chronicVisitType, setChronicVisitType] = useState('');
+
   // Token modal
   const [showTokenModal, setShowTokenModal] = useState(false);
   const [generatedToken, setGeneratedToken] = useState(null);
@@ -152,6 +159,18 @@ const GenerateTokenScreen = ({ navigation, route }) => {
   // ── Config ─────────────────────────────────────────────────────────────────
   const tokenOptions = [
     {
+      id: 'chronic',
+      name: 'Chronic OPD Token',
+      icon: 'pulse-outline',
+      color: COLORS_CUSTOM.chronicBlue,
+      lightColor: COLORS_CUSTOM.chronicLight,
+      bgColor: COLORS_CUSTOM.chronicBlue + '10',
+      description: 'Get token for Chronic OPD consultation',
+      prefix: 'C',
+      route: 'ChronicDashboardScreen',
+      gradient: [COLORS_CUSTOM.chronicLight, COLORS_CUSTOM.chronicBlue],
+    },
+    {
       id: 'pharmacy',
       name: 'Pharmacy Token',
       icon: 'medkit-outline',
@@ -160,7 +179,7 @@ const GenerateTokenScreen = ({ navigation, route }) => {
       bgColor: COLORS_CUSTOM.pharmacyGreen + '10',
       description: 'Get token for medicine collection',
       prefix: 'P',
-      route: 'PharmacyDashboard',
+      route: 'PharmacyDashboardScreen',
       gradient: [COLORS_CUSTOM.pharmacyLight, COLORS_CUSTOM.pharmacyGreen],
     },
     {
@@ -172,9 +191,30 @@ const GenerateTokenScreen = ({ navigation, route }) => {
       bgColor: COLORS_CUSTOM.labOrange + '10',
       description: 'Get token for lab tests',
       prefix: 'L',
-      route: 'LabDashboard',
+      route: 'LabDashboardScreen',
       gradient: [COLORS_CUSTOM.labLight, COLORS_CUSTOM.labOrange],
     },
+  ];
+
+  // Chronic OPD doctors & visit types (mirrors BookAppointmentScreen so the
+  // experience is consistent across the app)
+  const chronicDoctors = [
+    'Dr. Sarah Ahmed - Cardiologist',
+    'Dr. Muhammad Khan - Endocrinologist',
+    'Dr. Usman Chaudhry - Pulmonologist',
+    'Dr. Fatima Ali - Neurologist',
+    'Dr. Hassan Raza - Gastroenterologist',
+    'Dr. Ayesha Malik - Rheumatologist',
+    'Dr. Imran Ali - Nephrologist',
+    'Dr. Sana Javed - Oncologist',
+  ];
+
+  const chronicVisitTypes = [
+    'Routine Check-up',
+    'Follow-up Visit',
+    'Medication Review',
+    'Test Results Review',
+    'Emergency Consultation',
   ];
 
   // Use complete medicine list
@@ -218,6 +258,8 @@ const GenerateTokenScreen = ({ navigation, route }) => {
     setTestCategory('');
     setTestType('');
     setSampleType('');
+    setChronicDoctor('');
+    setChronicVisitType('');
     setSelectedTime('');
     setDate(new Date());
   };
@@ -269,6 +311,8 @@ const GenerateTokenScreen = ({ navigation, route }) => {
       baseWait = 10;
     } else if (department === 'Laboratory') {
       baseWait = 20;
+    } else if (department === 'Chronic OPD') {
+      baseWait = 15;
     }
 
     let queuePosition = 0;
@@ -323,8 +367,15 @@ const GenerateTokenScreen = ({ navigation, route }) => {
   };
 
   // ── Token generation ───────────────────────────────────────────────────────
+  const departmentNameMap = {
+    'Chronic OPD Token': 'Chronic OPD',
+    'Pharmacy Token': 'Pharmacy',
+    'Laboratory Token': 'Laboratory',
+  };
+
   const generateToken = (dept, name) => {
     const prefixMap = {
+      'Chronic OPD Token': 'C',
       'Pharmacy Token': 'P',
       'Laboratory Token': 'L',
     };
@@ -336,6 +387,14 @@ const GenerateTokenScreen = ({ navigation, route }) => {
     let room = '';
     let purpose = '';
 
+    if (dept === 'Chronic OPD Token') {
+      departmentData = {
+        doctor: chronicDoctor,
+        visitType: chronicVisitType,
+      };
+      room = 'OPD Block - Room 12, Chronic Care Wing';
+      purpose = chronicVisitType || 'Chronic OPD Visit';
+    }
     if (dept === 'Pharmacy Token') {
       departmentData = {
         medicines: selectedMedicines,
@@ -362,7 +421,7 @@ const GenerateTokenScreen = ({ navigation, route }) => {
     });
 
     const waitInfo = calculateWaitingTime(
-      dept === 'Pharmacy Token' ? 'Pharmacy' : 'Laboratory',
+      departmentNameMap[dept] || 'Laboratory',
       selectedTime
     );
 
@@ -370,7 +429,7 @@ const GenerateTokenScreen = ({ navigation, route }) => {
       token,
       prefix,
       number: num,
-      department: dept === 'Pharmacy Token' ? 'Pharmacy' : 'Laboratory',
+      department: departmentNameMap[dept] || 'Laboratory',
       patientName: name || userData?.name || 'Patient',
       date: formatted,
       time: selectedTime,
@@ -404,6 +463,17 @@ const GenerateTokenScreen = ({ navigation, route }) => {
       }
     }
 
+    if (selectedDepartment === 'Chronic OPD Token') {
+      if (!chronicDoctor) {
+        Alert.alert('Missing Info', 'Please select a doctor.');
+        return;
+      }
+      if (!chronicVisitType) {
+        Alert.alert('Missing Info', 'Please select a visit type.');
+        return;
+      }
+    }
+
     if (selectedDepartment === 'Laboratory Token') {
       if (!testCategory) {
         Alert.alert('Missing Info', 'Please select a test category.');
@@ -433,15 +503,26 @@ const GenerateTokenScreen = ({ navigation, route }) => {
     }, 1500);
   };
 
+  // Resolves the accent colors for a generated token's department. Used
+  // everywhere a token/modal/PDF needs to color itself (previously this
+  // was a Pharmacy/Laboratory-only binary check).
+  const getDeptDisplayColors = (deptName) => {
+    if (deptName === 'Pharmacy') {
+      return { color: COLORS_CUSTOM.pharmacyGreen, light: COLORS_CUSTOM.pharmacyLight };
+    }
+    if (deptName === 'Chronic OPD') {
+      return { color: COLORS_CUSTOM.chronicBlue, light: COLORS_CUSTOM.chronicLight };
+    }
+    return { color: COLORS_CUSTOM.labOrange, light: COLORS_CUSTOM.labLight };
+  };
+
   // ─── Download Token as PDF ──────────────────────────────────────────────
   const handleDownloadToken = async () => {
     if (!generatedToken) return;
     setDownloading(true);
 
     try {
-      const isPharmacy = generatedToken.department === 'Pharmacy';
-      const deptColor = isPharmacy ? COLORS_CUSTOM.pharmacyGreen : COLORS_CUSTOM.labOrange;
-      const lightColor = isPharmacy ? COLORS_CUSTOM.pharmacyLight : COLORS_CUSTOM.labLight;
+      const { color: deptColor, light: lightColor } = getDeptDisplayColors(generatedToken.department);
 
       const htmlContent = `
         <html>
@@ -642,6 +723,15 @@ const GenerateTokenScreen = ({ navigation, route }) => {
                   <span class="label">Prescription</span>
                   <span class="value">${generatedToken.departmentData.ref}</span>
                 </div>
+                ` : generatedToken.department === 'Chronic OPD' ? `
+                <div class="row">
+                  <span class="label">Doctor</span>
+                  <span class="value">${generatedToken.departmentData.doctor}</span>
+                </div>
+                <div class="row">
+                  <span class="label">Visit Type</span>
+                  <span class="value">${generatedToken.departmentData.visitType}</span>
+                </div>
                 ` : `
                 <div class="row">
                   <span class="label">Test</span>
@@ -749,6 +839,9 @@ const GenerateTokenScreen = ({ navigation, route }) => {
     if (generatedToken.department === 'Pharmacy') {
       msg += `\nMedicines: ${generatedToken.departmentData.medicines.join(', ')}`;
       msg += `\nPrescription: ${generatedToken.departmentData.ref}`;
+    } else if (generatedToken.department === 'Chronic OPD') {
+      msg += `\nDoctor: ${generatedToken.departmentData.doctor}`;
+      msg += `\nVisit Type: ${generatedToken.departmentData.visitType}`;
     } else if (generatedToken.department === 'Laboratory') {
       msg += `\nTest: ${generatedToken.departmentData.testType}`;
       msg += `\nSample: ${generatedToken.departmentData.sampleType}`;
@@ -867,16 +960,21 @@ const GenerateTokenScreen = ({ navigation, route }) => {
 
   // ── Dept colour helpers ────────────────────────────────────────────────────
   const getDeptColor = () => ({
+    'Chronic OPD Token': COLORS_CUSTOM.chronicBlue,
     'Pharmacy Token': COLORS_CUSTOM.pharmacyGreen,
     'Laboratory Token': COLORS_CUSTOM.labOrange,
   } [selectedDepartment] || COLORS.primary);
 
   const getGradient = () => ({
+    'Chronic OPD Token': [COLORS_CUSTOM.chronicBlue, COLORS_CUSTOM.chronicDark],
     'Pharmacy Token': [COLORS_CUSTOM.pharmacyGreen, COLORS_CUSTOM.pharmacyDark],
     'Laboratory Token': [COLORS_CUSTOM.labOrange, COLORS_CUSTOM.labDark],
   } [selectedDepartment] || [COLORS.primary, COLORS.secondary]);
 
   const getDeptInfo = () => {
+    if (selectedDepartment === 'Chronic OPD Token') {
+      return { color: COLORS_CUSTOM.chronicBlue, lightColor: COLORS_CUSTOM.chronicLight };
+    }
     if (selectedDepartment === 'Pharmacy Token') {
       return { color: COLORS_CUSTOM.pharmacyGreen, lightColor: COLORS_CUSTOM.pharmacyLight };
     }
@@ -887,7 +985,7 @@ const GenerateTokenScreen = ({ navigation, route }) => {
   const renderDeptSelection = () => (
     <View style={styles.departmentContainer}>
       <Text style={styles.sectionTitle}>Generate Token</Text>
-      <Text style={styles.sectionSubtitle}>Get token for pharmacy or laboratory services</Text>
+      <Text style={styles.sectionSubtitle}>Get token for Chronic OPD, pharmacy, or laboratory services</Text>
       <View style={styles.departmentButtonsContainer}>
         {tokenOptions.map((d) => (
           <TouchableOpacity
@@ -907,6 +1005,41 @@ const GenerateTokenScreen = ({ navigation, route }) => {
           </TouchableOpacity>
         ))}
       </View>
+    </View>
+  );
+
+  const renderChronicForm = () => (
+    <View style={styles.formContainer}>
+      <View style={styles.formHeader}>
+        <TouchableOpacity onPress={goBackToDepts} style={styles.backBtnSmall}>
+          <Ionicons name="arrow-back" size={24} color={COLORS_CUSTOM.white} />
+        </TouchableOpacity>
+        <Text style={[styles.formTitle, { color: COLORS_CUSTOM.chronicBlue }]}>Chronic OPD Token</Text>
+      </View>
+      <Text style={styles.label}>Select Doctor</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
+        {chronicDoctors.map((d) => (
+          <TouchableOpacity
+            key={d}
+            style={[styles.chip, styles.chronicChip, chronicDoctor === d && styles.chronicChipActive]}
+            onPress={() => setChronicDoctor(d)}
+          >
+            <Text style={[styles.chipText, chronicDoctor === d && styles.chipTextActive]}>{d}</Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+      <Text style={styles.label}>Visit Type</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
+        {chronicVisitTypes.map((v) => (
+          <TouchableOpacity
+            key={v}
+            style={[styles.chip, styles.chronicChip, chronicVisitType === v && styles.chronicChipActive]}
+            onPress={() => setChronicVisitType(v)}
+          >
+            <Text style={[styles.chipText, chronicVisitType === v && styles.chipTextActive]}>{v}</Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
     </View>
   );
 
@@ -1092,9 +1225,7 @@ const GenerateTokenScreen = ({ navigation, route }) => {
   // ─── TOKEN MODAL ──────────────────────────────────────────────────────────
   const renderTokenModal = () => {
     if (!generatedToken) return null;
-    const isPharmacy = generatedToken.department === 'Pharmacy';
-    const deptColor = isPharmacy ? COLORS_CUSTOM.pharmacyGreen : COLORS_CUSTOM.labOrange;
-    const lightColor = isPharmacy ? COLORS_CUSTOM.pharmacyLight : COLORS_CUSTOM.labLight;
+    const { color: deptColor, light: lightColor } = getDeptDisplayColors(generatedToken.department);
 
     return (
       <Modal visible={showTokenModal} transparent animationType="fade" onRequestClose={() => setShowTokenModal(false)}>
@@ -1219,6 +1350,28 @@ const GenerateTokenScreen = ({ navigation, route }) => {
                     </>
                   )}
                   
+                  {/* Chronic OPD details - WITH PURPOSE */}
+                  {generatedToken.department === 'Chronic OPD' && (
+                    <>
+                      <View style={styles.tokenCardRow}>
+                        <Text style={[styles.tokenCardLabel, { color: COLORS_CUSTOM.textSecondary }]}>
+                          Doctor
+                        </Text>
+                        <Text style={[styles.tokenCardValue, { color: COLORS_CUSTOM.text }]}>
+                          {generatedToken.departmentData.doctor}
+                        </Text>
+                      </View>
+                      <View style={styles.tokenCardRow}>
+                        <Text style={[styles.tokenCardLabel, { color: COLORS_CUSTOM.textSecondary }]}>
+                          Visit Type
+                        </Text>
+                        <Text style={[styles.tokenCardValue, { color: COLORS_CUSTOM.text }]}>
+                          {generatedToken.departmentData.visitType}
+                        </Text>
+                      </View>
+                    </>
+                  )}
+
                   {/* Laboratory details - WITH PURPOSE */}
                   {generatedToken.department === 'Laboratory' && (
                     <>
@@ -1346,6 +1499,7 @@ const GenerateTokenScreen = ({ navigation, route }) => {
 
           {!showForm ? renderDeptSelection() : (
             <View>
+              {selectedDepartment === 'Chronic OPD Token' && renderChronicForm()}
               {selectedDepartment === 'Pharmacy Token' && renderPharmacyForm()}
               {selectedDepartment === 'Laboratory Token' && renderLabForm()}
               {renderCommonFields()}
@@ -1417,6 +1571,8 @@ const styles = StyleSheet.create({
   chipTextActive: { color: COLORS_CUSTOM.white },
   labChip: { borderColor: COLORS_CUSTOM.labOrange },
   labChipActive: { backgroundColor: COLORS_CUSTOM.labOrange, borderColor: COLORS_CUSTOM.labOrange },
+  chronicChip: { borderColor: COLORS_CUSTOM.chronicBlue },
+  chronicChipActive: { backgroundColor: COLORS_CUSTOM.chronicBlue, borderColor: COLORS_CUSTOM.chronicBlue },
 
   inputBox: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS_CUSTOM.white,

@@ -388,7 +388,7 @@ const ProfileScreen = ({ navigation, route }) => {
           {/* Header */}
           <View style={styles.headerContainer}>
             <View style={styles.topHeader}>
-              <TouchableOpacity style={styles.headerBtn} onPress={() => navigation.goBack()}>
+              <TouchableOpacity style={styles.headerBtn} onPress={() => navigateTo('HomeScreen')}>
                 <Ionicons name="arrow-back" size={24} color={COLORS.white} />
               </TouchableOpacity>
               <View style={styles.titleWrap}>

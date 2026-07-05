@@ -1145,7 +1145,7 @@ const LabDashboardScreen = ({ navigation, route }) => {
             <View style={styles.header}>
               <TouchableOpacity 
                 style={styles.headerBtn}
-                onPress={() => navigation.navigate('HomeScreen')}
+                onPress={() => navigation.goBack()}
               >
                 <Ionicons name="arrow-back" size={24} color={COLORS.white} />
               </TouchableOpacity>

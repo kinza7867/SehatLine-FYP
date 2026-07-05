@@ -186,13 +186,17 @@ const AppointmentListScreen = ({ navigation, route }) => {
   };
 
   // ── Filtering ─────────────────────────────────────────────────────────────────
+  // Business rule: an appointment/token is Upcoming until it is explicitly
+  // marked Completed (or canceled). It must NOT fall into Past just because
+  // its scheduled time/date has technically passed or because it has no
+  // dateTimeISO (e.g. freshly generated Pharmacy/Lab/Chronic tokens) —
+  // that was causing new bookings and tokens to wrongly land in Past.
   const isUpcoming = useCallback((item) => {
-    if (
+    return !(
       item.status === 'Completed' ||
       item.status === 'Patient Canceled' ||
       item.status === 'Canceled'
-    ) return false;
-    return parseAppointmentDateTime(item) > new Date();
+    );
   }, []);
 
   const isPast = useCallback((item) => !isUpcoming(item), [isUpcoming]);

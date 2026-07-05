@@ -122,11 +122,6 @@ const PharmacyDashboardScreen = ({ navigation, route }) => {
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [selectedPrescription, setSelectedPrescription] = useState(null);
 
-  // ─── Refs for scrolling ────────────────────────────────────────────────
-  const scrollViewRef = useRef(null);
-  const medicinesRef = useRef(null);
-  const notificationsRef = useRef(null);
-
   // ─── DEMO TOKEN ──────────────────────────────────────────────────────────
   const DEMO_TOKEN = {
     token: 'P-042',
@@ -380,23 +375,6 @@ const PharmacyDashboardScreen = ({ navigation, route }) => {
     Alert.alert('Notification', notification.message);
   };
 
-  // ─── Scroll to sections ──────────────────────────────────────────────
-  const scrollToMedicines = () => {
-    if (medicinesRef.current) {
-      medicinesRef.current.measureLayout(scrollViewRef.current, (x, y) => {
-        scrollViewRef.current.scrollTo({ y, animated: true });
-      });
-    }
-  };
-
-  const scrollToNotifications = () => {
-    if (notificationsRef.current) {
-      notificationsRef.current.measureLayout(scrollViewRef.current, (x, y) => {
-        scrollViewRef.current.scrollTo({ y, animated: true });
-      });
-    }
-  };
-
   // ─── Render Header ────────────────────────────────────────────────────
   const renderHeader = () => (
     <LinearGradient
@@ -408,7 +386,7 @@ const PharmacyDashboardScreen = ({ navigation, route }) => {
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.headerBtn}
-          onPress={() => navigation.navigate('HomeScreen')}
+          onPress={() => navigation.goBack()}
         >
           <Ionicons name="arrow-back" size={24} color={COLORS.white} />
         </TouchableOpacity>
@@ -434,8 +412,6 @@ const PharmacyDashboardScreen = ({ navigation, route }) => {
           <Ionicons name="person-circle-outline" size={28} color={COLORS.white} />
         </TouchableOpacity>
       </View>
-
-      <Text style={styles.hospitalName}>CDA Hospital Islamabad</Text>
     </LinearGradient>
   );
 
@@ -627,7 +603,7 @@ const PharmacyDashboardScreen = ({ navigation, route }) => {
 
         <TouchableOpacity
           style={[styles.actionCard, { borderColor: '#2ECC7140' }]}
-          onPress={scrollToMedicines}
+          onPress={() => {}}
           activeOpacity={0.7}
         >
           <View style={[styles.actionIcon, { backgroundColor: '#2ECC7110' }]}>
@@ -638,7 +614,7 @@ const PharmacyDashboardScreen = ({ navigation, route }) => {
 
         <TouchableOpacity
           style={[styles.actionCard, { borderColor: '#2ECC7140' }]}
-          onPress={scrollToNotifications}
+          onPress={() => {}}
           activeOpacity={0.7}
         >
           <View style={[styles.actionIcon, { backgroundColor: '#2ECC7110' }]}>
@@ -666,11 +642,7 @@ const PharmacyDashboardScreen = ({ navigation, route }) => {
     const displayData = searchQuery.trim() ? filteredMedicines : medicines;
     
     return (
-      <View 
-        style={styles.medicinesContainer}
-        ref={medicinesRef}
-        collapsable={false}
-      >
+      <View style={styles.medicinesContainer}>
         <Text style={styles.cardTitle}>Medicine Availability</Text>
         <View style={styles.searchBar}>
           <Ionicons name="search-outline" size={20} color={COLORS.textLight} />
@@ -777,11 +749,7 @@ const PharmacyDashboardScreen = ({ navigation, route }) => {
 
   // ─── Render Notifications ──────────────────────────────────────────────
   const renderNotifications = () => (
-    <View 
-      style={styles.notificationContainer}
-      ref={notificationsRef}
-      collapsable={false}
-    >
+    <View style={styles.notificationContainer}>
       <Text style={styles.cardTitle}>Notifications</Text>
       {notifications.slice(0, 3).map((item) => (
         <TouchableOpacity
@@ -1066,14 +1034,20 @@ const PharmacyDashboardScreen = ({ navigation, route }) => {
   }
 
   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
-        
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
+      
+      <LinearGradient
+        colors={[COLORS.primary, COLORS.secondary, COLORS.background]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 0.45 }}
+        style={styles.backgroundGradient}
+      />
+
+      <View style={styles.mainContainer}>
         {renderHeader()}
 
         <ScrollView
-          ref={scrollViewRef}
           style={styles.scrollView}
           showsVerticalScrollIndicator={false}
           refreshControl={
@@ -1085,7 +1059,6 @@ const PharmacyDashboardScreen = ({ navigation, route }) => {
             />
           }
           contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
         >
           {renderCurrentToken()}
           {renderQueueStatus()}
@@ -1101,13 +1074,13 @@ const PharmacyDashboardScreen = ({ navigation, route }) => {
             <Text style={styles.footerSubtext}>SehatLine - Pharmacy Management</Text>
           </View>
         </ScrollView>
+      </View>
 
-        {renderTokenModal()}
-        {renderHistoryModal()}
-        {renderRepeatModal()}
-        {renderHelpModal()}
-      </SafeAreaView>
-    </TouchableWithoutFeedback>
+      {renderTokenModal()}
+      {renderHistoryModal()}
+      {renderRepeatModal()}
+      {renderHelpModal()}
+    </SafeAreaView>
   );
 };
 
@@ -1116,6 +1089,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+  
+  backgroundGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: hp(30),
+  },
+
+  mainContainer: {
+    flex: 1,
   },
 
   loadingContainer: {
@@ -1184,22 +1169,16 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontSize: wp(2.8),
   },
-  hospitalName: {
-    color: COLORS.white + '70',
-    fontSize: wp(2.8),
-    textAlign: 'center',
-    marginTop: hp(0.3),
-  },
 
   // ─── ScrollView ──────────────────────────────────────────────────────
   scrollView: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: 'transparent',
   },
   scrollContent: {
     paddingHorizontal: wp(4),
     paddingTop: hp(1),
-    paddingBottom: hp(6),
+    paddingBottom: hp(10),
   },
 
   cardTitle: {

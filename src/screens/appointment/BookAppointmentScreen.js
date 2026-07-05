@@ -102,11 +102,47 @@ const BookAppointmentScreen = ({ navigation, route }) => {
     setDate(new Date());
   };
 
+  // A time slot is only "passed" if the selected day is today AND that
+  // slot's time has already gone by. Future dates are never affected.
+  const isSlotPassed = (slot) => {
+    const today = new Date();
+    const isToday =
+      date.getFullYear() === today.getFullYear() &&
+      date.getMonth() === today.getMonth() &&
+      date.getDate() === today.getDate();
+    if (!isToday) return false;
+
+    const [timePart, meridiem] = slot.split(' ');
+    let [h, m] = timePart.split(':').map(Number);
+    if (meridiem === 'PM' && h !== 12) h += 12;
+    if (meridiem === 'AM' && h === 12) h = 0;
+
+    const slotDate = new Date(today);
+    slotDate.setHours(h, m, 0, 0);
+    return slotDate <= today;
+  };
+
+  // Guarantees the generated token number doesn't collide with any token
+  // already sitting in storage (previously two appointments could end up
+  // with the exact same visible token, e.g. two "A-045" cards).
+  const generateUniqueTokenNumber = (existingTokens) => {
+    for (let attempt = 0; attempt < 25; attempt++) {
+      const num = Math.floor(Math.random() * 90) + 10;
+      const candidate = `A-${String(num).padStart(3, '0')}`;
+      if (!existingTokens.includes(candidate)) {
+        return { num, token: candidate };
+      }
+    }
+    // Extremely unlikely fallback: derive from timestamp so it's still unique
+    const fallbackNum = Number(String(Date.now()).slice(-2)) || 10;
+    return { num: fallbackNum, token: `A-${String(fallbackNum).padStart(3, '0')}` };
+  };
+
   // ── Token generation ───────────────────────────────────────────────────────
-  const generateToken = () => {
-    // Generate appointment token with prefix 'A' for Appointment
-    const num = Math.floor(Math.random() * 90) + 10;
-    const token = `A-${String(num).padStart(3, '0')}`;
+  const generateToken = (existingTokens) => {
+    // Generate appointment token with prefix 'A' for Appointment, guaranteed
+    // not to collide with a token that's already stored.
+    const { num, token } = generateUniqueTokenNumber(existingTokens);
 
     const formatted = date.toLocaleDateString('en-US', {
       month: 'short',
@@ -154,19 +190,35 @@ const BookAppointmentScreen = ({ navigation, route }) => {
       Alert.alert('Missing Info', 'Please select a time slot.');
       return false;
     }
+    if (isSlotPassed(selectedTime)) {
+      Alert.alert('Invalid Time', 'That time slot has already passed today. Please choose a later slot.');
+      return false;
+    }
     return true;
   };
 
-  const handleBooking = () => {
+  const handleBooking = async () => {
     if (!validateForm()) return;
 
     setLoading(true);
-    setTimeout(() => {
+    try {
+      const existing = await AsyncStorage.getItem('appointments');
+      const appts = existing ? JSON.parse(existing) : [];
+      const existingTokens = appts.map((a) => a.token).filter(Boolean);
+
+      setTimeout(() => {
+        setLoading(false);
+        const tokenData = generateToken(existingTokens);
+        setGeneratedToken(tokenData);
+        setShowTokenModal(true);
+      }, 1500);
+    } catch (e) {
       setLoading(false);
-      const tokenData = generateToken();
+      console.log('Error preparing booking:', e);
+      const tokenData = generateToken([]);
       setGeneratedToken(tokenData);
       setShowTokenModal(true);
-    }, 1500);
+    }
   };
 
   const handleSaveToken = async () => {
@@ -180,6 +232,7 @@ const BookAppointmentScreen = ({ navigation, route }) => {
 
       setShowTokenModal(false);
       setShowThankYou(true);
+      resetForm();
       setTimeout(() => {
         setShowThankYou(false);
         navigation.navigate('AppointmentList', {
@@ -457,29 +510,35 @@ const BookAppointmentScreen = ({ navigation, route }) => {
         showsHorizontalScrollIndicator={false}
         style={styles.chipScroll}
       >
-        {timeSlots.map((t) => (
-          <TouchableOpacity
-            key={t}
-            style={[
-              styles.chip,
-              selectedTime === t && styles.chipActive,
-              selectedTime === t && {
-                backgroundColor: COLORS.primary,
-                borderColor: COLORS.primary,
-              },
-            ]}
-            onPress={() => setSelectedTime(t)}
-          >
-            <Text
+        {timeSlots.map((t) => {
+          const passed = isSlotPassed(t);
+          return (
+            <TouchableOpacity
+              key={t}
               style={[
-                styles.chipText,
-                selectedTime === t && styles.chipTextActive,
+                styles.chip,
+                selectedTime === t && styles.chipActive,
+                selectedTime === t && {
+                  backgroundColor: COLORS.primary,
+                  borderColor: COLORS.primary,
+                },
+                passed && styles.chipDisabled,
               ]}
+              onPress={() => !passed && setSelectedTime(t)}
+              disabled={passed}
             >
-              {t}
-            </Text>
-          </TouchableOpacity>
-        ))}
+              <Text
+                style={[
+                  styles.chipText,
+                  selectedTime === t && styles.chipTextActive,
+                  passed && styles.chipTextDisabled,
+                ]}
+              >
+                {t}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </ScrollView>
 
       {/* Confirm Button */}
@@ -813,6 +872,14 @@ const styles = StyleSheet.create({
   },
   chipTextActive: {
     color: COLORS.white,
+  },
+  chipDisabled: {
+    backgroundColor: COLORS.background,
+    borderColor: COLORS.border || '#E8EDF2',
+    opacity: 0.5,
+  },
+  chipTextDisabled: {
+    color: COLORS.textLight,
   },
 
   inputBox: {

@@ -418,6 +418,11 @@ const LoginScreen = ({ navigation }) => {
         joinDate: new Date().toLocaleDateString(),
       };
       await AsyncStorage.setItem('userData', JSON.stringify(userData));
+      // Also persist the session flags. AppNavigator checks these on
+      // app launch to keep the user logged in until they explicitly
+      // log out from Settings, instead of asking them to sign up again.
+      await AsyncStorage.setItem('isLoggedIn', 'true');
+      await AsyncStorage.setItem('userRole', role);
     } catch (error) {
       // Silent fail
     }

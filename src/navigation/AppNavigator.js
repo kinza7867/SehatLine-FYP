@@ -1,5 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { COLORS } from '../theme';
 
 // --- ADMIN ---
 import AdminDashboardScreen from '../screens/admin/AdminDashboardScreen';
@@ -47,7 +50,6 @@ import CallNextPatientScreen from '../screens/doctor/CallNextPatientScreen';
 // --- AI & SMART ---
 import AISymptomCheckerScreen from '../screens/ai/AISymptomCheckerScreen';
 import AIHealthTipsScreen from '../screens/ai/AIHealthTipsScreen';
-import VoiceHealthAssistantScreen from '../screens/ai/VoiceHealthAssistantScreen';
 import PredictiveWaitScreen from '../screens/ai/PredictiveWaitScreen';
 import AISeverityResultScreen from '../screens/ai/AISeverityResultScreen';
 
@@ -83,11 +85,20 @@ import { AppointmentProvider } from '../context/AppointmentContext';
 
 const Stack = createNativeStackNavigator();
 
+// Maps a persisted user role to the screen they should land on when the
+// app is relaunched while already logged in. Mirrors the roleConfig
+// mapping used inside LoginScreen so behavior stays consistent.
+const ROLE_HOME_SCREEN = {
+  patient: 'PatientPortal',
+  doctor: 'ManageDoctorsScreen',
+  admin: 'AdminDashboardScreen',
+};
+
 // ─── MAIN NAVIGATOR ──────────────────────────────────────────────────────────
-function MainStack() {
+function MainStack({ initialRouteName, initialParams }) {
   return (
     <Stack.Navigator 
-      initialRouteName="Welcome" 
+      initialRouteName={initialRouteName || 'Welcome'} 
       screenOptions={{ 
         headerShown: false,
         animation: 'slide_from_right' 
@@ -101,8 +112,16 @@ function MainStack() {
       <Stack.Screen name="PortalSelection" component={PortalSelectionScreen} />
 
       {/* Admin Flow */}
-      <Stack.Screen name="AdminDashboardScreen" component={AdminDashboardScreen} />
-      <Stack.Screen name="ManageDoctorsScreen" component={ManageDoctorsScreen} />
+      <Stack.Screen
+        name="AdminDashboardScreen"
+        component={AdminDashboardScreen}
+        initialParams={initialRouteName === 'AdminDashboardScreen' ? initialParams : undefined}
+      />
+      <Stack.Screen
+        name="ManageDoctorsScreen"
+        component={ManageDoctorsScreen}
+        initialParams={initialRouteName === 'ManageDoctorsScreen' ? initialParams : undefined}
+      />
       <Stack.Screen name="ManageUsersScreen" component={ManageUsersScreen} />
 
       {/* The Main App Entrance */}
@@ -118,7 +137,11 @@ function MainStack() {
       <Stack.Screen name="HospitalDirectoryScreen" component={HospitalDirectoryScreen} />
 
       {/* Portals */}
-      <Stack.Screen name="PatientPortal" component={PatientPortal} />
+      <Stack.Screen
+        name="PatientPortal"
+        component={PatientPortal}
+        initialParams={initialRouteName === 'PatientPortal' ? initialParams : undefined}
+      />
       <Stack.Screen name="ChronicPortal" component={ChronicPortal} />
       <Stack.Screen name="VisitorHome" component={VisitorHome} />
 
@@ -140,7 +163,6 @@ function MainStack() {
       {/* AI Services */}
       <Stack.Screen name="AISymptomCheckerScreen" component={AISymptomCheckerScreen} />
       <Stack.Screen name="AIHealthTipsScreen" component={AIHealthTipsScreen} />
-      <Stack.Screen name="VoiceAssistant" component={VoiceHealthAssistantScreen} />
       <Stack.Screen name="PredictiveWaitScreen" component={PredictiveWaitScreen} />
       <Stack.Screen name="AISeverityResultScreen" component={AISeverityResultScreen} />
 
@@ -178,9 +200,63 @@ function MainStack() {
 
 // ─── ROOT WITH CONTEXT PROVIDER ─────────────────────────────────────────────
 export default function AppNavigator() {
+  const [checkingSession, setCheckingSession] = useState(true);
+  const [initialRoute, setInitialRoute] = useState('Welcome');
+  const [initialParams, setInitialParams] = useState(undefined);
+
+  // On every app launch, check whether a user is already logged in
+  // (persisted via AsyncStorage during Login/Signup). If so, skip the
+  // Welcome/Login/Signup screens entirely and drop the user straight
+  // back into their portal - this is what keeps a signed-up/logged-in
+  // account "remembered" instead of asking them to sign up again.
+  useEffect(() => {
+    const restoreSession = async () => {
+      try {
+        const isLoggedIn = await AsyncStorage.getItem('isLoggedIn');
+        const userDataString = await AsyncStorage.getItem('userData');
+
+        if (isLoggedIn === 'true' && userDataString) {
+          const userData = JSON.parse(userDataString);
+          const storedRole = await AsyncStorage.getItem('userRole');
+          const role = storedRole || userData.role || 'patient';
+          const homeScreen = ROLE_HOME_SCREEN[role] || 'PatientPortal';
+
+          setInitialRoute(homeScreen);
+          setInitialParams({ userData });
+        } else {
+          setInitialRoute('Welcome');
+        }
+      } catch (error) {
+        // If anything goes wrong reading storage, fail safe to Welcome
+        setInitialRoute('Welcome');
+      } finally {
+        setCheckingSession(false);
+      }
+    };
+
+    restoreSession();
+  }, []);
+
+  if (checkingSession) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+      </View>
+    );
+  }
+
   return (
     <AppointmentProvider>
-      <MainStack />
+      <MainStack initialRouteName={initialRoute} initialParams={initialParams} />
     </AppointmentProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.white,
+  },
+});
