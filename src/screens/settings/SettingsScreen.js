@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView, Switch,
-  Dimensions, Platform, StatusBar, SafeAreaView,
-  Alert, Modal, Image, Animated, ActivityIndicator
+  Dimensions, Platform, StatusBar, SafeAreaView, TextInput,
+  Alert, Modal, Image, Animated, ActivityIndicator, Share
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -23,6 +23,13 @@ const SettingsScreen = ({ navigation }) => {
   const [userEmail, setUserEmail] = useState('patient@sehatline.com');
   const toastAnim = useRef(new Animated.Value(-100)).current;
 
+  // ─── Rating State ──────────────────────────────────────────────────────
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [rating, setRating] = useState(0);
+  const [ratingComment, setRatingComment] = useState('');
+  const [isRatingSubmitted, setIsRatingSubmitted] = useState(false);
+  const [ratingSubmitted, setRatingSubmitted] = useState(false);
+
   const [settings, setSettings] = useState({
     notificationsEnabled: true,
     autoSync: true,
@@ -33,6 +40,7 @@ const SettingsScreen = ({ navigation }) => {
   useEffect(() => {
     loadSettings();
     loadUserData();
+    loadSavedRating();
   }, []);
 
   const loadUserData = async () => {
@@ -58,6 +66,20 @@ const SettingsScreen = ({ navigation }) => {
       }
     } catch (error) {
       console.log('Error loading settings:', error);
+    }
+  };
+
+  const loadSavedRating = async () => {
+    try {
+      const savedRating = await AsyncStorage.getItem('userRating');
+      if (savedRating) {
+        const data = JSON.parse(savedRating);
+        setRating(data.rating || 0);
+        setRatingComment(data.comment || '');
+        setRatingSubmitted(true);
+      }
+    } catch (error) {
+      console.log('Error loading rating:', error);
     }
   };
 
@@ -129,6 +151,175 @@ const SettingsScreen = ({ navigation }) => {
       ]
     );
   };
+
+  // ─── Share App Function ──────────────────────────────────────────────
+  const handleShareApp = async () => {
+    try {
+      const result = await Share.share({
+        message: '🏥 SehatLine - Your Health, Our Priority\n\n' +
+                 '📱 Download SehatLine: CDA Healthcare Portal\n' +
+                 '✅ Book Appointments • Generate Tokens • View Reports\n' +
+                 '🤖 AI Symptom Checker • Family Health Hub\n\n' +
+                 '🔗 Available on Google Play & App Store\n' +
+                 '📍 CDA Hospital, Islamabad\n\n' +
+                 '💚 "Your Health, Our Priority"',
+        title: 'Share SehatLine',
+      });
+      
+      if (result.action === Share.sharedAction) {
+        Alert.alert(
+          '🎉 Shared Successfully!',
+          'Thank you for sharing SehatLine with your loved ones! 💚'
+        );
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Unable to share at this moment. Please try again.');
+    }
+  };
+
+  // ─── Rating Functions ──────────────────────────────────────────────────
+  const handleStarPress = (starCount) => {
+    setRating(starCount);
+  };
+
+  const handleSubmitRating = async () => {
+    if (rating === 0) {
+      Alert.alert('⚠️ Please Rate', 'Please select a star rating before submitting.');
+      return;
+    }
+
+    const ratingData = {
+      rating: rating,
+      comment: ratingComment,
+      submittedAt: new Date().toISOString(),
+    };
+
+    await AsyncStorage.setItem('userRating', JSON.stringify(ratingData));
+    setRatingSubmitted(true);
+    setShowRatingModal(false);
+
+    // ─── Thank You Message Based on Rating ─────────────────────────────
+    let thankYouMessage = '';
+    let emoji = '';
+    
+    if (rating >= 4) {
+      emoji = '🎉';
+      thankYouMessage = 'Thank you so much for your amazing rating! 🌟\n\nYour feedback makes us better every day!\n\n❤️ We\'re committed to providing you the best healthcare experience.';
+    } else if (rating >= 3) {
+      emoji = '😊';
+      thankYouMessage = 'Thank you for your feedback! 🌟\n\nWe appreciate your honest opinion and we\'re always working to improve.\n\n💪 We\'ll do our best to earn that 5-star rating from you!';
+    } else if (rating >= 1) {
+      emoji = '🤗';
+      thankYouMessage = 'Thank you for being honest with us! 🌟\n\nYour feedback helps us identify areas for improvement.\n\n🛠️ We\'re working hard to make SehatLine better for you!';
+    }
+
+    Alert.alert(
+      `${emoji} Thank You for Rating!`,
+      thankYouMessage,
+      [{ text: '💚 We Appreciate You!', style: 'cancel' }]
+    );
+  };
+
+  const handleRateUsPress = () => {
+    if (ratingSubmitted) {
+      Alert.alert(
+        '⭐ Already Rated',
+        `You have already rated us ${rating} stars.\n\nThank you for your feedback! 💚\n\nWould you like to update your rating?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Update Rating', onPress: () => {
+            setRatingSubmitted(false);
+            setRating(0);
+            setRatingComment('');
+            setShowRatingModal(true);
+          }}
+        ]
+      );
+    } else {
+      setRating(0);
+      setRatingComment('');
+      setShowRatingModal(true);
+    }
+  };
+
+  // ─── Rating Modal ──────────────────────────────────────────────────────
+  const renderRatingModal = () => (
+    <Modal
+      visible={showRatingModal}
+      transparent={true}
+      animationType="slide"
+      onRequestClose={() => setShowRatingModal(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={[styles.modalContainer, styles.cardShadow]}>
+          <LinearGradient
+            colors={[COLORS.primary, COLORS.secondary]}
+            style={styles.modalHeader}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+          >
+            <Text style={styles.modalTitle}>⭐ Rate SehatLine</Text>
+            <TouchableOpacity onPress={() => setShowRatingModal(false)}>
+              <Ionicons name="close" size={wp(5.5)} color={COLORS.white} />
+            </TouchableOpacity>
+          </LinearGradient>
+
+          <View style={styles.modalBody}>
+            <Text style={styles.modalSubTitle}>How would you rate your experience?</Text>
+
+            <View style={styles.starsContainer}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <TouchableOpacity
+                  key={star}
+                  onPress={() => handleStarPress(star)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons
+                    name={star <= rating ? 'star' : 'star-outline'}
+                    size={wp(10)}
+                    color={star <= rating ? '#FFB800' : '#D1D5DB'}
+                  />
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text style={styles.ratingLabel}>
+              {rating === 0 ? 'Tap a star to rate' : `You rated ${rating} ${rating === 1 ? 'star' : 'stars'}`}
+            </Text>
+
+            <View style={styles.commentContainer}>
+              <Text style={styles.commentLabel}>Additional Feedback (Optional)</Text>
+              <TextInput
+                style={styles.commentInput}
+                placeholder="Share your thoughts..."
+                placeholderTextColor={COLORS.textLight}
+                multiline
+                numberOfLines={4}
+                value={ratingComment}
+                onChangeText={setRatingComment}
+              />
+            </View>
+
+            <TouchableOpacity 
+              style={[styles.submitRatingBtn, styles.cardShadow]}
+              onPress={handleSubmitRating}
+              activeOpacity={0.85}
+            >
+              <LinearGradient
+                colors={[COLORS.primary, COLORS.secondary]}
+                style={styles.submitRatingGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+              >
+                <Ionicons name="send" size={wp(4)} color={COLORS.white} />
+                <Text style={styles.submitRatingText}>Submit Rating</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
 
   // ─── Theme Colors ──────────────────────────────────────────────────
   const themeColors = darkMode ? {
@@ -410,20 +601,31 @@ const SettingsScreen = ({ navigation }) => {
             <SettingItem 
               icon="star-outline" 
               title="Rate Us"
-              subtitle="Rate SehatLine on App Store"
-              onPress={() => Alert.alert(
-                'Rate SehatLine',
-                '⭐ ⭐ ⭐ ⭐ ⭐\n\nYour feedback helps us improve!\nThank you for using SehatLine ❤️'
-              )}
+              subtitle={ratingSubmitted ? `⭐ ${rating} stars - Thank you!` : "Rate SehatLine on App Store"}
+              onPress={handleRateUsPress}
+              rightElement={
+                ratingSubmitted && (
+                  <View style={[styles.ratingBadge, { backgroundColor: '#FFB80015' }]}>
+                    <Ionicons name="star" size={wp(3.5)} color="#FFB800" />
+                    <Text style={styles.ratingBadgeText}>{rating}</Text>
+                  </View>
+                )
+              }
             />
             <SettingItem 
               icon="share-social-outline" 
               title="Share App"
               subtitle="Invite friends and family"
-              onPress={() => Alert.alert(
-                'Share SehatLine',
-                'Share SehatLine with your loved ones ❤️\n\n"Your Health, Our Priority"'
-              )}
+              onPress={handleShareApp}
+              rightElement={
+                <TouchableOpacity 
+                  style={[styles.shareBtn, { backgroundColor: COLORS.primary + '15' }]}
+                  onPress={handleShareApp}
+                >
+                  <Ionicons name="share-outline" size={wp(3.5)} color={COLORS.primary} />
+                  <Text style={[styles.shareBtnText, { color: COLORS.primary }]}>Share</Text>
+                </TouchableOpacity>
+              }
             />
           </View>
 
@@ -446,12 +648,7 @@ const SettingsScreen = ({ navigation }) => {
               subtitle="How we protect your data"
               onPress={() => navigation.navigate('PoliciesScreen')}
             />
-            <SettingItem 
-              icon="document-text-outline" 
-              title="Terms of Service"
-              subtitle="Read our terms and conditions"
-              onPress={() => navigation.navigate('PoliciesScreen')}
-            />
+            
           </View>
 
           {/* Danger Zone */}
@@ -478,6 +675,9 @@ const SettingsScreen = ({ navigation }) => {
           <View style={{ height: hp(3) }} />
         </ScrollView>
       </SafeAreaView>
+
+      {/* Rating Modal */}
+      {renderRatingModal()}
     </View>
   );
 };
@@ -657,6 +857,35 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
+  // ─── Rating Badge ─────────────────────────────────────────────
+  ratingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: wp(2),
+    paddingVertical: hp(0.2),
+    borderRadius: wp(2),
+    gap: wp(0.8),
+  },
+  ratingBadgeText: {
+    color: '#FFB800',
+    fontSize: wp(2.8),
+    fontWeight: '700',
+  },
+
+  // ─── Share Button ─────────────────────────────────────────────
+  shareBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: wp(2.5),
+    paddingVertical: hp(0.3),
+    borderRadius: wp(2.5),
+    gap: wp(1),
+  },
+  shareBtnText: {
+    fontSize: wp(2.8),
+    fontWeight: '600',
+  },
+
   // ─── Footer ──────────────────────────────────────────────────
   footer: {
     alignItems: 'center',
@@ -673,6 +902,92 @@ const styles = StyleSheet.create({
     fontSize: wp(2.5),
     marginTop: hp(0.2),
   },
+
+  // ─── Rating Modal ────────────────────────────────────────────────
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    width: width * 0.92,
+    backgroundColor: COLORS.white,
+    borderRadius: wp(5),
+    overflow: 'hidden',
+    ...SHADOWS.large,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: wp(4),
+  },
+  modalTitle: {
+    color: COLORS.white,
+    fontSize: wp(4.5),
+    fontWeight: 'bold',
+  },
+  modalBody: {
+    padding: wp(4),
+    alignItems: 'center',
+  },
+  modalSubTitle: {
+    fontSize: wp(3.8),
+    color: COLORS.text,
+    fontWeight: '500',
+    marginBottom: hp(1),
+  },
+  starsContainer: {
+    flexDirection: 'row',
+    gap: wp(2),
+    marginVertical: hp(0.5),
+  },
+  ratingLabel: {
+    fontSize: wp(3.2),
+    color: COLORS.textSecondary,
+    marginBottom: hp(1),
+  },
+  commentContainer: {
+    width: '100%',
+  },
+  commentLabel: {
+    fontSize: wp(3),
+    color: COLORS.text,
+    fontWeight: '500',
+    marginBottom: hp(0.3),
+  },
+  commentInput: {
+    backgroundColor: COLORS.backgroundSecondary,
+    borderRadius: wp(2.5),
+    padding: wp(3),
+    fontSize: wp(3.2),
+    color: COLORS.text,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    minHeight: hp(10),
+    textAlignVertical: 'top',
+  },
+  submitRatingBtn: {
+    width: '100%',
+    borderRadius: wp(2.5),
+    overflow: 'hidden',
+    marginTop: hp(1.5),
+  },
+  submitRatingGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: hp(1.2),
+    gap: wp(2),
+  },
+  submitRatingText: {
+    color: COLORS.white,
+    fontSize: wp(3.8),
+    fontWeight: 'bold',
+  },
+
+  cardShadow: { ...SHADOWS.medium },
 });
 
 export default SettingsScreen;

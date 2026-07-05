@@ -1,171 +1,330 @@
 import React from 'react';
 import { 
   View, Text, StyleSheet, ScrollView, Image, 
-  Dimensions, TouchableOpacity, Platform 
+  Dimensions, TouchableOpacity, Platform, SafeAreaView, StatusBar
 } from 'react-native';
-import Ionicons from 'react-native-vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import { COLORS, SHADOWS } from '../../theme';
 
-const { width, height} = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
+const wp = (p) => (width * p) / 100;
+const hp = (p) => (height * p) / 100;
 
 const AboutHospitalScreen = ({ navigation }) => {
-  const highlights = [
-    { id: 1, label: 'Beds', value: '500+', icon: 'bed' },
-    { id: 2, label: 'Doctors', value: '120+', icon: 'people' },
-    { id: 3, label: 'Years', value: '45+', icon: 'ribbon' },
-    { id: 4, label: 'Rating', value: '4.8', icon: 'star' },
-  ];
-
-  return (
-    <View style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        
-        {/* Hero Section with Image */}
-        <View style={styles.heroSection}>
-          <Image 
-            source={{ uri: 'https://images.unsplash.com/photo-1587350859728-117699f8aae6?auto=format&fit=crop&w=800&q=80' }} 
-            style={styles.hospitalImage}
-          />
-          <LinearGradient 
-            colors={['transparent', 'rgba(2, 9, 20, 0.95)', '#020914']} 
-            style={styles.heroOverlay}
-          />
-          <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-            <Ionicons name="chevron-back" size={28} color="#FFF" />
+  const renderHeader = () => (
+    <LinearGradient
+      colors={[COLORS.primary, COLORS.secondary]}
+      style={styles.headerGradient}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 0 }}
+    >
+      <SafeAreaView>
+        <View style={styles.header}>
+          <TouchableOpacity 
+            style={styles.backBtn}
+            onPress={() => navigation.goBack()}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="arrow-back" size={wp(5.5)} color={COLORS.white} />
           </TouchableOpacity>
-          <View style={styles.heroTitleContainer}>
-            <Text style={styles.heroTag}>ESTABLISHED 1981</Text>
-            <Text style={styles.heroTitle}>SehatLine Islamabad</Text>
-          </View>
-        </View>
 
-        {/* Stats Row */}
-        <View style={styles.statsContainer}>
-          {highlights.map((item) => (
-            <View key={item.id} style={styles.statItem}>
-              <Ionicons name={item.icon} size={22} color="#00EAFF" />
-              <Text style={styles.statValue}>{item.value}</Text>
-              <Text style={styles.statLabel}>{item.label}</Text>
+          <View style={styles.headerCenter}>
+            <View style={styles.logoContainer}>
+              <Image 
+                source={require('../../../assets/logo.png')} 
+                style={styles.logoImage} 
+                resizeMode="contain"
+              />
             </View>
-          ))}
-        </View>
-
-        {/* Main Content */}
-        <View style={styles.content}>
-          <Text style={styles.sectionTitle}>Our Legacy</Text>
-          <Text style={styles.description}>
-            SehatLine Digital Healthcare (CDA Hospital) has been the cornerstone of medical excellence in Islamabad for over four decades. 
-            We combine state-of-the-art technology with compassionate care to ensure the best health outcomes for our community.
-          </Text>
-
-          <View style={styles.missionCard}>
-            <LinearGradient colors={['#00EAFF20', '#00EAFF05']} style={styles.missionGradient}>
-              <Ionicons name="eye-outline" size={30} color="#00EAFF" />
-              <Text style={styles.missionTitle}>Our Vision</Text>
-              <Text style={styles.missionText}>
-                To be the leading digital healthcare provider in Pakistan, making quality medical services accessible to every citizen.
-              </Text>
-            </LinearGradient>
-          </View>
-
-          <Text style={styles.sectionTitle}>Accreditations</Text>
-          <View style={styles.badgeRow}>
-            <View style={styles.badge}>
-              <Ionicons name="checkmark-seal" size={20} color="#FFD60A" />
-              <Text style={styles.badgeText}>ISO 9001</Text>
-            </View>
-            <View style={styles.badge}>
-              <Ionicons name="checkmark-seal" size={20} color="#FFD60A" />
-              <Text style={styles.badgeText}>JCIA Certified</Text>
-            </View>
-            <View style={styles.badge}>
-              <Ionicons name="checkmark-seal" size={20} color="#FFD60A" />
-              <Text style={styles.badgeText}>WHO Partner</Text>
-            </View>
+            <Text style={styles.headerTitle}>About Hospital</Text>
           </View>
 
           <TouchableOpacity 
-            style={styles.contactBtn}
-            onPress={() => navigation.navigate('ContactScreen')}
+            style={styles.headerBtn}
+            onPress={() => navigation.navigate('HomeScreen')}
+            activeOpacity={0.7}
           >
-            <Text style={styles.contactBtnText}>Visit Our Location</Text>
-            <Ionicons name="arrow-forward" size={18} color="#000" />
+            <Ionicons name="home-outline" size={wp(5.5)} color={COLORS.white} />
           </TouchableOpacity>
         </View>
+      </SafeAreaView>
+    </LinearGradient>
+  );
 
-        <View style={{ height: 40 }} />
-      </ScrollView>
+  return (
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} translucent={true} />
+      
+      <LinearGradient
+        colors={[COLORS.primary, COLORS.secondary, COLORS.background]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 0.2 }}
+        style={styles.gradientBackground}
+      />
+
+      {renderHeader()}
+
+      <SafeAreaView style={styles.safeArea}>
+        <ScrollView 
+          showsVerticalScrollIndicator={false} 
+          contentContainerStyle={styles.scrollContent}
+        >
+          <View style={styles.content}>
+            <Text style={styles.sectionTitle}>About CDA Hospital</Text>
+            <Text style={styles.description}>
+              CDA Hospital, managed by the Capital Development Authority, was established in March 1981. 
+              It is a 280-bed tertiary care hospital located at G-6/2, Near Melody, Islamabad.
+            </Text>
+
+            <Text style={styles.sectionTitle}>Services</Text>
+            
+            <View style={[styles.card, SHADOWS.small]}>
+              <View style={styles.cardRow}>
+                <Ionicons name="medkit-outline" size={wp(5)} color={COLORS.primary} />
+                <View style={styles.cardContent}>
+                  <Text style={styles.cardTitle}>OPD & Treatment Service</Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={[styles.card, SHADOWS.small]}>
+              <View style={styles.cardRow}>
+                <Ionicons name="bed-outline" size={wp(5)} color={COLORS.primary} />
+                <View style={styles.cardContent}>
+                  <Text style={styles.cardTitle}>Indoor & Surgical Service</Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={[styles.card, SHADOWS.small]}>
+              <View style={styles.cardRow}>
+                <Ionicons name="flask-outline" size={wp(5)} color={COLORS.primary} />
+                <View style={styles.cardContent}>
+                  <Text style={styles.cardTitle}>Investigative Service</Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={[styles.card, SHADOWS.small]}>
+              <View style={styles.cardRow}>
+                <Ionicons name="alert-circle-outline" size={wp(5)} color={COLORS.primary} />
+                <View style={styles.cardContent}>
+                  <Text style={styles.cardTitle}>Emergency Services</Text>
+                </View>
+              </View>
+            </View>
+
+            <Text style={styles.sectionTitle}>Location</Text>
+            <View style={[styles.locationCard, SHADOWS.small]}>
+              <Ionicons name="location-outline" size={wp(5)} color={COLORS.primary} />
+              <View style={styles.locationContent}>
+                <Text style={styles.locationText}>G-6/2, Near Melody, Islamabad</Text>
+              </View>
+            </View>
+
+            <TouchableOpacity 
+              style={[styles.contactBtn, SHADOWS.medium]}
+              onPress={() => navigation.navigate('ContactScreen')}
+              activeOpacity={0.85}
+            >
+              <LinearGradient
+                colors={[COLORS.primary, COLORS.secondary]}
+                style={styles.contactGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+              >
+                <Text style={styles.contactBtnText}>Contact Hospital</Text>
+                <Ionicons name="arrow-forward" size={wp(4.5)} color="#000" />
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>SehatLine • CDA Hospital Islamabad</Text>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#020914' },
-  scrollContent: { paddingBottom: 20 },
+  container: { 
+    flex: 1, 
+    backgroundColor: COLORS.background 
+  },
   
-  heroSection: { height: height * 0.45, position: 'relative' },
-  hospitalImage: { width: '100%', height: '100%' },
-  heroOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, height: '60%' },
-  backBtn: { 
-    position: 'absolute', 
-    top: Platform.OS === 'ios' ? 50 : 30, 
-    left: 20, 
-    backgroundColor: 'rgba(0,0,0,0.5)', 
-    padding: 8, 
-    borderRadius: 12 
+  gradientBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: hp(25),
   },
-  heroTitleContainer: { position: 'absolute', bottom: 20, left: 20 },
-  heroTag: { color: '#00EAFF', fontSize: 12, fontWeight: '900', letterSpacing: 2 },
-  heroTitle: { color: '#FFF', fontSize: 32, fontWeight: 'bold', marginTop: 5 },
 
-  statsContainer: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    backgroundColor: '#0A192F', 
-    marginHorizontal: 20, 
-    marginTop: -30, 
-    borderRadius: 20, 
-    padding: 20,
-    elevation: 10,
+  safeArea: {
+    flex: 1,
+  },
+
+  scrollContent: { 
+    paddingHorizontal: wp(4),
+    paddingBottom: hp(4),
+    paddingTop: hp(0.5),
+  },
+
+  // ─── Header ────────────────────────────────────────────────────────────
+  headerGradient: {
+    paddingHorizontal: wp(4),
+    paddingTop: Platform.OS === 'ios' ? hp(0.5) : hp(0.8),
+    paddingBottom: hp(1.5),
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+    ...SHADOWS.medium,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(0,234,255,0.1)'
+    borderColor: 'rgba(255,255,255,0.2)',
   },
-  statItem: { alignItems: 'center', flex: 1 },
-  statValue: { color: '#FFF', fontSize: 18, fontWeight: 'bold', marginTop: 5 },
-  statLabel: { color: '#888', fontSize: 11, marginTop: 2 },
-
-  content: { padding: 20 },
-  sectionTitle: { color: '#FFF', fontSize: 20, fontWeight: 'bold', marginBottom: 15, marginTop: 20 },
-  description: { color: '#CCC', fontSize: 15, lineHeight: 24, opacity: 0.8 },
-
-  missionCard: { marginTop: 25, borderRadius: 20, overflow: 'hidden' },
-  missionGradient: { padding: 25, alignItems: 'center' },
-  missionTitle: { color: '#FFF', fontSize: 18, fontWeight: 'bold', marginVertical: 10 },
-  missionText: { color: '#AAA', textAlign: 'center', fontSize: 14, lineHeight: 20 },
-
-  badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 5 },
-  badge: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    backgroundColor: 'rgba(255,255,255,0.05)', 
-    paddingHorizontal: 12, 
-    paddingVertical: 8, 
-    borderRadius: 10,
-    gap: 8
+  headerCenter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
-  badgeText: { color: '#DDD', fontSize: 13 },
+  logoContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  logoImage: {
+    width: 30,
+    height: 30,
+  },
+  headerTitle: {
+    color: COLORS.white,
+    fontSize: wp(4.5),
+    fontWeight: 'bold',
+  },
+  headerBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
 
+  // ─── Content ──────────────────────────────────────────────────────────
+  content: { 
+    paddingTop: hp(1.5),
+  },
+  
+  sectionTitle: { 
+    color: COLORS.text, 
+    fontSize: wp(4.5), 
+    fontWeight: 'bold', 
+    marginBottom: hp(1),
+    marginTop: hp(2) 
+  },
+  
+  description: { 
+    color: COLORS.textSecondary, 
+    fontSize: wp(3.5), 
+    lineHeight: hp(2.5), 
+    marginBottom: hp(0.5),
+  },
+
+  // ─── Cards ──────────────────────────────────────────────────────────
+  card: {
+    backgroundColor: COLORS.white,
+    borderRadius: wp(3),
+    padding: wp(3.5),
+    marginBottom: hp(0.8),
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  cardRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: wp(3),
+  },
+  cardContent: {
+    flex: 1,
+  },
+  cardTitle: {
+    color: COLORS.text,
+    fontSize: wp(3.5),
+    fontWeight: '600',
+  },
+
+  // ─── Location ──────────────────────────────────────────────────────────
+  locationCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: wp(3),
+    padding: wp(3.5),
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: wp(3),
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  locationContent: {
+    flex: 1,
+  },
+  locationText: {
+    color: COLORS.text,
+    fontSize: wp(3.5),
+  },
+
+  // ─── Contact Button ──────────────────────────────────────────────────
   contactBtn: { 
-    backgroundColor: '#00EAFF', 
+    borderRadius: wp(3), 
+    overflow: 'hidden',
+    marginTop: hp(2.5),
+  },
+  contactGradient: {
     flexDirection: 'row', 
     justifyContent: 'center', 
     alignItems: 'center', 
-    padding: 18, 
-    borderRadius: 15, 
-    marginTop: 40,
-    gap: 10
+    padding: hp(1.8),
+    gap: wp(2),
   },
-  contactBtnText: { color: '#000', fontWeight: 'bold', fontSize: 16 }
+  contactBtnText: { 
+    color: '#000', 
+    fontWeight: 'bold', 
+    fontSize: wp(4) 
+  },
+
+  // ─── Footer ──────────────────────────────────────────────────────────
+  footer: {
+    alignItems: 'center',
+    marginTop: hp(3),
+    paddingTop: hp(1.5),
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  footerText: {
+    color: COLORS.textSecondary,
+    fontSize: wp(3),
+    fontWeight: '600',
+  },
 });
 
 export default AboutHospitalScreen;

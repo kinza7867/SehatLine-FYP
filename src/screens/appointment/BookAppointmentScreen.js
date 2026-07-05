@@ -31,12 +31,17 @@ const BookAppointmentScreen = ({ navigation, route }) => {
   const [loading, setLoading] = useState(false);
   const [userData, setUserData] = useState(null);
 
-  // Chronic OPD fields
+  // Cardiology fields
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedTime, setSelectedTime] = useState('');
   const [doctor, setDoctor] = useState('');
   const [visitType, setVisitType] = useState('');
+  const [selectedDepartment, setSelectedDepartment] = useState('Cardiology');
+
+  // Visit type description
+  const [showVisitTypeInfo, setShowVisitTypeInfo] = useState(false);
+  const [selectedVisitInfo, setSelectedVisitInfo] = useState(null);
 
   // Token modal
   const [showTokenModal, setShowTokenModal] = useState(false);
@@ -44,36 +49,59 @@ const BookAppointmentScreen = ({ navigation, route }) => {
   const [showThankYou, setShowThankYou] = useState(false);
 
   // ── Config ──────────────────────────────────────────────────────────────────
-  const chronicDoctors = [
-    'Dr. Sarah Ahmed - Cardiologist',
-    'Dr. Muhammad Khan - Endocrinologist',
-    'Dr. Usman Chaudhry - Pulmonologist',
-    'Dr. Fatima Ali - Neurologist',
-    'Dr. Hassan Raza - Gastroenterologist',
-    'Dr. Ayesha Malik - Rheumatologist',
-    'Dr. Imran Ali - Nephrologist',
-    'Dr. Sana Javed - Oncologist',
+  // ✅ Cardiology Department - Based on CDA Hospital Website
+  const cardiologyDoctors = [
+    'Dr. Ahmed Hassan - Interventional Cardiologist',
+    'Dr. Fatima Noor - Pediatric Cardiologist',
+    'Dr. Zain Akhtar - Cardiothoracic Surgeon',
+    'Dr. Ayesha Tariq - Cardiac Electrophysiologist',
+    'Dr. Usman Riaz - Clinical Cardiologist',
   ];
 
+  // ✅ Visit Types with Descriptions - Emergency Removed
   const visitTypes = [
-    'Routine Check-up',
-    'Follow-up Visit',
-    'Medication Review',
-    'Test Results Review',
-    'Emergency Consultation',
+    { 
+      id: 'routine', 
+      label: 'Routine Check-up', 
+      description: 'Preventive health check for maintaining good heart health. Includes BP, ECG, and basic blood work.',
+      duration: '30 min',
+      tests: ['Blood Pressure', 'ECG', 'Lipid Profile', 'Blood Sugar']
+    },
+    { 
+      id: 'followup', 
+      label: 'Follow-up Visit', 
+      description: 'Review of existing heart condition. Monitoring progress of treatment plan.',
+      duration: '20 min',
+      tests: ['Condition-specific tests', 'Medication review', 'Progress assessment']
+    },
+    { 
+      id: 'medication', 
+      label: 'Medication Review', 
+      description: 'Review and refill of heart medications. Check for side effects and effectiveness.',
+      duration: '15 min',
+      tests: ['Medication list review', 'Side effect check', 'Dosage adjustment']
+    },
+    { 
+      id: 'testresults', 
+      label: 'Test Results Review', 
+      description: 'Discussion of recent test results including ECG, Echo, Stress Test, or Blood Work.',
+      duration: '20 min',
+      tests: ['Report discussion', 'Treatment plan adjustment', 'Next steps']
+    },
+    { 
+      id: 'postsurgery', 
+      label: 'Post-Surgery Follow-up', 
+      description: 'Follow-up after cardiac surgery. Monitor recovery and healing progress.',
+      duration: '30 min',
+      tests: ['Wound check', 'Vital signs', 'Recovery assessment', 'Medication adjustment']
+    },
   ];
 
   const timeSlots = [
-    '08:00 AM',
-    '08:30 AM',
-    '09:00 AM',
-    '09:30 AM',
-    '10:00 AM',
-    '10:30 AM',
-    '11:00 AM',
-    '11:30 AM',
-    '12:00 PM',
-    '12:30 PM',
+    '08:00 AM', '08:30 AM', '09:00 AM', '09:30 AM',
+    '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM',
+    '12:00 PM', '12:30 PM', '01:00 PM', '01:30 PM',
+    '02:00 PM', '02:30 PM', '03:00 PM',
   ];
 
   // ── Lifecycle ──────────────────────────────────────────────────────────────
@@ -102,8 +130,6 @@ const BookAppointmentScreen = ({ navigation, route }) => {
     setDate(new Date());
   };
 
-  // A time slot is only "passed" if the selected day is today AND that
-  // slot's time has already gone by. Future dates are never affected.
   const isSlotPassed = (slot) => {
     const today = new Date();
     const isToday =
@@ -122,26 +148,20 @@ const BookAppointmentScreen = ({ navigation, route }) => {
     return slotDate <= today;
   };
 
-  // Guarantees the generated token number doesn't collide with any token
-  // already sitting in storage (previously two appointments could end up
-  // with the exact same visible token, e.g. two "A-045" cards).
   const generateUniqueTokenNumber = (existingTokens) => {
     for (let attempt = 0; attempt < 25; attempt++) {
       const num = Math.floor(Math.random() * 90) + 10;
-      const candidate = `A-${String(num).padStart(3, '0')}`;
+      const candidate = `C-${String(num).padStart(3, '0')}`;
       if (!existingTokens.includes(candidate)) {
         return { num, token: candidate };
       }
     }
-    // Extremely unlikely fallback: derive from timestamp so it's still unique
     const fallbackNum = Number(String(Date.now()).slice(-2)) || 10;
-    return { num: fallbackNum, token: `A-${String(fallbackNum).padStart(3, '0')}` };
+    return { num: fallbackNum, token: `C-${String(fallbackNum).padStart(3, '0')}` };
   };
 
   // ── Token generation ───────────────────────────────────────────────────────
   const generateToken = (existingTokens) => {
-    // Generate appointment token with prefix 'A' for Appointment, guaranteed
-    // not to collide with a token that's already stored.
     const { num, token } = generateUniqueTokenNumber(existingTokens);
 
     const formatted = date.toLocaleDateString('en-US', {
@@ -150,7 +170,6 @@ const BookAppointmentScreen = ({ navigation, route }) => {
       year: 'numeric',
     });
 
-    // Parse selectedTime for ISO string
     const [timePart, meridiem] = selectedTime.split(' ');
     let [hours, minutes] = timePart.split(':').map(Number);
     if (meridiem === 'PM' && hours !== 12) hours += 12;
@@ -158,18 +177,23 @@ const BookAppointmentScreen = ({ navigation, route }) => {
     const apptDate = new Date(date);
     apptDate.setHours(hours, minutes, 0, 0);
 
+    const selectedVisit = visitTypes.find(v => v.label === visitType);
+
     return {
       token,
-      prefix: 'A',
+      prefix: 'C',
       number: num,
-      department: 'Chronic OPD',
+      department: 'Cardiology',
       patientName: userData?.name || 'Patient',
+      patientEmail: userData?.email || '',
       date: formatted,
       time: selectedTime,
       dateTimeISO: apptDate.toISOString(),
       departmentData: {
         doctor,
         visitType,
+        visitDuration: selectedVisit?.duration || '30 min',
+        testsOrdered: selectedVisit?.tests || [],
       },
       bookedAt: new Date().toISOString(),
       status: 'Confirmed',
@@ -179,7 +203,7 @@ const BookAppointmentScreen = ({ navigation, route }) => {
 
   const validateForm = () => {
     if (!doctor) {
-      Alert.alert('Missing Info', 'Please select a doctor.');
+      Alert.alert('Missing Info', 'Please select a cardiologist.');
       return false;
     }
     if (!visitType) {
@@ -228,7 +252,6 @@ const BookAppointmentScreen = ({ navigation, route }) => {
       let appts = existing ? JSON.parse(existing) : [];
       appts.push(generatedToken);
       await AsyncStorage.setItem('appointments', JSON.stringify(appts));
-      console.log('✅ Appointment saved:', generatedToken.token, '| Total:', appts.length);
 
       setShowTokenModal(false);
       setShowThankYou(true);
@@ -239,6 +262,7 @@ const BookAppointmentScreen = ({ navigation, route }) => {
           userData,
           refresh: true,
           highlightToken: generatedToken.token,
+          department: 'Cardiology',
         });
       }, 2000);
     } catch (e) {
@@ -250,49 +274,88 @@ const BookAppointmentScreen = ({ navigation, route }) => {
   const handleShareToken = async () => {
     if (!generatedToken) return;
     const msg =
-      `🏥 CDA HOSPITAL - Doctor Appointment\n` +
+      `🏥 CDA HOSPITAL - Cardiology Appointment\n` +
       `━━━━━━━━━━━━━━━━━━━━━\n` +
       `👤 Patient: ${generatedToken.patientName}\n` +
-      `🏥 Department: Chronic OPD\n` +
-      `👨‍⚕️ Doctor: ${generatedToken.departmentData.doctor}\n` +
+      `🏥 Department: Cardiology\n` +
+      `👨‍⚕️ Cardiologist: ${generatedToken.departmentData.doctor}\n` +
       `📋 Visit: ${generatedToken.departmentData.visitType}\n` +
       `📅 Date: ${generatedToken.date}\n` +
       `⏰ Time: ${generatedToken.time}\n` +
       `🎫 Token: ${generatedToken.token}\n` +
       `━━━━━━━━━━━━━━━━━━━━━\n` +
-      `CDA Hospital Islamabad`;
+      `CDA Hospital Islamabad\n` +
+      `Heart Care - Our Priority ❤️`;
 
     try {
-      await Share.share({ message: msg, title: 'Appointment Token' });
+      await Share.share({ message: msg, title: 'Cardiology Appointment Token' });
     } catch (e) {
       Alert.alert('Error', 'Unable to share token');
     }
   };
 
-  const handleViewQueue = () => {
+  const handleViewAppointments = () => {
     setShowTokenModal(false);
-    navigation.navigate('LiveTokenQueueScreen', {
-      token: generatedToken?.token,
-      department: 'Chronic OPD',
+    navigation.navigate('AppointmentList', {
       userData,
+      refresh: true,
+      highlightToken: generatedToken?.token,
     });
   };
+
+  // ─── Visit Type Info ──────────────────────────────────────────────────────
+  const showVisitInfo = (visit) => {
+    setSelectedVisitInfo(visit);
+    setShowVisitTypeInfo(true);
+  };
+
+  const VisitTypeInfoModal = () => (
+    <Modal
+      visible={showVisitTypeInfo}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setShowVisitTypeInfo(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.infoModalContainer}>
+          <View style={styles.infoModalHeader}>
+            <Text style={styles.infoModalTitle}>{selectedVisitInfo?.label}</Text>
+            <TouchableOpacity onPress={() => setShowVisitTypeInfo(false)}>
+              <Ionicons name="close" size={24} color={COLORS.text} />
+            </TouchableOpacity>
+          </View>
+          <ScrollView style={styles.infoModalBody}>
+            <Text style={styles.infoModalDescription}>
+              {selectedVisitInfo?.description}
+            </Text>
+            <View style={styles.infoModalDetail}>
+              <Text style={styles.infoModalLabel}>⏱️ Duration:</Text>
+              <Text style={styles.infoModalValue}>{selectedVisitInfo?.duration}</Text>
+            </View>
+            <Text style={styles.infoModalSubLabel}>📋 Tests/Checks:</Text>
+            {selectedVisitInfo?.tests?.map((test, index) => (
+              <View key={index} style={styles.infoModalTestItem}>
+                <Ionicons name="checkmark-circle" size={16} color="#10B981" />
+                <Text style={styles.infoModalTestText}>{test}</Text>
+              </View>
+            ))}
+          </ScrollView>
+          <TouchableOpacity
+            style={styles.infoModalCloseBtn}
+            onPress={() => setShowVisitTypeInfo(false)}
+          >
+            <Text style={styles.infoModalCloseText}>Got it</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
 
   // ── Calendar ───────────────────────────────────────────────────────────────
   const renderCustomCalendar = () => {
     const monthNames = [
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December',
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December',
     ];
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const m = date.getMonth(),
@@ -345,11 +408,7 @@ const BookAppointmentScreen = ({ navigation, route }) => {
             onPress={() => changeMonth(-1)}
             style={styles.calendarNav}
           >
-            <Ionicons
-              name="chevron-back"
-              size={24}
-              color={COLORS.primary}
-            />
+            <Ionicons name="chevron-back" size={24} color={COLORS.primary} />
           </TouchableOpacity>
           <Text style={styles.calendarMonthText}>
             {monthNames[m]} {y}
@@ -358,11 +417,7 @@ const BookAppointmentScreen = ({ navigation, route }) => {
             onPress={() => changeMonth(1)}
             style={styles.calendarNav}
           >
-            <Ionicons
-              name="chevron-forward"
-              size={24}
-              color={COLORS.primary}
-            />
+            <Ionicons name="chevron-forward" size={24} color={COLORS.primary} />
           </TouchableOpacity>
         </View>
         <View style={styles.calendarDaysHeader}>
@@ -411,14 +466,22 @@ const BookAppointmentScreen = ({ navigation, route }) => {
   // ── Render sections ──────────────────────────────────────────────────────
   const renderAppointmentForm = () => (
     <View style={styles.formContainer}>
-      {/* Doctor Selection */}
-      <Text style={styles.label}>Select Doctor</Text>
+      {/* Department Header */}
+      <View style={styles.departmentHeader}>
+        <Ionicons name="heart-outline" size={wp(5)} color={COLORS.primary} />
+        <Text style={styles.departmentTitle}>Cardiology</Text>
+        <View style={styles.departmentBadge}>
+          <Text style={styles.departmentBadgeText}>Heart Care</Text>
+        </View>
+      </View>
+
+      <Text style={styles.label}>Select Cardiologist</Text>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         style={styles.chipScroll}
       >
-        {chronicDoctors.map((doc) => (
+        {cardiologyDoctors.map((doc) => (
           <TouchableOpacity
             key={doc}
             style={[styles.chip, doctor === doc && styles.chipActive]}
@@ -438,29 +501,50 @@ const BookAppointmentScreen = ({ navigation, route }) => {
         ))}
       </ScrollView>
 
-      {/* Visit Type */}
-      <Text style={styles.label}>Visit Type</Text>
+      {/* Visit Type with Info Button */}
+      <View style={styles.visitTypeHeader}>
+        <Text style={styles.label}>Visit Type</Text>
+        <TouchableOpacity 
+          style={styles.infoIconBtn}
+          onPress={() => {
+            if (visitType) {
+              const visit = visitTypes.find(v => v.label === visitType);
+              if (visit) showVisitInfo(visit);
+            } else {
+              Alert.alert('Select a Visit Type', 'Please select a visit type first to see details.');
+            }
+          }}
+        >
+          <Ionicons name="information-circle-outline" size={wp(5)} color={COLORS.primary} />
+        </TouchableOpacity>
+      </View>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         style={styles.chipScroll}
       >
-        {visitTypes.map((t) => (
+        {visitTypes.map((v) => (
           <TouchableOpacity
-            key={t}
-            style={[styles.chip, visitType === t && styles.chipActive]}
-            onPress={() => setVisitType(t)}
+            key={v.id}
+            style={[styles.chip, visitType === v.label && styles.chipActive]}
+            onPress={() => setVisitType(v.label)}
           >
             <Text
-              style={[styles.chipText, visitType === t && styles.chipTextActive]}
+              style={[styles.chipText, visitType === v.label && styles.chipTextActive]}
             >
-              {t}
+              {v.label}
             </Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
+      {visitType && (
+        <View style={styles.visitTypeHint}>
+          <Text style={styles.visitTypeHintText}>
+            ℹ️ Tap the ℹ️ icon to see visit details
+          </Text>
+        </View>
+      )}
 
-      {/* Date Selection */}
       <Text style={styles.label}>Select Date</Text>
       <TouchableOpacity
         style={styles.inputBox}
@@ -503,8 +587,7 @@ const BookAppointmentScreen = ({ navigation, route }) => {
         </Modal>
       )}
 
-      {/* Time Selection */}
-      <Text style={styles.label}>Select Time (8:00 AM – 1:00 PM)</Text>
+      <Text style={styles.label}>Select Time (8:00 AM – 3:00 PM)</Text>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -518,10 +601,6 @@ const BookAppointmentScreen = ({ navigation, route }) => {
               style={[
                 styles.chip,
                 selectedTime === t && styles.chipActive,
-                selectedTime === t && {
-                  backgroundColor: COLORS.primary,
-                  borderColor: COLORS.primary,
-                },
                 passed && styles.chipDisabled,
               ]}
               onPress={() => !passed && setSelectedTime(t)}
@@ -541,7 +620,6 @@ const BookAppointmentScreen = ({ navigation, route }) => {
         })}
       </ScrollView>
 
-      {/* Confirm Button */}
       <TouchableOpacity
         style={styles.confirmBtn}
         onPress={handleBooking}
@@ -581,8 +659,8 @@ const BookAppointmentScreen = ({ navigation, route }) => {
               color={COLORS.success || '#2ECC71'}
             />
           </View>
-          <Text style={styles.modalTitle}>Appointment Confirmed!</Text>
-          <Text style={styles.modalSubtitle}>Your token has been generated</Text>
+          <Text style={styles.modalTitle}>Appointment Confirmed! ❤️</Text>
+          <Text style={styles.modalSubtitle}>Your Cardiology appointment has been booked</Text>
 
           {generatedToken && (
             <View style={styles.tokenCard}>
@@ -592,7 +670,7 @@ const BookAppointmentScreen = ({ navigation, route }) => {
               >
                 <View style={styles.tokenCardHeader}>
                   <Text style={styles.tokenCardTitle}>CDA HOSPITAL</Text>
-                  <Text style={styles.tokenCardSub}>Chronic OPD</Text>
+                  <Text style={styles.tokenCardSub}>Cardiology Department</Text>
                 </View>
                 <Text style={styles.tokenCardNumber}>
                   {generatedToken.token}
@@ -600,8 +678,9 @@ const BookAppointmentScreen = ({ navigation, route }) => {
                 <View style={styles.tokenCardDetails}>
                   {[
                     ['Patient', generatedToken.patientName],
-                    ['Doctor', generatedToken.departmentData.doctor],
+                    ['Cardiologist', generatedToken.departmentData.doctor],
                     ['Visit Type', generatedToken.departmentData.visitType],
+                    ['Duration', generatedToken.departmentData.visitDuration || '30 min'],
                     ['Date', generatedToken.date],
                     ['Time', generatedToken.time],
                   ].map(([label, value]) => (
@@ -620,31 +699,27 @@ const BookAppointmentScreen = ({ navigation, route }) => {
             </View>
           )}
 
-          <View style={styles.modalActions}>
-            <TouchableOpacity
-              style={[styles.modalActionBtn, styles.modalShareBtn]}
-              onPress={handleShareToken}
-            >
-              <Ionicons name="share-outline" size={20} color={COLORS.primary} />
-              <Text style={styles.modalShareText}>Share</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.modalActionBtn, styles.modalSaveBtn]}
-              onPress={handleSaveToken}
-            >
-              <Ionicons name="save-outline" size={20} color={COLORS.white} />
-              <Text style={styles.modalSaveText}>View Appointment</Text>
-            </TouchableOpacity>
-          </View>
-
-          <TouchableOpacity style={styles.modalQueueBtn} onPress={handleViewQueue}>
+          {/* ✅ Single Action - View Appointment */}
+          <TouchableOpacity
+            style={[styles.modalActionBtn, styles.modalSaveBtn, { width: '100%', marginBottom: hp(1) }]}
+            onPress={handleSaveToken}
+          >
             <LinearGradient
               colors={[COLORS.primary, COLORS.secondary]}
-              style={styles.modalQueueGradient}
+              style={styles.modalSaveGradient}
             >
-              <Ionicons name="timer-outline" size={20} color={COLORS.white} />
-              <Text style={styles.modalQueueText}>View Queue Status</Text>
+              <Ionicons name="calendar-outline" size={20} color={COLORS.white} />
+              <Text style={styles.modalSaveText}>View My Appointment</Text>
             </LinearGradient>
+          </TouchableOpacity>
+
+          {/* Share Button */}
+          <TouchableOpacity
+            style={[styles.modalActionBtn, styles.modalShareBtn, { width: '100%' }]}
+            onPress={handleShareToken}
+          >
+            <Ionicons name="share-outline" size={20} color={COLORS.primary} />
+            <Text style={styles.modalShareText}>Share Appointment Details</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -661,12 +736,12 @@ const BookAppointmentScreen = ({ navigation, route }) => {
       <View style={styles.thankYouOverlay}>
         <View style={styles.thankYouContainer}>
           <Ionicons name="heart-circle" size={80} color={COLORS.primary} />
-          <Text style={styles.thankYouTitle}>Thank You!</Text>
+          <Text style={styles.thankYouTitle}>Thank You! ❤️</Text>
           <Text style={styles.thankYouSubtitle}>
-            Your appointment has been confirmed successfully.
+            Your Cardiology appointment has been confirmed successfully.
           </Text>
           <Text style={styles.thankYouToken}>Token: {generatedToken?.token}</Text>
-          <Text style={styles.thankYouDept}>Chronic OPD</Text>
+          <Text style={styles.thankYouDept}>Cardiology Department</Text>
           <View style={styles.thankYouDetails}>
             <Text style={styles.thankYouDetailText}>
               📅 {generatedToken?.date} at {generatedToken?.time}
@@ -718,7 +793,7 @@ const BookAppointmentScreen = ({ navigation, route }) => {
             >
               <Ionicons name="arrow-back" size={24} color={COLORS.white} />
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>Book Appointment</Text>
+            <Text style={styles.headerTitle}>Book Cardiology</Text>
             <View style={{ width: 40 }} />
           </View>
 
@@ -731,28 +806,24 @@ const BookAppointmentScreen = ({ navigation, route }) => {
                 color={COLORS.white}
               />
               <Text style={styles.userName}>{userData.name}</Text>
-              {userData.cdaCard && (
-                <Text style={styles.userCda}>CDA: {userData.cdaCard}</Text>
-              )}
             </View>
           )}
 
           {/* Info Banner */}
           <View style={styles.infoBanner}>
-            <Ionicons name="information-circle" size={24} color={COLORS.primary} />
+            <Ionicons name="heart-outline" size={24} color="#EF4444" />
             <Text style={styles.infoText}>
-              Book your doctor consultation appointment at Chronic OPD
+              Book your Cardiology consultation with our specialist heart doctors
             </Text>
           </View>
 
           {/* Appointment Form */}
           {renderAppointmentForm()}
 
-          {/* Note about other services */}
+          {/* Note */}
           <View style={styles.serviceNote}>
             <Text style={styles.serviceNoteText}>
-              📌 For Pharmacy & Laboratory services, please visit the respective
-              token counters.
+              ❤️ Our cardiologists are available Mon-Sat for heart consultations.
             </Text>
           </View>
         </ScrollView>
@@ -760,6 +831,7 @@ const BookAppointmentScreen = ({ navigation, route }) => {
 
       {renderTokenModal()}
       {renderThankYou()}
+      {VisitTypeInfoModal()}
     </View>
   );
 };
@@ -807,10 +879,6 @@ const styles = StyleSheet.create({
     fontSize: wp(3.5),
     fontWeight: '600',
   },
-  userCda: {
-    color: COLORS.white + '70',
-    fontSize: wp(2.8),
-  },
 
   infoBanner: {
     flexDirection: 'row',
@@ -836,12 +904,55 @@ const styles = StyleSheet.create({
     ...SHADOWS.medium,
   },
 
+  departmentHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: hp(1.5),
+    gap: 10,
+  },
+  departmentTitle: {
+    fontSize: wp(4.5),
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  departmentBadge: {
+    backgroundColor: '#EF444415',
+    paddingHorizontal: wp(2.5),
+    paddingVertical: hp(0.2),
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#EF444430',
+  },
+  departmentBadgeText: {
+    color: '#EF4444',
+    fontSize: wp(2.2),
+    fontWeight: '600',
+  },
+
   label: {
     color: COLORS.text,
     fontSize: wp(3.8),
     fontWeight: '600',
     marginBottom: hp(0.8),
     marginTop: hp(1.5),
+  },
+
+  visitTypeHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  infoIconBtn: {
+    padding: wp(1),
+  },
+  visitTypeHint: {
+    marginTop: hp(0.3),
+    marginBottom: hp(0.5),
+  },
+  visitTypeHintText: {
+    fontSize: wp(2.6),
+    color: COLORS.textSecondary,
+    fontStyle: 'italic',
   },
 
   chipScroll: {
@@ -1026,7 +1137,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.8)',
     borderRadius: 12,
     borderLeftWidth: 3,
-    borderLeftColor: COLORS.primary,
+    borderLeftColor: '#EF4444',
   },
   serviceNoteText: {
     color: COLORS.textSecondary,
@@ -1122,13 +1233,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
 
-  modalActions: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: hp(1),
-  },
   modalActionBtn: {
-    flex: 1,
     paddingVertical: hp(1.2),
     borderRadius: 12,
     alignItems: 'center',
@@ -1136,6 +1241,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
     borderWidth: 1,
+    marginBottom: hp(0.8),
   },
   modalShareBtn: {
     borderColor: COLORS.primary,
@@ -1147,26 +1253,94 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   modalSaveBtn: {
-    backgroundColor: COLORS.primary,
     borderColor: COLORS.primary,
+    overflow: 'hidden',
+  },
+  modalSaveGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: hp(1.2),
+    width: '100%',
+    gap: 8,
   },
   modalSaveText: {
     color: COLORS.white,
     fontSize: wp(3.5),
     fontWeight: '600',
   },
-  modalQueueBtn: {
-    borderRadius: 12,
-    overflow: 'hidden',
+
+  // Info Modal
+  infoModalContainer: {
+    backgroundColor: COLORS.white,
+    borderRadius: 20,
+    padding: wp(4),
+    width: width * 0.88,
+    maxHeight: height * 0.7,
+    ...SHADOWS.large,
   },
-  modalQueueGradient: {
+  infoModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: hp(1),
+    paddingBottom: hp(0.5),
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  infoModalTitle: {
+    fontSize: wp(4.5),
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  infoModalBody: {
+    marginBottom: hp(1),
+  },
+  infoModalDescription: {
+    fontSize: wp(3.2),
+    color: COLORS.textSecondary,
+    lineHeight: wp(4.5),
+    marginBottom: hp(1),
+  },
+  infoModalDetail: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: hp(1.2),
+    marginBottom: hp(0.5),
     gap: 8,
   },
-  modalQueueText: {
+  infoModalLabel: {
+    fontSize: wp(3),
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  infoModalValue: {
+    fontSize: wp(3),
+    color: COLORS.primary,
+    fontWeight: '500',
+  },
+  infoModalSubLabel: {
+    fontSize: wp(3.2),
+    fontWeight: '600',
+    color: COLORS.text,
+    marginBottom: hp(0.3),
+  },
+  infoModalTestItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: hp(0.2),
+  },
+  infoModalTestText: {
+    fontSize: wp(2.8),
+    color: COLORS.textSecondary,
+  },
+  infoModalCloseBtn: {
+    backgroundColor: COLORS.primary,
+    paddingVertical: hp(0.8),
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  infoModalCloseText: {
     color: COLORS.white,
     fontSize: wp(3.5),
     fontWeight: '600',

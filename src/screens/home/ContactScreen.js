@@ -16,7 +16,6 @@ const hp = (percentage) => (height * percentage) / 100;
 
 const ContactScreen = ({ navigation }) => {
   const [showMapModal, setShowMapModal] = useState(false);
-  const [copiedText, setCopiedText] = useState('');
 
   const openMaps = () => {
     const url = "https://www.google.com/maps/search/?api=1&query=CDA+Hospital+Islamabad";
@@ -43,8 +42,6 @@ const ContactScreen = ({ navigation }) => {
   };
 
   const departments = [
-    { name: 'Emergency', phone: '1122', timing: '24/7', icon: 'alert-circle-outline' },
-    { name: 'Ambulance Service', phone: '1022', timing: '24/7', icon: 'car-sport-outline' },
     { name: 'OPD Registration', phone: '051-111-123-456', timing: '8AM - 8PM', icon: 'clipboard-outline' },
     { name: 'Pharmacy', phone: '051-111-123-457', timing: '24/7', icon: 'medkit-outline' },
     { name: 'Lab Services', phone: '051-111-123-458', timing: '8AM - 10PM', icon: 'flask-outline' },
@@ -66,7 +63,7 @@ const ContactScreen = ({ navigation }) => {
   const workingHours = [
     { day: 'Monday - Friday', hours: '8:00 AM - 8:00 PM' },
     { day: 'Saturday', hours: '9:00 AM - 5:00 PM' },
-    { day: 'Sunday', hours: '10:00 AM - 2:00 PM (Emergency 24/7)' },
+    { day: 'Sunday', hours: '10:00 AM - 2:00 PM' },
   ];
 
   return (
@@ -101,29 +98,9 @@ const ContactScreen = ({ navigation }) => {
                 </LinearGradient>
               </View>
               <Text style={styles.heroTitle}>Contact Us</Text>
-              <Text style={styles.heroSubtitle}>We're here to help 24/7</Text>
+              <Text style={styles.heroSubtitle}>We're here to help</Text>
             </View>
           </View>
-
-          {/* Emergency Contact Banner */}
-          <TouchableOpacity 
-            style={[styles.emergencyBanner, styles.cardShadow]}
-            onPress={() => openPhone('1122')}
-            activeOpacity={0.9}
-          >
-            <LinearGradient
-              colors={[COLORS.danger, '#CC0000']}
-              style={styles.emergencyGradient}
-            >
-              <Ionicons name="alert-circle" size={wp(6)} color={COLORS.white} />
-              <View style={styles.emergencyContent}>
-                <Text style={styles.emergencyTitle}>Emergency Helpline</Text>
-                <Text style={styles.emergencyNumber}>1122</Text>
-                <Text style={styles.emergencySub}>24/7 Ambulance & Emergency Services</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={wp(4.5)} color={COLORS.white} />
-            </LinearGradient>
-          </TouchableOpacity>
 
           {/* Main Contact Cards */}
           <View style={styles.section}>
@@ -153,8 +130,8 @@ const ContactScreen = ({ navigation }) => {
 
               <TouchableOpacity style={[styles.contactCard, styles.cardShadow]} onPress={openMaps}>
                 <View style={styles.cardContent}>
-                  <View style={[styles.cardIcon, { backgroundColor: COLORS.appointment + '15' }]}>
-                    <Ionicons name="location-outline" size={wp(5)} color={COLORS.appointment} />
+                  <View style={[styles.cardIcon, { backgroundColor: '#8B5CF6' + '15' }]}>
+                    <Ionicons name="location-outline" size={wp(5)} color="#8B5CF6" />
                   </View>
                   <Text style={styles.cardTitle}>Visit Us</Text>
                   <Text style={styles.cardValue}>CDA Hospital, G-6/2</Text>
@@ -164,8 +141,8 @@ const ContactScreen = ({ navigation }) => {
 
               <TouchableOpacity style={[styles.contactCard, styles.cardShadow]} onPress={shareApp}>
                 <View style={styles.cardContent}>
-                  <View style={[styles.cardIcon, { backgroundColor: COLORS.warning + '15' }]}>
-                    <Ionicons name="share-social-outline" size={wp(5)} color={COLORS.warning} />
+                  <View style={[styles.cardIcon, { backgroundColor: '#F59E0B' + '15' }]}>
+                    <Ionicons name="share-social-outline" size={wp(5)} color="#F59E0B" />
                   </View>
                   <Text style={styles.cardTitle}>Share App</Text>
                   <Text style={styles.cardValue}>Invite Friends</Text>
@@ -211,11 +188,6 @@ const ContactScreen = ({ navigation }) => {
                   <Text style={styles.hoursTime}>{item.hours}</Text>
                 </View>
               ))}
-              <View style={styles.hoursDivider} />
-              <View style={styles.emergencyNote}>
-                <Ionicons name="alert-circle" size={wp(3.5)} color={COLORS.danger} />
-                <Text style={styles.emergencyNoteText}>Emergency services available 24/7</Text>
-              </View>
             </View>
           </View>
 
@@ -327,39 +299,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: wp(4),
     paddingBottom: hp(5),
-  },
-
-  emergencyBanner: {
-    marginTop: hp(0.5),
-    marginBottom: hp(2),
-    borderRadius: wp(4),
-    overflow: 'hidden',
-  },
-  emergencyGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: wp(3.5),
-    gap: wp(3),
-  },
-  emergencyContent: {
-    flex: 1,
-  },
-  emergencyTitle: {
-    color: COLORS.white,
-    fontSize: wp(3.2),
-    fontWeight: 'bold',
-  },
-  emergencyNumber: {
-    color: COLORS.white,
-    fontSize: wp(5.5),
-    fontWeight: 'bold',
-    marginTop: hp(0.1),
-  },
-  emergencySub: {
-    color: COLORS.white,
-    fontSize: wp(2.3),
-    marginTop: hp(0.1),
-    opacity: 0.8,
   },
 
   section: {
@@ -480,21 +419,6 @@ const styles = StyleSheet.create({
   hoursTime: {
     color: COLORS.textSecondary,
     fontSize: wp(2.8),
-  },
-  hoursDivider: {
-    height: 1,
-    backgroundColor: COLORS.border,
-    marginVertical: hp(0.8),
-  },
-  emergencyNote: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: wp(2),
-  },
-  emergencyNoteText: {
-    color: COLORS.danger,
-    fontSize: wp(2.8),
-    fontWeight: '500',
   },
 
   socialGrid: {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, ActivityIndicator, StyleSheet, Alert, TouchableOpacity, Text } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { COLORS } from '../theme';
@@ -69,7 +69,7 @@ import MyPrescriptionsScreen from '../screens/prescription/MyPrescriptionsScreen
 import ProfileScreen from '../screens/profile/ProfileScreen';
 import SettingsScreen from '../screens/settings/SettingsScreen';
 import HealthIDScreen from '../screens/patient/HealthIDScreen';
-import HealthMetricsScreen from '../screens/patient/HealthMetricsScreen'
+import HealthMetricsScreen from '../screens/patient/HealthMetricsScreen';
 import HelpSupportScreen from '../screens/settings/HelpSupportScreen';
 import PoliciesScreen from '../screens/settings/PoliciesScreen'; 
 
@@ -85,12 +85,10 @@ import { AppointmentProvider } from '../context/AppointmentContext';
 
 const Stack = createNativeStackNavigator();
 
-// Maps a persisted user role to the screen they should land on when the
-// app is relaunched while already logged in. Mirrors the roleConfig
-// mapping used inside LoginScreen so behavior stays consistent.
+// Maps a persisted user role to the screen they should land on
 const ROLE_HOME_SCREEN = {
   patient: 'PatientPortal',
-  doctor: 'ManageDoctorsScreen',
+  doctor: 'DoctorDashboardScreen',
   admin: 'AdminDashboardScreen',
 };
 
@@ -204,37 +202,15 @@ export default function AppNavigator() {
   const [initialRoute, setInitialRoute] = useState('Welcome');
   const [initialParams, setInitialParams] = useState(undefined);
 
-  // On every app launch, check whether a user is already logged in
-  // (persisted via AsyncStorage during Login/Signup). If so, skip the
-  // Welcome/Login/Signup screens entirely and drop the user straight
-  // back into their portal - this is what keeps a signed-up/logged-in
-  // account "remembered" instead of asking them to sign up again.
   useEffect(() => {
-    const restoreSession = async () => {
-      try {
-        const isLoggedIn = await AsyncStorage.getItem('isLoggedIn');
-        const userDataString = await AsyncStorage.getItem('userData');
-
-        if (isLoggedIn === 'true' && userDataString) {
-          const userData = JSON.parse(userDataString);
-          const storedRole = await AsyncStorage.getItem('userRole');
-          const role = storedRole || userData.role || 'patient';
-          const homeScreen = ROLE_HOME_SCREEN[role] || 'PatientPortal';
-
-          setInitialRoute(homeScreen);
-          setInitialParams({ userData });
-        } else {
-          setInitialRoute('Welcome');
-        }
-      } catch (error) {
-        // If anything goes wrong reading storage, fail safe to Welcome
-        setInitialRoute('Welcome');
-      } finally {
-        setCheckingSession(false);
-      }
-    };
-
-    restoreSession();
+    // 🔥 SIMPLE FIX: Always show Welcome screen
+    // No need to check AsyncStorage at all
+    setInitialRoute('Welcome');
+    setCheckingSession(false);
+    
+    // (Optional) You can still clear data if you want
+    // AsyncStorage.clear();
+    
   }, []);
 
   if (checkingSession) {
@@ -257,6 +233,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.background || '#FFFFFF',
   },
 });

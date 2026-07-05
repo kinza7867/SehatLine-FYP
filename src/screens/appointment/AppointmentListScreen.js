@@ -68,28 +68,36 @@ const rndQueue = () => Math.floor(Math.random() * 5) + 1;
 const rndAhead = () => Math.floor(Math.random() * 5);
 
 // ─── Date/Time parser ─────────────────────────────────────────────────────────
-// Returns a proper Date object combining appointment date + time
 const parseAppointmentDateTime = (item) => {
-  // Best case: BookAppointmentScreen ne dateTimeISO save ki ho
   if (item.dateTimeISO) {
     return new Date(item.dateTimeISO);
   }
 
-  // Fallback: date string + time string manually parse karo
-  // date format: "Jun 28, 2026"  |  time format: "10:30 AM"
   try {
-    const base = new Date(item.date); // "Jun 28, 2026" → browser parse karta hai
-    if (!isNaN(base) && item.time) {
-      const [timePart, meridiem] = item.time.split(' ');
-      let [h, m] = timePart.split(':').map(Number);
-      if (meridiem === 'PM' && h !== 12) h += 12;
-      if (meridiem === 'AM' && h === 12) h = 0;
-      base.setHours(h, m, 0, 0);
+    if (item.date && item.time) {
+      const dateParts = item.date.split(/[,\s]+/);
+      if (dateParts.length >= 3) {
+        const month = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].indexOf(dateParts[0]);
+        const day = parseInt(dateParts[1]);
+        const year = parseInt(dateParts[2]);
+        if (month >= 0 && !isNaN(day) && !isNaN(year)) {
+          const base = new Date(year, month, day);
+          const [timePart, meridiem] = item.time.split(' ');
+          let [h, m] = timePart.split(':').map(Number);
+          if (meridiem === 'PM' && h !== 12) h += 12;
+          if (meridiem === 'AM' && h === 12) h = 0;
+          base.setHours(h, m, 0, 0);
+          return base;
+        }
+      }
     }
-    return base;
-  } catch (_) {
-    return new Date(0); // parse fail → treat as very old past
+  } catch (_) {}
+
+  if (item.bookedAt) {
+    return new Date(item.bookedAt);
   }
+
+  return new Date(0);
 };
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
@@ -161,7 +169,6 @@ const AppointmentListScreen = ({ navigation, route }) => {
           doctor:       app.departmentData?.doctor || getDoctorForDept(app.department),
           date:         app.date,
           time:         app.time,
-          // ✅ dateTimeISO forward karo taake parseAppointmentDateTime use kar sake
           dateTimeISO:  app.dateTimeISO || null,
           tokenNo:      app.token,
           status:       app.status,
@@ -186,25 +193,45 @@ const AppointmentListScreen = ({ navigation, route }) => {
   };
 
   // ── Filtering ─────────────────────────────────────────────────────────────────
-  // Business rule: an appointment/token is Upcoming until it is explicitly
-  // marked Completed (or canceled). It must NOT fall into Past just because
-  // its scheduled time/date has technically passed or because it has no
-  // dateTimeISO (e.g. freshly generated Pharmacy/Lab/Chronic tokens) —
-  // that was causing new bookings and tokens to wrongly land in Past.
   const isUpcoming = useCallback((item) => {
-    return !(
-      item.status === 'Completed' ||
-      item.status === 'Patient Canceled' ||
-      item.status === 'Canceled'
-    );
+    if (item.status === 'Completed' || 
+        item.status === 'Patient Canceled' || 
+        item.status === 'Canceled') {
+      return false;
+    }
+    
+    const apptDate = parseAppointmentDateTime(item);
+    const now = new Date();
+    
+    return apptDate > now;
   }, []);
 
-  const isPast = useCallback((item) => !isUpcoming(item), [isUpcoming]);
+  const isPast = useCallback((item) => {
+    if (item.status === 'Completed' || 
+        item.status === 'Patient Canceled' || 
+        item.status === 'Canceled') {
+      return true;
+    }
+    
+    const apptDate = parseAppointmentDateTime(item);
+    const now = new Date();
+    
+    return apptDate <= now;
+  }, []);
 
-  const filteredAppointments = useMemo(
-    () => appointments.filter(activeTab === 'upcoming' ? isUpcoming : isPast),
-    [appointments, activeTab, isUpcoming, isPast],
-  );
+  // ─── SORTING: Newest first ──────────────────────────────────────────────────
+  // Sort by bookedAt (newest first) so new appointments appear at top
+  const sortByNewest = useCallback((a, b) => {
+    const dateA = a.bookedAt ? new Date(a.bookedAt) : new Date(0);
+    const dateB = b.bookedAt ? new Date(b.bookedAt) : new Date(0);
+    return dateB - dateA; // Newest first
+  }, []);
+
+  const filteredAndSortedAppointments = useMemo(() => {
+    const filtered = appointments.filter(activeTab === 'upcoming' ? isUpcoming : isPast);
+    // ✅ Sort by newest first
+    return filtered.sort(sortByNewest);
+  }, [appointments, activeTab, isUpcoming, isPast, sortByNewest]);
 
   const upcomingCount = useMemo(() => appointments.filter(isUpcoming).length, [appointments, isUpcoming]);
   const pastCount     = useMemo(() => appointments.filter(isPast).length,     [appointments, isPast]);
@@ -299,7 +326,6 @@ const AppointmentListScreen = ({ navigation, route }) => {
         )}
 
         <View style={styles.card}>
-          {/* ── Header ── */}
           <View style={styles.cardHeader}>
             <View style={[styles.avatar, { backgroundColor: deptCfg.color }]}>
               <Text style={styles.avatarText}>
@@ -319,13 +345,11 @@ const AppointmentListScreen = ({ navigation, route }) => {
             </View>
           </View>
 
-          {/* ── Department badge ── */}
           <View style={[styles.deptBadge, { backgroundColor: deptCfg.bg }]}>
             <Ionicons name={deptCfg.icon} size={13} color={deptCfg.color} />
             <Text style={[styles.deptBadgeText, { color: deptCfg.color }]}>{item.department}</Text>
           </View>
 
-          {/* ── Token + queue (upcoming only) ── */}
           {upcoming && (
             <View style={styles.tokenQueueRow}>
               <View style={styles.tokenQueueItem}>
@@ -339,7 +363,6 @@ const AppointmentListScreen = ({ navigation, route }) => {
             </View>
           )}
 
-          {/* ── Date / Time / Room ── */}
           <View style={styles.detailsBox}>
             <View style={styles.detailRow}>
               <Ionicons name="calendar-outline" size={14} color={COLORS.primary} />
@@ -355,7 +378,6 @@ const AppointmentListScreen = ({ navigation, route }) => {
             </View>
           </View>
 
-          {/* ── Wait + position (upcoming only) ── */}
           {upcoming && (
             <View style={styles.waitRow}>
               <Text style={styles.waitText}>⏳ Wait: {item.waitingTime}</Text>
@@ -363,7 +385,6 @@ const AppointmentListScreen = ({ navigation, route }) => {
             </View>
           )}
 
-          {/* ── Visit purpose ── */}
           {!!item.visitPurpose && (
             <View style={styles.purposeRow}>
               <Ionicons name="document-text-outline" size={13} color={COLORS.textSecondary} />
@@ -371,7 +392,6 @@ const AppointmentListScreen = ({ navigation, route }) => {
             </View>
           )}
 
-          {/* ── Actions ── */}
           <View style={styles.actionRow}>
             <TouchableOpacity
               style={[styles.actionBtn, styles.actionBtnPrimary]}
@@ -421,7 +441,7 @@ const AppointmentListScreen = ({ navigation, route }) => {
       </Text>
       <Text style={styles.emptySubtext}>
         {activeTab === 'upcoming'
-          ? 'You have no scheduled appointments.'
+          ? 'You have no scheduled appointments for today or future.'
           : 'Your past appointments will appear here.'}
       </Text>
     </View>
@@ -515,7 +535,6 @@ const AppointmentListScreen = ({ navigation, route }) => {
         style={StyleSheet.absoluteFill}
       />
 
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.headerBtn} onPress={() => navigation.goBack()} activeOpacity={0.7}>
           <Ionicons name="arrow-back" size={24} color={COLORS.text} />
@@ -524,7 +543,6 @@ const AppointmentListScreen = ({ navigation, route }) => {
         <View style={styles.headerPlaceholder} />
       </View>
 
-      {/* Tabs */}
       <View style={styles.tabContainer}>
         {[
           { key: 'upcoming', label: 'Upcoming', icon: 'calendar-outline', count: upcomingCount },
@@ -552,9 +570,8 @@ const AppointmentListScreen = ({ navigation, route }) => {
         })}
       </View>
 
-      {/* List */}
       <FlatList
-        data={filteredAppointments}
+        data={filteredAndSortedAppointments}
         keyExtractor={(item) => String(item.id)}
         renderItem={renderCard}
         contentContainerStyle={styles.listPadding}
@@ -569,9 +586,9 @@ const AppointmentListScreen = ({ navigation, route }) => {
           />
         }
         ListHeaderComponent={
-          filteredAppointments.length > 0 ? (
+          filteredAndSortedAppointments.length > 0 ? (
             <Text style={styles.listCount}>
-              {filteredAppointments.length} appointment{filteredAppointments.length !== 1 ? 's' : ''}
+              {filteredAndSortedAppointments.length} appointment{filteredAndSortedAppointments.length !== 1 ? 's' : ''}
             </Text>
           ) : null
         }

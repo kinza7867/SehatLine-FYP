@@ -17,7 +17,6 @@ import {
   Animated,
   ActivityIndicator,
   SafeAreaView,
-  Switch,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -81,14 +80,13 @@ const DoctorPortalScreen = ({ navigation }) => {
   const [showDoctorModal, setShowDoctorModal] = useState(false);
   const [showAddDoctorModal, setShowAddDoctorModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedDepartment, setSelectedDepartment] = useState('All');
-  const [filterType, setFilterType] = useState('all');
+  const [selectedSpecialty, setSelectedSpecialty] = useState('All');
 
   const showToast = (message, type) => setToast({ visible: true, message, type });
 
-  // Complete Doctors Database
+  // ✅ All Doctors - ALL in Cardiology Department with different specialties
   const [doctors, setDoctors] = useState([
-    // Cardiology Department
+    // Cardiologists
     { 
       id: '1', 
       name: 'Dr. Ahmed Hassan', 
@@ -98,7 +96,6 @@ const DoctorPortalScreen = ({ navigation }) => {
       patientsHandled: 2847,
       rating: 4.9,
       status: 'available',
-      consultationFee: 2500,
       qualification: 'FCPS Cardiology, MBBS',
       email: 'ahmed.hassan@sehatline.com',
       phone: '+92 321 1234567',
@@ -124,7 +121,6 @@ const DoctorPortalScreen = ({ navigation }) => {
       patientsHandled: 2134,
       rating: 4.8,
       status: 'available',
-      consultationFee: 2200,
       qualification: 'FCPS Pediatrics, MBBS',
       email: 'fatima.noor@sehatline.com',
       phone: '+92 322 2345678',
@@ -150,7 +146,6 @@ const DoctorPortalScreen = ({ navigation }) => {
       patientsHandled: 3521,
       rating: 4.9,
       status: 'busy',
-      consultationFee: 3500,
       qualification: 'FCPS Cardiac Surgery, MBBS',
       email: 'zain.akhtar@sehatline.com',
       phone: '+92 323 3456789',
@@ -176,7 +171,6 @@ const DoctorPortalScreen = ({ navigation }) => {
       patientsHandled: 1876,
       rating: 4.7,
       status: 'available',
-      consultationFee: 2800,
       qualification: 'FCPS Cardiology, MBBS',
       email: 'ayesha.tariq@sehatline.com',
       phone: '+92 324 4567890',
@@ -202,7 +196,6 @@ const DoctorPortalScreen = ({ navigation }) => {
       patientsHandled: 2156,
       rating: 4.7,
       status: 'available',
-      consultationFee: 2300,
       qualification: 'FRCP, MBBS',
       email: 'usman.riaz@sehatline.com',
       phone: '+92 325 5678901',
@@ -220,17 +213,16 @@ const DoctorPortalScreen = ({ navigation }) => {
       bio: 'Clinical cardiologist focusing on preventive cardiology and cardiac rehabilitation.',
     },
 
-    // Pharmacy Department
+    // Cardiovascular Pharmacists
     { 
       id: '6', 
       name: 'Dr. Muhammad Hassan', 
-      specialty: 'Clinical Pharmacist', 
-      department: 'Pharmacy',
+      specialty: 'Cardiovascular Clinical Pharmacist', 
+      department: 'Cardiology',
       experience: '12 years',
       patientsHandled: 2980,
       rating: 4.9,
       status: 'available',
-      consultationFee: 1500,
       qualification: 'Pharm.D, RPh',
       email: 'muhammad.hassan@sehatline.com',
       phone: '+92 325 5678901',
@@ -245,21 +237,17 @@ const DoctorPortalScreen = ({ navigation }) => {
       joinDate: 'Aug 2020',
       certifications: ['BCPS', 'RPh'],
       location: 'CDA Hospital, Islamabad',
-      bio: 'Clinical pharmacist specializing in medication management and drug interactions.',
-      prescriptionVerified: 45,
-      drugInteractions: 3,
-      inventoryAlert: false,
+      bio: 'Clinical pharmacist specializing in cardiovascular medication management and drug interactions.',
     },
     { 
       id: '7', 
       name: 'Dr. Samina Ali', 
-      specialty: 'Hospital Pharmacist', 
-      department: 'Pharmacy',
+      specialty: 'Cardiology Hospital Pharmacist', 
+      department: 'Cardiology',
       experience: '9 years',
       patientsHandled: 2134,
       rating: 4.6,
       status: 'available',
-      consultationFee: 1200,
       qualification: 'Pharm.D, MBA',
       email: 'samina.ali@sehatline.com',
       phone: '+92 326 6789012',
@@ -274,23 +262,19 @@ const DoctorPortalScreen = ({ navigation }) => {
       joinDate: 'Jan 2021',
       certifications: ['RPh', 'MBA'],
       location: 'CDA Hospital, Islamabad',
-      bio: 'Hospital pharmacist with expertise in sterile compounding and medication safety.',
-      prescriptionVerified: 32,
-      drugInteractions: 1,
-      inventoryAlert: true,
+      bio: 'Hospital pharmacist with expertise in cardiovascular sterile compounding and medication safety.',
     },
 
-    // Laboratory Department
+    // Cardiovascular Pathologists
     { 
       id: '8', 
       name: 'Dr. Ahmed Khan', 
-      specialty: 'Clinical Pathologist', 
-      department: 'Laboratory',
+      specialty: 'Cardiovascular Pathologist', 
+      department: 'Cardiology',
       experience: '14 years',
       patientsHandled: 1340,
       rating: 4.8,
       status: 'available',
-      consultationFee: 1800,
       qualification: 'PhD, MBBS',
       email: 'ahmed.khan@sehatline.com',
       phone: '+92 327 7890123',
@@ -305,19 +289,17 @@ const DoctorPortalScreen = ({ navigation }) => {
       joinDate: 'Mar 2019',
       certifications: ['FACP', 'ASCP'],
       location: 'CDA Hospital, Islamabad',
-      bio: 'Clinical pathologist leading diagnostic laboratory services.',
-      testsProcessed: 156,
+      bio: 'Cardiovascular pathologist leading diagnostic laboratory services for heart conditions.',
     },
     { 
       id: '9', 
       name: 'Dr. Sana Javed', 
-      specialty: 'Microbiologist', 
-      department: 'Laboratory',
+      specialty: 'Cardiac Microbiologist', 
+      department: 'Cardiology',
       experience: '10 years',
       patientsHandled: 760,
       rating: 4.7,
       status: 'available',
-      consultationFee: 1600,
       qualification: 'MD, MRCPath',
       email: 'sana.javed@sehatline.com',
       phone: '+92 328 8901234',
@@ -332,21 +314,19 @@ const DoctorPortalScreen = ({ navigation }) => {
       joinDate: 'Jun 2022',
       certifications: ['MRCPath', 'FIDSA'],
       location: 'CDA Hospital, Islamabad',
-      bio: 'Medical microbiologist specializing in infectious disease diagnosis.',
-      testsProcessed: 89,
+      bio: 'Medical microbiologist specializing in cardiac infectious disease diagnosis.',
     },
 
-    // Other Specialists
+    // Neuro-Cardiologist
     { 
       id: '10', 
       name: 'Dr. Muhammad Ali', 
-      specialty: 'Neurologist', 
-      department: 'Neurology',
+      specialty: 'Neuro-Cardiologist', 
+      department: 'Cardiology',
       experience: '10 years',
       patientsHandled: 760,
       rating: 4.6,
       status: 'available',
-      consultationFee: 2600,
       qualification: 'FACP, MBBS',
       email: 'muhammad.ali@sehatline.com',
       phone: '+92 329 9012345',
@@ -361,18 +341,19 @@ const DoctorPortalScreen = ({ navigation }) => {
       joinDate: 'Jul 2020',
       certifications: ['FACP', 'ABPN'],
       location: 'CDA Hospital, Islamabad',
-      bio: 'Neurologist specializing in stroke, epilepsy, and Parkinson\'s disease.',
+      bio: 'Neuro-cardiologist specializing in stroke, epilepsy, and cardiovascular neurology.',
     },
+
+    // Cardiovascular Research Specialist
     { 
       id: '11', 
       name: 'Dr. Ayesha Malik', 
-      specialty: 'Gynecologist & Obstetrician', 
-      department: 'Gynecology',
+      specialty: 'Cardiovascular Research Specialist', 
+      department: 'Cardiology',
       experience: '11 years',
       patientsHandled: 1850,
       rating: 4.9,
       status: 'available',
-      consultationFee: 2800,
       qualification: 'FACOG, MBBS',
       email: 'ayesha.malik@sehatline.com',
       phone: '+92 332 2345678',
@@ -387,13 +368,14 @@ const DoctorPortalScreen = ({ navigation }) => {
       joinDate: 'Feb 2020',
       certifications: ['FACOG', 'FACS'],
       location: 'CDA Hospital, Islamabad',
-      bio: 'Comprehensive women\'s health care specialist.',
+      bio: 'Cardiovascular research specialist focusing on women\'s heart health and clinical trials.',
     },
   ]);
 
-  const departments = ['All', 'Cardiology', 'Pharmacy', 'Laboratory', 'Neurology', 'Gynecology'];
+  // ✅ Only Cardiology Department - Filter by Specialty
+  const specialties = ['All', 'Interventional Cardiologist', 'Pediatric Cardiologist', 'Cardiothoracic Surgeon', 'Cardiac Electrophysiologist', 'Clinical Cardiologist', 'Cardiovascular Clinical Pharmacist', 'Cardiology Hospital Pharmacist', 'Cardiovascular Pathologist', 'Cardiac Microbiologist', 'Neuro-Cardiologist', 'Cardiovascular Research Specialist'];
 
-  // Stats
+  // ✅ Stats
   const stats = {
     totalDoctors: doctors.length,
     activeToday: doctors.filter(d => d.status === 'available').length,
@@ -402,9 +384,6 @@ const DoctorPortalScreen = ({ navigation }) => {
     totalPatientsServed: doctors.reduce((sum, d) => sum + d.patientsHandled, 0),
     avgRating: (doctors.reduce((sum, d) => sum + d.rating, 0) / doctors.length).toFixed(1),
     emergencyOnCall: doctors.filter(d => d.emergencyOnCall).length,
-    cardiologists: doctors.filter(d => d.department === 'Cardiology').length,
-    pharmacists: doctors.filter(d => d.department === 'Pharmacy').length,
-    labSpecialists: doctors.filter(d => d.department === 'Laboratory').length,
   };
 
   const onRefresh = () => {
@@ -435,10 +414,9 @@ const DoctorPortalScreen = ({ navigation }) => {
 
   const filteredDoctors = doctors.filter(doctor => {
     const matchesSearch = doctor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      doctor.specialty.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      doctor.department.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesDepartment = selectedDepartment === 'All' || doctor.department === selectedDepartment;
-    return matchesSearch && matchesDepartment;
+      doctor.specialty.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSpecialty = selectedSpecialty === 'All' || doctor.specialty === selectedSpecialty;
+    return matchesSearch && matchesSpecialty;
   });
 
   const handleDeleteDoctor = (id) => {
@@ -475,7 +453,7 @@ const DoctorPortalScreen = ({ navigation }) => {
     }, 500);
   };
 
-  // Render Doctor Card - Modern Design
+  // Render Doctor Card
   const renderDoctorCard = ({ item }) => (
     <TouchableOpacity 
       activeOpacity={0.9} 
@@ -533,11 +511,6 @@ const DoctorPortalScreen = ({ navigation }) => {
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
-            <Ionicons name="cash-outline" size={14} color={COLORS.primary} />
-            <Text style={styles.statItemText}>₨{item.consultationFee}</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
             <Ionicons name="calendar-outline" size={14} color={COLORS.primary} />
             <Text style={styles.statItemText}>{item.todayAppointments}</Text>
           </View>
@@ -575,10 +548,10 @@ const DoctorPortalScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
       
       <LinearGradient
-        colors={[COLORS.primary, COLORS.background, COLORS.background]}
+        colors={[COLORS.primary, COLORS.secondary, COLORS.background]}
         start={{ x: 0, y: 0 }}
         end={{ x: 0, y: 1 }}
         style={styles.gradientBackground}
@@ -589,24 +562,22 @@ const DoctorPortalScreen = ({ navigation }) => {
 
         {/* Header */}
         <View style={styles.header}>
-          {/* FIX: Use navigation.replace to go to home screen */}
           <TouchableOpacity 
             style={styles.backBtn} 
-            onPress={() => {
-              // Use replace to go to home screen - Change 'HomeScreen' to your actual screen name
-              navigation.replace('HomeScreen');
-            }}
+            onPress={() => navigation.navigate('HomeScreen')}
           >
-            <Ionicons name="arrow-back" size={24} color={COLORS.white} />
+            <Ionicons name="arrow-back" size={wp(5)} color={COLORS.white} />
           </TouchableOpacity>
           
           <View style={styles.logoContainer}>
             <View style={styles.logoOutline}>
               <Image source={require('../../../assets/logo.png')} style={styles.logoImage} resizeMode="contain" />
             </View>
+            <Text style={styles.headerTitle}>SehatLine</Text>
           </View>
+          
           <TouchableOpacity style={styles.notifBtn}>
-            <Ionicons name="notifications-outline" size={24} color={COLORS.white} />
+            <Ionicons name="notifications-outline" size={wp(5)} color={COLORS.white} />
             <View style={styles.badge}>
               <Text style={styles.badgeText}>3</Text>
             </View>
@@ -614,8 +585,8 @@ const DoctorPortalScreen = ({ navigation }) => {
         </View>
 
         <View style={styles.titleContainer}>
-          <Text style={styles.title}>Doctor Portal</Text>
-          <Text style={styles.subtitle}>Complete Doctor Management System</Text>
+          <Text style={styles.title}>Cardiology Department</Text>
+          <Text style={styles.subtitle}>Complete Cardiology Management System</Text>
         </View>
 
         <ScrollView 
@@ -624,7 +595,7 @@ const DoctorPortalScreen = ({ navigation }) => {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} tintColor={COLORS.primary} />}
         >
 
-          {/* Hero Stats - Modern Card */}
+          {/* Hero Stats */}
           <View style={styles.heroStats}>
             <LinearGradient
               colors={[COLORS.primary + '20', COLORS.secondary + '10']}
@@ -654,21 +625,17 @@ const DoctorPortalScreen = ({ navigation }) => {
             </LinearGradient>
           </View>
 
-          {/* Department Quick Filters */}
+          {/* Specialty Filters - Only Cardiology Specialties */}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.deptFilterScroll}>
-            <TouchableOpacity 
-              style={[styles.deptFilterChip, selectedDepartment === 'All' && styles.deptFilterChipActive]}
-              onPress={() => setSelectedDepartment('All')}
-            >
-              <Text style={[styles.deptFilterText, selectedDepartment === 'All' && styles.deptFilterTextActive]}>All</Text>
-            </TouchableOpacity>
-            {departments.filter(d => d !== 'All').map((dept) => (
+            {specialties.map((specialty) => (
               <TouchableOpacity 
-                key={dept}
-                style={[styles.deptFilterChip, selectedDepartment === dept && styles.deptFilterChipActive]}
-                onPress={() => setSelectedDepartment(dept)}
+                key={specialty}
+                style={[styles.deptFilterChip, selectedSpecialty === specialty && styles.deptFilterChipActive]}
+                onPress={() => setSelectedSpecialty(specialty)}
               >
-                <Text style={[styles.deptFilterText, selectedDepartment === dept && styles.deptFilterTextActive]}>{dept}</Text>
+                <Text style={[styles.deptFilterText, selectedSpecialty === specialty && styles.deptFilterTextActive]}>
+                  {specialty === 'All' ? 'All' : specialty.split(' ').slice(0, 2).join(' ')}
+                </Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
@@ -676,23 +643,23 @@ const DoctorPortalScreen = ({ navigation }) => {
           {/* Search Bar */}
           <View style={styles.searchWrapper}>
             <View style={[styles.searchBar, styles.cardShadow]}>
-              <Ionicons name="search-outline" size={20} color={COLORS.textSecondary} />
+              <Ionicons name="search-outline" size={wp(4.5)} color={COLORS.textSecondary} />
               <TextInput 
                 style={styles.searchInput}
-                placeholder="Search doctors by name, specialty..."
+                placeholder="Search doctors by name or specialty..."
                 placeholderTextColor={COLORS.textLight}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
               />
               {searchQuery.length > 0 && (
                 <TouchableOpacity onPress={() => setSearchQuery('')}>
-                  <Ionicons name="close-circle" size={20} color={COLORS.textLight} />
+                  <Ionicons name="close-circle" size={wp(4.5)} color={COLORS.textLight} />
                 </TouchableOpacity>
               )}
             </View>
             <TouchableOpacity style={[styles.addBtn, styles.cardShadow]} onPress={() => setShowAddDoctorModal(true)}>
               <LinearGradient colors={[COLORS.primary, COLORS.secondary]} style={styles.addBtnGradient}>
-                <Ionicons name="add" size={24} color={COLORS.white} />
+                <Ionicons name="add" size={wp(5.5)} color={COLORS.white} />
               </LinearGradient>
             </TouchableOpacity>
           </View>
@@ -714,7 +681,7 @@ const DoctorPortalScreen = ({ navigation }) => {
             />
           ) : (
             <View style={styles.emptyContainer}>
-              <Ionicons name="people-outline" size={60} color={COLORS.border} />
+              <Ionicons name="people-outline" size={wp(15)} color={COLORS.border} />
               <Text style={styles.emptyText}>No doctors found</Text>
               <Text style={styles.emptySubText}>Try adjusting your search or filters</Text>
             </View>
@@ -730,7 +697,7 @@ const DoctorPortalScreen = ({ navigation }) => {
             <View style={styles.addDoctorHeader}>
               <Text style={styles.addDoctorTitle}>Add New Doctor</Text>
               <TouchableOpacity onPress={() => setShowAddDoctorModal(false)}>
-                <Ionicons name="close" size={24} color={COLORS.text} />
+                <Ionicons name="close" size={wp(5.5)} color={COLORS.text} />
               </TouchableOpacity>
             </View>
             <ScrollView style={styles.addDoctorBody} showsVerticalScrollIndicator={false}>
@@ -741,16 +708,13 @@ const DoctorPortalScreen = ({ navigation }) => {
               <TextInput style={[styles.input, styles.cardShadow]} placeholder="Enter specialty" placeholderTextColor={COLORS.textLight} />
               
               <Text style={styles.inputLabel}>Department</Text>
-              <TextInput style={[styles.input, styles.cardShadow]} placeholder="Enter department" placeholderTextColor={COLORS.textLight} />
+              <TextInput style={[styles.input, styles.cardShadow]} placeholder="Cardiology" placeholderTextColor={COLORS.textLight} value="Cardiology" editable={false} />
               
               <Text style={styles.inputLabel}>Qualification</Text>
               <TextInput style={[styles.input, styles.cardShadow]} placeholder="Enter qualification" placeholderTextColor={COLORS.textLight} />
               
               <Text style={styles.inputLabel}>Experience (years)</Text>
               <TextInput style={[styles.input, styles.cardShadow]} placeholder="Enter experience" placeholderTextColor={COLORS.textLight} keyboardType="numeric" />
-              
-              <Text style={styles.inputLabel}>Consultation Fee (PKR)</Text>
-              <TextInput style={[styles.input, styles.cardShadow]} placeholder="Enter fee" placeholderTextColor={COLORS.textLight} keyboardType="numeric" />
               
               <Text style={styles.inputLabel}>Bio</Text>
               <TextInput 
@@ -767,7 +731,7 @@ const DoctorPortalScreen = ({ navigation }) => {
               }}>
                 <LinearGradient colors={[COLORS.primary, COLORS.secondary]} style={styles.submitGradient}>
                   <Text style={styles.submitText}>Add Doctor</Text>
-                  <Ionicons name="arrow-forward" size={20} color={COLORS.white} />
+                  <Ionicons name="arrow-forward" size={wp(4.5)} color={COLORS.white} />
                 </LinearGradient>
               </TouchableOpacity>
             </ScrollView>
@@ -780,7 +744,13 @@ const DoctorPortalScreen = ({ navigation }) => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
-  gradientBackground: { ...StyleSheet.absoluteFillObject },
+  gradientBackground: { 
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: hp(25),
+  },
   safeArea: { flex: 1 },
 
   // Header
@@ -788,21 +758,28 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: SIZES.xl,
-    paddingTop: Platform.OS === 'ios' ? 10 : StatusBar.currentHeight + 10,
-    paddingBottom: SIZES.sm,
+    paddingHorizontal: wp(5),
+    paddingTop: Platform.OS === 'ios' ? hp(1) : StatusBar.currentHeight + hp(1),
+    paddingBottom: hp(1),
   },
   backBtn: {
-    width: 40, height: 40,
-    justifyContent: 'center', alignItems: 'center',
+    width: wp(9),
+    height: wp(9),
+    justifyContent: 'center',
+    alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.15)',
-    borderRadius: 20,
+    borderRadius: wp(4.5),
     ...SHADOWS.medium,
   },
-  logoContainer: { flexDirection: 'row', alignItems: 'center' },
+  logoContainer: { 
+    flexDirection: 'row', 
+    alignItems: 'center',
+    gap: wp(2),
+  },
   logoOutline: {
-    width: 44, height: 44,
-    borderRadius: 22,
+    width: wp(10),
+    height: wp(10),
+    borderRadius: wp(5),
     borderWidth: 2,
     borderColor: COLORS.white,
     backgroundColor: 'rgba(255,255,255,0.1)',
@@ -810,57 +787,68 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     ...SHADOWS.medium,
   },
-  logoImage: { width: 32, height: 32, borderRadius: 16 },
+  logoImage: { width: wp(7), height: wp(7), borderRadius: wp(3.5) },
+  headerTitle: {
+    color: COLORS.white,
+    fontSize: wp(4.5),
+    fontWeight: 'bold',
+  },
   notifBtn: {
-    width: 40, height: 40,
-    justifyContent: 'center', alignItems: 'center',
+    width: wp(9),
+    height: wp(9),
+    justifyContent: 'center',
+    alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.15)',
-    borderRadius: 20,
+    borderRadius: wp(4.5),
     position: 'relative',
     ...SHADOWS.medium,
   },
   badge: {
     position: 'absolute',
-    top: 2,
-    right: 2,
-    backgroundColor: COLORS.danger,
-    borderRadius: 8,
-    minWidth: 16,
-    height: 16,
+    top: -2,
+    right: -2,
+    backgroundColor: COLORS.danger || '#EF4444',
+    borderRadius: wp(2),
+    minWidth: wp(4),
+    height: wp(4),
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 4,
+    paddingHorizontal: wp(1),
   },
-  badgeText: { color: COLORS.white, fontSize: 9, fontWeight: 'bold' },
+  badgeText: { color: COLORS.white, fontSize: wp(2), fontWeight: 'bold' },
 
   titleContainer: {
-    paddingHorizontal: SIZES.xl,
-    marginBottom: SIZES.md,
+    paddingHorizontal: wp(5),
+    marginBottom: hp(1.5),
   },
   title: {
     color: COLORS.white,
-    fontSize: SIZES.h2,
+    fontSize: wp(5.5),
     fontWeight: 'bold',
   },
   subtitle: {
     color: COLORS.white,
-    fontSize: SIZES.body,
+    fontSize: wp(3.2),
     opacity: 0.8,
-    marginTop: 2,
+    marginTop: hp(0.3),
   },
 
-  scrollContent: { paddingBottom: 40 },
+  scrollContent: { 
+    paddingBottom: hp(4),
+    paddingTop: hp(1),
+  },
 
   // Hero Stats
   heroStats: {
-    paddingHorizontal: SIZES.xl,
-    marginBottom: SIZES.md,
+    paddingHorizontal: wp(5),
+    marginBottom: hp(1.5),
   },
   heroStatsCard: {
-    borderRadius: SIZES.radiusLg,
-    padding: SIZES.lg,
+    borderRadius: wp(4),
+    padding: wp(4),
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: COLORS.border || '#E8ECF0',
+    backgroundColor: 'rgba(255,255,255,0.9)',
   },
   heroStatsGrid: {
     flexDirection: 'row',
@@ -872,43 +860,43 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   heroStatNumber: {
-    fontSize: SIZES.h2,
+    fontSize: wp(5),
     fontWeight: 'bold',
-    color: COLORS.text,
+    color: COLORS.text || '#1A2332',
   },
   heroStatLabel: {
-    fontSize: SIZES.xSmall,
-    color: COLORS.textSecondary,
-    marginTop: 2,
+    fontSize: wp(2.6),
+    color: COLORS.textSecondary || '#5A6B7A',
+    marginTop: hp(0.2),
   },
   heroStatDivider: {
     width: 1,
-    height: 30,
-    backgroundColor: COLORS.border,
+    height: hp(3.5),
+    backgroundColor: COLORS.border || '#E8ECF0',
   },
 
-  // Department Filters
+  // Specialty Filters
   deptFilterScroll: {
-    paddingHorizontal: SIZES.xl,
-    marginBottom: SIZES.md,
+    paddingHorizontal: wp(5),
+    marginBottom: hp(1.5),
   },
   deptFilterChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingHorizontal: wp(3.5),
+    paddingVertical: hp(0.6),
+    borderRadius: wp(5),
     backgroundColor: COLORS.white,
-    marginRight: 10,
+    marginRight: wp(2),
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: COLORS.border || '#E8ECF0',
     ...SHADOWS.small,
   },
   deptFilterChipActive: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
+    backgroundColor: COLORS.primary || '#00D4FF',
+    borderColor: COLORS.primary || '#00D4FF',
   },
   deptFilterText: {
-    fontSize: SIZES.small,
-    color: COLORS.textSecondary,
+    fontSize: wp(2.8),
+    color: COLORS.textSecondary || '#5A6B7A',
     fontWeight: '500',
   },
   deptFilterTextActive: {
@@ -918,100 +906,101 @@ const styles = StyleSheet.create({
   // Search
   searchWrapper: {
     flexDirection: 'row',
-    paddingHorizontal: SIZES.xl,
-    gap: 12,
-    marginBottom: SIZES.md,
+    paddingHorizontal: wp(5),
+    gap: wp(3),
+    marginBottom: hp(1.5),
   },
   searchBar: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.white,
-    borderRadius: SIZES.radiusLg,
-    paddingHorizontal: SIZES.md,
-    paddingVertical: 10,
+    borderRadius: wp(3),
+    paddingHorizontal: wp(3),
+    paddingVertical: hp(0.6),
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: COLORS.border || '#E8ECF0',
   },
   searchInput: {
     flex: 1,
-    color: COLORS.text,
-    fontSize: SIZES.body,
-    paddingVertical: 4,
-    marginLeft: 10,
+    color: COLORS.text || '#1A2332',
+    fontSize: wp(3.5),
+    paddingVertical: hp(0.3),
+    marginLeft: wp(2),
   },
   addBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: SIZES.radiusLg,
+    width: wp(11),
+    height: wp(11),
+    borderRadius: wp(3),
     overflow: 'hidden',
     ...SHADOWS.button,
   },
   addBtnGradient: {
-    width: 48,
-    height: 48,
+    width: wp(11),
+    height: wp(11),
     justifyContent: 'center',
     alignItems: 'center',
   },
 
   // Doctors Count
   doctorsCountContainer: {
-    paddingHorizontal: SIZES.xl,
-    marginBottom: SIZES.md,
+    paddingHorizontal: wp(5),
+    marginBottom: hp(1.5),
   },
   doctorsCountText: {
-    fontSize: SIZES.small,
-    color: COLORS.textSecondary,
+    fontSize: wp(3.2),
+    color: COLORS.textSecondary || '#5A6B7A',
     fontWeight: '500',
   },
 
-  // Doctor Card - Modern Design
+  // Doctor Card
   doctorCardWrapper: {
-    paddingHorizontal: SIZES.xl,
-    marginBottom: SIZES.md,
+    paddingHorizontal: wp(5),
+    marginBottom: hp(1.5),
   },
   doctorCard: {
-    borderRadius: SIZES.radiusLg,
-    padding: SIZES.md,
+    borderRadius: wp(4),
+    padding: wp(3.5),
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: COLORS.border || '#E8ECF0',
     position: 'relative',
+    backgroundColor: COLORS.white,
   },
   cardShadow: { ...SHADOWS.medium },
   
   statusBadge: {
     position: 'absolute',
-    top: 12,
-    right: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+    top: wp(2.5),
+    right: wp(2.5),
+    paddingHorizontal: wp(2.5),
+    paddingVertical: hp(0.2),
+    borderRadius: wp(3),
     zIndex: 10,
   },
   statusBadgeText: {
     color: COLORS.white,
-    fontSize: 10,
+    fontSize: wp(2.2),
     fontWeight: '600',
   },
 
   doctorCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: hp(0.8),
   },
   avatarWrapper: {
     position: 'relative',
-    marginRight: 14,
+    marginRight: wp(3),
   },
   doctorAvatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: wp(13),
+    height: wp(13),
+    borderRadius: wp(6.5),
     justifyContent: 'center',
     alignItems: 'center',
   },
   doctorAvatarText: {
-    fontSize: 18,
+    fontSize: wp(4.5),
     fontWeight: 'bold',
     color: COLORS.white,
   },
@@ -1019,10 +1008,10 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -2,
     right: -2,
-    backgroundColor: COLORS.danger,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
+    backgroundColor: COLORS.danger || '#EF4444',
+    width: wp(4.5),
+    height: wp(4.5),
+    borderRadius: wp(2.25),
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
@@ -1032,67 +1021,67 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   doctorCardName: {
-    fontSize: 16,
+    fontSize: wp(4),
     fontWeight: 'bold',
-    color: COLORS.text,
+    color: COLORS.text || '#1A2332',
   },
   doctorCardSpecialty: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
-    marginTop: 1,
+    fontSize: wp(3.2),
+    color: COLORS.textSecondary || '#5A6B7A',
+    marginTop: hp(0.1),
   },
   departmentChipWrapper: {
-    marginTop: 4,
+    marginTop: hp(0.2),
   },
   departmentChip: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
+    paddingHorizontal: wp(2),
+    paddingVertical: hp(0.1),
+    borderRadius: wp(2.5),
     alignSelf: 'flex-start',
   },
   departmentChipText: {
-    fontSize: 10,
+    fontSize: wp(2.4),
     fontWeight: '600',
   },
   ratingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.warning + '15',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    gap: 4,
+    backgroundColor: '#F59E0B15',
+    paddingHorizontal: wp(2),
+    paddingVertical: hp(0.2),
+    borderRadius: wp(3),
+    gap: wp(0.8),
   },
   ratingText: {
-    fontSize: 13,
+    fontSize: wp(3.2),
     fontWeight: '700',
-    color: COLORS.text,
+    color: COLORS.text || '#1A2332',
   },
 
   doctorCardStats: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
-    paddingVertical: 10,
+    paddingVertical: hp(0.6),
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
+    borderTopColor: COLORS.border || '#E8ECF0',
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-    marginBottom: 12,
+    borderBottomColor: COLORS.border || '#E8ECF0',
+    marginBottom: hp(0.8),
   },
   statItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: wp(0.8),
   },
   statItemText: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
+    fontSize: wp(2.8),
+    color: COLORS.textSecondary || '#5A6B7A',
   },
   statDivider: {
     width: 1,
-    height: 20,
-    backgroundColor: COLORS.border,
+    height: hp(2.5),
+    backgroundColor: COLORS.border || '#E8ECF0',
   },
 
   doctorCardFooter: {
@@ -1102,32 +1091,32 @@ const styles = StyleSheet.create({
   },
   footerBtn: {
     flex: 1,
-    borderRadius: SIZES.radiusMd,
+    borderRadius: wp(2.5),
     overflow: 'hidden',
   },
   portalBtn: {
-    marginRight: 10,
+    marginRight: wp(2),
   },
   portalBtnGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10,
-    gap: 6,
+    paddingVertical: hp(0.6),
+    gap: wp(1.5),
   },
   portalBtnText: {
     color: COLORS.white,
-    fontSize: 13,
+    fontSize: wp(3.2),
     fontWeight: '600',
   },
   footerActions: {
     flexDirection: 'row',
-    gap: 8,
+    gap: wp(2),
   },
   footerActionBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: wp(8.5),
+    height: wp(8.5),
+    borderRadius: wp(4.25),
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1136,18 +1125,18 @@ const styles = StyleSheet.create({
   emptyContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 40,
+    paddingVertical: hp(4),
   },
   emptyText: {
-    fontSize: SIZES.h4,
+    fontSize: wp(4.5),
     fontWeight: '600',
-    color: COLORS.text,
-    marginTop: 12,
+    color: COLORS.text || '#1A2332',
+    marginTop: hp(1),
   },
   emptySubText: {
-    fontSize: SIZES.body,
-    color: COLORS.textSecondary,
-    marginTop: 4,
+    fontSize: wp(3.5),
+    color: COLORS.textSecondary || '#5A6B7A',
+    marginTop: hp(0.3),
   },
 
   // Add Doctor Modal
@@ -1161,83 +1150,83 @@ const styles = StyleSheet.create({
     width: width * 0.92,
     maxHeight: height * 0.85,
     backgroundColor: COLORS.white,
-    borderRadius: SIZES.radiusXl,
+    borderRadius: wp(5),
     overflow: 'hidden',
   },
   addDoctorHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: SIZES.lg,
+    padding: wp(4),
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    borderBottomColor: COLORS.border || '#E8ECF0',
   },
   addDoctorTitle: {
-    fontSize: SIZES.h4,
+    fontSize: wp(4.5),
     fontWeight: 'bold',
-    color: COLORS.text,
+    color: COLORS.text || '#1A2332',
   },
   addDoctorBody: {
-    padding: SIZES.lg,
+    padding: wp(4),
   },
   inputLabel: {
-    fontSize: SIZES.small,
+    fontSize: wp(3.2),
     fontWeight: '500',
-    color: COLORS.text,
-    marginBottom: 4,
+    color: COLORS.text || '#1A2332',
+    marginBottom: hp(0.2),
   },
   input: {
-    backgroundColor: COLORS.backgroundSecondary,
-    borderRadius: SIZES.radiusMd,
-    padding: SIZES.md,
-    marginBottom: SIZES.md,
-    fontSize: SIZES.body,
-    color: COLORS.text,
+    backgroundColor: COLORS.backgroundSecondary || '#F0F4F8',
+    borderRadius: wp(2.5),
+    padding: wp(3),
+    marginBottom: hp(0.8),
+    fontSize: wp(3.5),
+    color: COLORS.text || '#1A2332',
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: COLORS.border || '#E8ECF0',
   },
   bioInput: {
-    height: 100,
+    height: hp(12),
     textAlignVertical: 'top',
   },
   submitBtn: {
-    borderRadius: SIZES.radiusMd,
+    borderRadius: wp(2.5),
     overflow: 'hidden',
-    marginTop: SIZES.sm,
+    marginTop: hp(0.5),
   },
   submitGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 14,
-    gap: 8,
+    paddingVertical: hp(1.2),
+    gap: wp(2),
   },
   submitText: {
     color: COLORS.white,
-    fontSize: SIZES.body,
+    fontSize: wp(3.5),
     fontWeight: 'bold',
   },
 
   // Toast
   toastContainer: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 50 : 30,
-    left: 20,
-    right: 20,
+    top: Platform.OS === 'ios' ? hp(5) : hp(3),
+    left: wp(5),
+    right: wp(5),
     zIndex: 1000,
-    borderRadius: SIZES.radiusMd,
-    paddingHorizontal: SIZES.md,
-    paddingVertical: SIZES.sm,
+    borderRadius: wp(3),
+    paddingHorizontal: wp(3),
+    paddingVertical: hp(0.5),
     ...SHADOWS.medium,
   },
   toastContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: wp(2),
   },
   toastMessage: {
     flex: 1,
-    fontSize: SIZES.body,
+    fontSize: wp(3.5),
     fontWeight: '500',
   },
 });

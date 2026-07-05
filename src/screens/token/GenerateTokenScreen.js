@@ -20,22 +20,21 @@ const hp = (p) => (height * p) / 100;
 
 // ─── COLORS ──────────────────────────────────────────────────────────────────
 const COLORS_CUSTOM = {
-  pharmacyLight: '#E8F8F0',
-  pharmacyGreen: '#2ECC71',
-  pharmacyDark: '#1A8C4A',
-  labOrange: '#F39C12',
-  labLight: '#FEF5E7',
-  labDark: '#D68910',
-  chronicBlue: '#3B82F6',
-  chronicLight: '#EAF2FE',
-  chronicDark: '#1D4ED8',
-  primary: '#20D3C2',
-  secondary: '#0EA5A4',
-  accent: '#5EEAD4',
-  success: '#2ECC71',
+  pharmacyGreen: '#10B981',
+  pharmacyLight: '#10B98115',
+  pharmacyDark: '#059669',
+  labOrange: '#F59E0B',
+  labLight: '#F59E0B15',
+  labDark: '#D97706',
+  chronicBlue: '#8B5CF6',
+  chronicLight: '#8B5CF615',
+  chronicDark: '#6D28D9',
+  primary: '#00D4FF',
+  secondary: '#0EA5E9',
+  success: '#10B981',
   white: '#FFFFFF',
   text: '#1E293B',
-  textSecondary: '#475569',
+  textSecondary: '#64748B',
   textLight: '#94A3B8',
   background: '#F8FAFC',
   border: '#E2E8F0',
@@ -161,14 +160,12 @@ const GenerateTokenScreen = ({ navigation, route }) => {
     {
       id: 'chronic',
       name: 'Chronic OPD Token',
-      icon: 'pulse-outline',
+      icon: 'medical-outline',
       color: COLORS_CUSTOM.chronicBlue,
       lightColor: COLORS_CUSTOM.chronicLight,
-      bgColor: COLORS_CUSTOM.chronicBlue + '10',
       description: 'Get token for Chronic OPD consultation',
       prefix: 'C',
       route: 'ChronicDashboardScreen',
-      gradient: [COLORS_CUSTOM.chronicLight, COLORS_CUSTOM.chronicBlue],
     },
     {
       id: 'pharmacy',
@@ -176,11 +173,9 @@ const GenerateTokenScreen = ({ navigation, route }) => {
       icon: 'medkit-outline',
       color: COLORS_CUSTOM.pharmacyGreen,
       lightColor: COLORS_CUSTOM.pharmacyLight,
-      bgColor: COLORS_CUSTOM.pharmacyGreen + '10',
       description: 'Get token for medicine collection',
       prefix: 'P',
       route: 'PharmacyDashboardScreen',
-      gradient: [COLORS_CUSTOM.pharmacyLight, COLORS_CUSTOM.pharmacyGreen],
     },
     {
       id: 'lab',
@@ -188,16 +183,13 @@ const GenerateTokenScreen = ({ navigation, route }) => {
       icon: 'flask-outline',
       color: COLORS_CUSTOM.labOrange,
       lightColor: COLORS_CUSTOM.labLight,
-      bgColor: COLORS_CUSTOM.labOrange + '10',
       description: 'Get token for lab tests',
       prefix: 'L',
       route: 'LabDashboardScreen',
-      gradient: [COLORS_CUSTOM.labLight, COLORS_CUSTOM.labOrange],
     },
   ];
 
-  // Chronic OPD doctors & visit types (mirrors BookAppointmentScreen so the
-  // experience is consistent across the app)
+  // Chronic OPD doctors & visit types
   const chronicDoctors = [
     'Dr. Sarah Ahmed - Cardiologist',
     'Dr. Muhammad Khan - Endocrinologist',
@@ -214,10 +206,8 @@ const GenerateTokenScreen = ({ navigation, route }) => {
     'Follow-up Visit',
     'Medication Review',
     'Test Results Review',
-    'Emergency Consultation',
   ];
 
-  // Use complete medicine list
   const commonMedicines = getAllChronicMedicines().map(m => m.name);
 
   const testCategories = {
@@ -282,7 +272,6 @@ const GenerateTokenScreen = ({ navigation, route }) => {
     );
   };
 
-  // ─── Prescription Reference Input ──────────────────────────────────────
   const handlePrescriptionRefChange = (text) => {
     const numericText = text.replace(/[^0-9]/g, '');
     setPrescriptionRef(numericText);
@@ -366,7 +355,7 @@ const GenerateTokenScreen = ({ navigation, route }) => {
     return `${displayHours}:${String(newMins).padStart(2, '0')} ${newPeriod}`;
   };
 
-  // ── Token generation ───────────────────────────────────────────────────────
+  // ─── Token generation ───────────────────────────────────────────────────────
   const departmentNameMap = {
     'Chronic OPD Token': 'Chronic OPD',
     'Pharmacy Token': 'Pharmacy',
@@ -402,7 +391,7 @@ const GenerateTokenScreen = ({ navigation, route }) => {
         hasPrescription: !!prescriptionImage,
       };
       room = 'Pharmacy Wing - Counter 3, Ground Floor';
-      purpose = ''; // No purpose for pharmacy
+      purpose = '';
     }
     if (dept === 'Laboratory Token') {
       departmentData = {
@@ -503,17 +492,30 @@ const GenerateTokenScreen = ({ navigation, route }) => {
     }, 1500);
   };
 
-  // Resolves the accent colors for a generated token's department. Used
-  // everywhere a token/modal/PDF needs to color itself (previously this
-  // was a Pharmacy/Laboratory-only binary check).
-  const getDeptDisplayColors = (deptName) => {
-    if (deptName === 'Pharmacy') {
-      return { color: COLORS_CUSTOM.pharmacyGreen, light: COLORS_CUSTOM.pharmacyLight };
+  // ─── Department Color Helper ──────────────────────────────────────────────
+  const getDeptColors = (deptName) => {
+    if (deptName === 'Chronic OPD' || deptName === 'Chronic OPD Token') {
+      return { color: COLORS_CUSTOM.chronicBlue, light: COLORS_CUSTOM.chronicLight, dark: COLORS_CUSTOM.chronicDark };
     }
-    if (deptName === 'Chronic OPD') {
-      return { color: COLORS_CUSTOM.chronicBlue, light: COLORS_CUSTOM.chronicLight };
+    if (deptName === 'Pharmacy' || deptName === 'Pharmacy Token') {
+      return { color: COLORS_CUSTOM.pharmacyGreen, light: COLORS_CUSTOM.pharmacyLight, dark: COLORS_CUSTOM.pharmacyDark };
     }
-    return { color: COLORS_CUSTOM.labOrange, light: COLORS_CUSTOM.labLight };
+    if (deptName === 'Laboratory' || deptName === 'Laboratory Token') {
+      return { color: COLORS_CUSTOM.labOrange, light: COLORS_CUSTOM.labLight, dark: COLORS_CUSTOM.labDark };
+    }
+    return { color: COLORS.primary, light: COLORS.primary + '15', dark: COLORS.secondary };
+  };
+
+  const getDeptColor = () => {
+    const dept = selectedDepartment || 'Laboratory Token';
+    const colors = getDeptColors(dept);
+    return colors.color;
+  };
+
+  const getGradient = () => {
+    const dept = selectedDepartment || 'Laboratory Token';
+    const colors = getDeptColors(dept);
+    return [colors.color, colors.dark];
   };
 
   // ─── Download Token as PDF ──────────────────────────────────────────────
@@ -522,7 +524,8 @@ const GenerateTokenScreen = ({ navigation, route }) => {
     setDownloading(true);
 
     try {
-      const { color: deptColor, light: lightColor } = getDeptDisplayColors(generatedToken.department);
+      const deptColors = getDeptColors(generatedToken.department);
+      const { color: deptColor, light: lightColor } = deptColors;
 
       const htmlContent = `
         <html>
@@ -582,20 +585,22 @@ const GenerateTokenScreen = ({ navigation, route }) => {
                 font-weight: 600;
                 margin-bottom: 12px;
               }
-              .qr-section {
+              .wait-time {
                 text-align: center;
-                margin: 10px 0;
-                padding: 12px;
-                background: rgba(255,255,255,0.5);
+                background: ${deptColor}15;
                 border-radius: 12px;
+                padding: 10px;
+                margin: 8px 0;
+                border: 1px solid ${deptColor}40;
               }
-              .qr-icon {
-                font-size: 48px;
-                margin-bottom: 4px;
-              }
-              .qr-text {
+              .wait-time-label {
+                font-size: 13px;
                 color: #475569;
-                font-size: 11px;
+              }
+              .wait-time-value {
+                font-size: 24px;
+                font-weight: bold;
+                color: ${deptColor};
               }
               .details {
                 background: white;
@@ -632,34 +637,6 @@ const GenerateTokenScreen = ({ navigation, route }) => {
                 font-size: 11px;
                 color: #475569;
               }
-              .status-badge {
-                display: inline-block;
-                background: ${deptColor}22;
-                color: ${deptColor};
-                padding: 4px 12px;
-                border-radius: 12px;
-                font-size: 12px;
-                font-weight: 600;
-                text-align: center;
-                margin-top: 4px;
-              }
-              .wait-time {
-                text-align: center;
-                background: ${deptColor}15;
-                border-radius: 12px;
-                padding: 10px;
-                margin: 8px 0;
-                border: 1px solid ${deptColor}40;
-              }
-              .wait-time-label {
-                font-size: 13px;
-                color: #475569;
-              }
-              .wait-time-value {
-                font-size: 24px;
-                font-weight: bold;
-                color: ${deptColor};
-              }
             </style>
           </head>
           <body>
@@ -671,18 +648,10 @@ const GenerateTokenScreen = ({ navigation, route }) => {
               
               <div class="token-number">${generatedToken.token}</div>
               <div class="dept-name">${generatedToken.department}</div>
-              <div style="text-align:center;">
-                <span class="status-badge">Confirmed</span>
-              </div>
               
               <div class="wait-time">
                 <div class="wait-time-label">Estimated Wait Time</div>
                 <div class="wait-time-value">${generatedToken.waitingTime}</div>
-              </div>
-              
-              <div class="qr-section">
-                <div class="qr-icon">QR</div>
-                <div class="qr-text">Scan this code at the hospital counter</div>
               </div>
               
               <div class="details">
@@ -741,6 +710,10 @@ const GenerateTokenScreen = ({ navigation, route }) => {
                   <span class="label">Sample</span>
                   <span class="value">${generatedToken.departmentData.sampleType}</span>
                 </div>
+                <div class="row">
+                  <span class="label">Purpose</span>
+                  <span class="value">${generatedToken.purpose}</span>
+                </div>
                 `}
               </div>
               
@@ -758,28 +731,14 @@ const GenerateTokenScreen = ({ navigation, route }) => {
         base64: false,
       });
 
-      const fileName = `Token_${generatedToken.token}_${Date.now()}.pdf`;
-
-      if (Platform.OS === 'android') {
-        if (await Sharing.isAvailableAsync()) {
-          await Sharing.shareAsync(uri, {
-            mimeType: 'application/pdf',
-            dialogTitle: 'Save Token PDF',
-            UTI: 'com.adobe.pdf',
-          });
-        } else {
-          Alert.alert('Success', 'Token PDF generated successfully!');
-        }
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri, {
+          mimeType: 'application/pdf',
+          dialogTitle: 'Save Token PDF',
+          UTI: 'com.adobe.pdf',
+        });
       } else {
-        if (await Sharing.isAvailableAsync()) {
-          await Sharing.shareAsync(uri, {
-            mimeType: 'application/pdf',
-            dialogTitle: 'Save Token PDF',
-            UTI: 'com.adobe.pdf',
-          });
-        } else {
-          Alert.alert('Success', 'Token PDF generated successfully!');
-        }
+        Alert.alert('Success', 'Token PDF generated successfully!');
       }
 
     } catch (error) {
@@ -845,6 +804,7 @@ const GenerateTokenScreen = ({ navigation, route }) => {
     } else if (generatedToken.department === 'Laboratory') {
       msg += `\nTest: ${generatedToken.departmentData.testType}`;
       msg += `\nSample: ${generatedToken.departmentData.sampleType}`;
+      msg += `\nPurpose: ${generatedToken.purpose}`;
     }
 
     try {
@@ -958,19 +918,7 @@ const GenerateTokenScreen = ({ navigation, route }) => {
     );
   };
 
-  // ── Dept colour helpers ────────────────────────────────────────────────────
-  const getDeptColor = () => ({
-    'Chronic OPD Token': COLORS_CUSTOM.chronicBlue,
-    'Pharmacy Token': COLORS_CUSTOM.pharmacyGreen,
-    'Laboratory Token': COLORS_CUSTOM.labOrange,
-  } [selectedDepartment] || COLORS.primary);
-
-  const getGradient = () => ({
-    'Chronic OPD Token': [COLORS_CUSTOM.chronicBlue, COLORS_CUSTOM.chronicDark],
-    'Pharmacy Token': [COLORS_CUSTOM.pharmacyGreen, COLORS_CUSTOM.pharmacyDark],
-    'Laboratory Token': [COLORS_CUSTOM.labOrange, COLORS_CUSTOM.labDark],
-  } [selectedDepartment] || [COLORS.primary, COLORS.secondary]);
-
+  // ─── Get Dept Info ──────────────────────────────────────────────────────────
   const getDeptInfo = () => {
     if (selectedDepartment === 'Chronic OPD Token') {
       return { color: COLORS_CUSTOM.chronicBlue, lightColor: COLORS_CUSTOM.chronicLight };
@@ -981,7 +929,7 @@ const GenerateTokenScreen = ({ navigation, route }) => {
     return { color: COLORS_CUSTOM.labOrange, lightColor: COLORS_CUSTOM.labLight };
   };
 
-  // ── Render sections ────────────────────────────────────────────────────────
+  // ─── Render sections ────────────────────────────────────────────────────────
   const renderDeptSelection = () => (
     <View style={styles.departmentContainer}>
       <Text style={styles.sectionTitle}>Generate Token</Text>
@@ -1012,7 +960,7 @@ const GenerateTokenScreen = ({ navigation, route }) => {
     <View style={styles.formContainer}>
       <View style={styles.formHeader}>
         <TouchableOpacity onPress={goBackToDepts} style={styles.backBtnSmall}>
-          <Ionicons name="arrow-back" size={24} color={COLORS_CUSTOM.white} />
+          <Ionicons name="arrow-back" size={24} color={COLORS_CUSTOM.chronicBlue} />
         </TouchableOpacity>
         <Text style={[styles.formTitle, { color: COLORS_CUSTOM.chronicBlue }]}>Chronic OPD Token</Text>
       </View>
@@ -1047,7 +995,7 @@ const GenerateTokenScreen = ({ navigation, route }) => {
     <View style={styles.formContainer}>
       <View style={styles.formHeader}>
         <TouchableOpacity onPress={goBackToDepts} style={styles.backBtnSmall}>
-          <Ionicons name="arrow-back" size={24} color={COLORS_CUSTOM.white} />
+          <Ionicons name="arrow-back" size={24} color={COLORS_CUSTOM.pharmacyGreen} />
         </TouchableOpacity>
         <Text style={[styles.formTitle, { color: COLORS_CUSTOM.pharmacyGreen }]}>Pharmacy Token</Text>
       </View>
@@ -1115,7 +1063,7 @@ const GenerateTokenScreen = ({ navigation, route }) => {
     <View style={styles.formContainer}>
       <View style={styles.formHeader}>
         <TouchableOpacity onPress={goBackToDepts} style={styles.backBtnSmall}>
-          <Ionicons name="arrow-back" size={24} color={COLORS_CUSTOM.white} />
+          <Ionicons name="arrow-back" size={24} color={COLORS_CUSTOM.labOrange} />
         </TouchableOpacity>
         <Text style={[styles.formTitle, { color: COLORS_CUSTOM.labOrange }]}>Laboratory Token</Text>
       </View>
@@ -1195,7 +1143,7 @@ const GenerateTokenScreen = ({ navigation, route }) => {
           </Modal>
         )}
 
-        <Text style={styles.label}>Select Time (8:00 AM – 1:00 PM)</Text>
+        <Text style={styles.label}>Select Time (8:00 AM – 12:30 PM)</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
           {timeSlots.map((t) => (
             <TouchableOpacity
@@ -1225,7 +1173,8 @@ const GenerateTokenScreen = ({ navigation, route }) => {
   // ─── TOKEN MODAL ──────────────────────────────────────────────────────────
   const renderTokenModal = () => {
     if (!generatedToken) return null;
-    const { color: deptColor, light: lightColor } = getDeptDisplayColors(generatedToken.department);
+    const deptColors = getDeptColors(generatedToken.department);
+    const { color: deptColor, light: lightColor } = deptColors;
 
     return (
       <Modal visible={showTokenModal} transparent animationType="fade" onRequestClose={() => setShowTokenModal(false)}>
@@ -1237,7 +1186,7 @@ const GenerateTokenScreen = ({ navigation, route }) => {
             <Text style={styles.modalTitle}>Token Generated!</Text>
             <Text style={styles.modalSubtitle}>Your token has been generated successfully</Text>
 
-            {/* ─── COMPLETE TOKEN CARD ─── */}
+            {/* ─── UNIFIED TOKEN CARD ─── */}
             <View style={[styles.tokenCard, { borderColor: deptColor, borderWidth: 2 }]}>
               <LinearGradient
                 colors={[lightColor, lightColor]}
@@ -1249,7 +1198,7 @@ const GenerateTokenScreen = ({ navigation, route }) => {
                 <View style={styles.tokenCardHeader}>
                   <Text style={styles.tokenCardTitle}>CDA HOSPITAL</Text>
                   <Text style={styles.tokenCardSub}>ISLAMABAD</Text>
-                  <Text style={styles.tokenCardLocation}>CDA Hospital, G-8/4, Islamabad</Text>
+                  <Text style={styles.tokenCardLocation}>CDA Hospital, Islamabad</Text>
                 </View>
 
                 {/* Token Number */}
@@ -1260,14 +1209,6 @@ const GenerateTokenScreen = ({ navigation, route }) => {
                   {generatedToken.department}
                 </Text>
 
-                {/* QR Code Placeholder */}
-                <View style={[styles.qrContainer, { backgroundColor: deptColor + '15' }]}>
-                  <Ionicons name="qr-code" size={60} color={deptColor} />
-                  <Text style={[styles.qrText, { color: COLORS_CUSTOM.textSecondary }]}>
-                    Scan at hospital counter
-                  </Text>
-                </View>
-
                 {/* Wait Time - HIGHLIGHTED */}
                 <View style={[styles.waitTimeContainer, { backgroundColor: deptColor + '15', borderColor: deptColor + '40' }]}>
                   <Ionicons name="time-outline" size={24} color={deptColor} />
@@ -1277,7 +1218,7 @@ const GenerateTokenScreen = ({ navigation, route }) => {
                   </Text>
                 </View>
 
-                {/* Token Details - DARK TEXT COLORS */}
+                {/* Token Details - UNIFIED for all departments */}
                 <View style={[styles.tokenCardDetails, { backgroundColor: deptColor + '08' }]}>
                   <View style={styles.tokenCardRow}>
                     <Text style={[styles.tokenCardLabel, { color: COLORS_CUSTOM.textSecondary }]}>
@@ -1328,7 +1269,7 @@ const GenerateTokenScreen = ({ navigation, route }) => {
                     </Text>
                   </View>
                   
-                  {/* Pharmacy details - NO PURPOSE */}
+                  {/* Department-specific details */}
                   {generatedToken.department === 'Pharmacy' && (
                     <>
                       <View style={styles.tokenCardRow}>
@@ -1350,7 +1291,6 @@ const GenerateTokenScreen = ({ navigation, route }) => {
                     </>
                   )}
                   
-                  {/* Chronic OPD details - WITH PURPOSE */}
                   {generatedToken.department === 'Chronic OPD' && (
                     <>
                       <View style={styles.tokenCardRow}>
@@ -1369,10 +1309,17 @@ const GenerateTokenScreen = ({ navigation, route }) => {
                           {generatedToken.departmentData.visitType}
                         </Text>
                       </View>
+                      <View style={styles.tokenCardRow}>
+                        <Text style={[styles.tokenCardLabel, { color: COLORS_CUSTOM.textSecondary }]}>
+                          Purpose
+                        </Text>
+                        <Text style={[styles.tokenCardValue, { color: COLORS_CUSTOM.text }]}>
+                          {generatedToken.purpose}
+                        </Text>
+                      </View>
                     </>
                   )}
 
-                  {/* Laboratory details - WITH PURPOSE */}
                   {generatedToken.department === 'Laboratory' && (
                     <>
                       <View style={styles.tokenCardRow}>
@@ -1405,7 +1352,7 @@ const GenerateTokenScreen = ({ navigation, route }) => {
               </LinearGradient>
             </View>
 
-            {/* ─── ACTION BUTTONS: Download + View Queue ─── */}
+            {/* ─── ACTION BUTTONS ─── */}
             <View style={styles.modalActions}>
               <TouchableOpacity
                 style={[styles.modalActionBtn, styles.modalDownloadBtn, { backgroundColor: deptColor, borderColor: deptColor }]}
@@ -1476,7 +1423,7 @@ const GenerateTokenScreen = ({ navigation, route }) => {
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
       <LinearGradient
         colors={[COLORS.primary, COLORS.secondary, COLORS.background]}
-        start={{ x: 0, y: 0 }} end={{ x: 0, y: 0.6 }}
+        start={{ x: 0, y: 0 }} end={{ x: 0, y: 0.33 }}
         style={StyleSheet.absoluteFill}
       />
       <SafeAreaView style={{ flex: 1 }}>
@@ -1539,7 +1486,7 @@ const styles = StyleSheet.create({
 
   departmentContainer: { marginTop: hp(1) },
   sectionTitle: { color: COLORS_CUSTOM.white, fontSize: wp(5.5), fontWeight: 'bold' },
-  sectionSubtitle: { color: COLORS_CUSTOM.white + '70', fontSize: wp(3.5), marginTop: hp(0.5), marginBottom: hp(2) },
+  sectionSubtitle: { color: COLORS_CUSTOM.white, fontSize: wp(3.5), marginTop: hp(0.5), marginBottom: hp(2) },
   departmentButtonsContainer: { gap: 12 },
   departmentButton: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF',
@@ -1551,12 +1498,12 @@ const styles = StyleSheet.create({
   departmentName: { fontSize: wp(4.5), fontWeight: '700' },
   departmentDesc: { fontSize: wp(3), color: COLORS_CUSTOM.textLight, marginTop: 2 },
 
-  formContainer: { marginTop: hp(1) },
+  formContainer: { marginTop: hp(6) },
   formHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: hp(1.5) },
   backBtnSmall: { padding: wp(1.5), marginRight: wp(2) },
   formTitle: { fontSize: wp(5), fontWeight: '700' },
 
-  label: { color: COLORS_CUSTOM.text, fontSize: wp(3.8), fontWeight: '600', marginBottom: hp(0.8), marginTop: hp(1.5) },
+  label: { color: COLORS_CUSTOM.text, fontSize: wp(3.8), fontWeight: '600', marginBottom: hp(0.), marginTop: hp(1.5) },
 
   chipScroll: { flexDirection: 'row', marginBottom: hp(0.5) },
   chip: {
@@ -1692,14 +1639,6 @@ const styles = StyleSheet.create({
   },
   tokenCardLabel: { fontSize: wp(2.8), fontWeight: '500' },
   tokenCardValue: { fontSize: wp(3), fontWeight: '600', maxWidth: '60%', textAlign: 'right' },
-
-  qrContainer: {
-    alignItems: 'center',
-    borderRadius: 12,
-    padding: wp(2),
-    marginVertical: hp(0.5),
-  },
-  qrText: { fontSize: wp(2.8), marginTop: hp(0.3) },
 
   modalActions: { flexDirection: 'row', gap: 10, marginBottom: hp(1) },
   modalActionBtn: {
