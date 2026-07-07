@@ -130,7 +130,7 @@ const LoginScreen = ({ navigation }) => {
     return unsubscribe;
   }, [navigation]);
 
-  // Detect role from email
+  // Detect role from email - Updated with all modules
   const detectRole = (email) => {
     if (!email) return 'patient';
     
@@ -143,11 +143,34 @@ const LoginScreen = ({ navigation }) => {
       return 'admin';
     }
     
-    // Doctor detection
-    if (emailLower.includes('doctor') || 
-        emailLower.includes('dr.') ||
-        emailLower.includes('physician')) {
+    // Doctor detection - Now using sehatline.com domain
+    if (emailLower.includes('doctor@sehatline.com') || 
+        emailLower.includes('doctor') || 
+        emailLower.includes('dr.')) {
       return 'doctor';
+    }
+    
+    // Lab detection
+    if (emailLower.includes('lab@sehatline.com') || 
+        emailLower.includes('lab') || 
+        emailLower.includes('laboratory')) {
+      return 'lab';
+    }
+    
+    // Pharmacy detection
+    if (emailLower.includes('pharmacy@sehatline.com') || 
+        emailLower.includes('pharmacy') || 
+        emailLower.includes('pharma')) {
+      return 'pharmacy';
+    }
+    
+    // Chronic/Cardiology detection
+    if (emailLower.includes('chronic@sehatline.com') || 
+        emailLower.includes('cardio@sehatline.com') || 
+        emailLower.includes('chronic') || 
+        emailLower.includes('cardiology') ||
+        emailLower.includes('cardio')) {
+      return 'chronic';
     }
     
     return 'patient';
@@ -170,6 +193,33 @@ const LoginScreen = ({ navigation }) => {
       bgColor: COLORS.warning + '15',
       navigateTo: 'ManageDoctorsScreen',
       gradientColors: [COLORS.warning, '#F59E0B'],
+      requiresSignup: false,
+    },
+    lab: {
+      name: 'Lab',
+      icon: 'flask-outline',
+      color: '#8B5CF6', // Purple
+      bgColor: '#8B5CF6' + '15',
+      navigateTo: 'LabDashboardScreen', // You can change this
+      gradientColors: ['#8B5CF6', '#6D28D9'],
+      requiresSignup: false,
+    },
+    pharmacy: {
+      name: 'Pharmacy',
+      icon: 'medal-outline',
+      color: '#10B981', // Green
+      bgColor: '#10B981' + '15',
+      navigateTo: 'PharmacyDashboardScreen', // You can change this
+      gradientColors: ['#10B981', '#059669'],
+      requiresSignup: false,
+    },
+    chronic: {
+      name: 'Chronic/Cardiology',
+      icon: 'heart-outline',
+      color: '#EF4444', // Red
+      bgColor: '#EF4444' + '15',
+      navigateTo: 'ChronicDashboardScreen', // You can change this
+      gradientColors: ['#EF4444', '#DC2626'],
       requiresSignup: false,
     },
     admin: {
@@ -249,9 +299,11 @@ const LoginScreen = ({ navigation }) => {
         if (user) return user;
       }
       
-      // If not found, check if it's a doctor or admin (pre-defined)
+      // If not found, check if it's a role-based user (pre-defined)
       const emailLower = emailOrPhone.toLowerCase();
-      if (emailLower.includes('doctor') || emailLower.includes('dr.')) {
+      
+      // Doctor check
+      if (emailLower.includes('doctor@sehatline.com') || emailLower.includes('doctor')) {
         return {
           name: emailOrPhone.split('@')[0] || 'Doctor',
           email: emailOrPhone,
@@ -260,6 +312,44 @@ const LoginScreen = ({ navigation }) => {
           joinDate: new Date().toLocaleDateString(),
         };
       }
+      
+      // Lab check
+      if (emailLower.includes('lab@sehatline.com') || emailLower.includes('lab')) {
+        return {
+          name: emailOrPhone.split('@')[0] || 'Lab',
+          email: emailOrPhone,
+          phone: '',
+          role: 'lab',
+          joinDate: new Date().toLocaleDateString(),
+        };
+      }
+      
+      // Pharmacy check
+      if (emailLower.includes('pharmacy@sehatline.com') || emailLower.includes('pharmacy')) {
+        return {
+          name: emailOrPhone.split('@')[0] || 'Pharmacy',
+          email: emailOrPhone,
+          phone: '',
+          role: 'pharmacy',
+          joinDate: new Date().toLocaleDateString(),
+        };
+      }
+      
+      // Chronic/Cardiology check
+      if (emailLower.includes('chronic@sehatline.com') || 
+          emailLower.includes('cardio@sehatline.com') || 
+          emailLower.includes('chronic') || 
+          emailLower.includes('cardiology')) {
+        return {
+          name: emailOrPhone.split('@')[0] || 'Chronic',
+          email: emailOrPhone,
+          phone: '',
+          role: 'chronic',
+          joinDate: new Date().toLocaleDateString(),
+        };
+      }
+      
+      // Admin check
       if (emailLower.includes('admin') || emailLower.includes('administrator') || emailLower.includes('manager')) {
         return {
           name: 'Administrator',
