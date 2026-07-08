@@ -1,3 +1,4 @@
+// src/screens/auth/LoginScreen.js
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   View, Text, TextInput, TouchableOpacity, StyleSheet, 
@@ -191,34 +192,34 @@ const LoginScreen = ({ navigation }) => {
       icon: 'medkit-outline',
       color: COLORS.warning,
       bgColor: COLORS.warning + '15',
-      navigateTo: 'ManageDoctorsScreen',
+      navigateTo: 'DoctorPortalScreen',  // ✅ FIXED: Changed from DoctorPortalScreen to DoctorDashboardScreen
       gradientColors: [COLORS.warning, '#F59E0B'],
       requiresSignup: false,
     },
     lab: {
       name: 'Lab',
       icon: 'flask-outline',
-      color: '#8B5CF6', // Purple
+      color: '#8B5CF6',
       bgColor: '#8B5CF6' + '15',
-      navigateTo: 'LabDashboardScreen', // You can change this
+      navigateTo: 'LabDashboardScreen',
       gradientColors: ['#8B5CF6', '#6D28D9'],
       requiresSignup: false,
     },
     pharmacy: {
       name: 'Pharmacy',
       icon: 'medal-outline',
-      color: '#10B981', // Green
+      color: '#10B981',
       bgColor: '#10B981' + '15',
-      navigateTo: 'PharmacyDashboardScreen', // You can change this
+      navigateTo: 'PharmacyDashboardScreen',
       gradientColors: ['#10B981', '#059669'],
       requiresSignup: false,
     },
     chronic: {
       name: 'Chronic/Cardiology',
       icon: 'heart-outline',
-      color: '#EF4444', // Red
+      color: '#EF4444',
       bgColor: '#EF4444' + '15',
-      navigateTo: 'ChronicDashboardScreen', // You can change this
+      navigateTo: 'ChronicDashboardScreen',
       gradientColors: ['#EF4444', '#DC2626'],
       requiresSignup: false,
     },
@@ -240,11 +241,9 @@ const LoginScreen = ({ navigation }) => {
   const validateEmailOrPhone = (value) => {
     if (!value) return 'Email or Phone is required';
     
-    // Check if it's an email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (emailRegex.test(value)) return '';
     
-    // Check if it's a phone number (basic validation)
     const phoneRegex = /^[0-9+\-\s()]{7,15}$/;
     if (phoneRegex.test(value)) return '';
     
@@ -288,7 +287,6 @@ const LoginScreen = ({ navigation }) => {
   // Get user data by email or phone
   const getUserData = async (emailOrPhone) => {
     try {
-      // First check registered users
       const registeredUsersString = await AsyncStorage.getItem('registeredUsers');
       if (registeredUsersString) {
         const registeredUsers = JSON.parse(registeredUsersString);
@@ -299,7 +297,6 @@ const LoginScreen = ({ navigation }) => {
         if (user) return user;
       }
       
-      // If not found, check if it's a role-based user (pre-defined)
       const emailLower = emailOrPhone.toLowerCase();
       
       // Doctor check
@@ -397,7 +394,6 @@ const LoginScreen = ({ navigation }) => {
       const isEmail = emailOrPhone.includes('@');
       const loginValue = isEmail ? emailOrPhone : emailOrPhone;
       
-      // Find user in registered users or detect role
       let user = await getUserData(loginValue);
       
       if (!user) {
@@ -409,7 +405,6 @@ const LoginScreen = ({ navigation }) => {
         return;
       }
       
-      // If user has no role, detect it from email
       if (!user.role) {
         user.role = detectRole(user.email);
       }
@@ -417,7 +412,6 @@ const LoginScreen = ({ navigation }) => {
       const detectedRole = user.role || detectRole(user.email);
       const currentRole = roleConfig[detectedRole] || roleConfig.patient;
       
-      // For patients, check if they have signed up
       if (detectedRole === 'patient' && currentRole.requiresSignup) {
         const accountExists = await checkUserAccount(loginValue);
         if (!accountExists) {
@@ -442,12 +436,13 @@ const LoginScreen = ({ navigation }) => {
         
         await saveUserData(userData.name, userData.email, userData.phone, detectedRole);
         
-        // Save to registered users if patient
         if (detectedRole === 'patient') {
           await saveUserToRegistered(userData);
         }
         
         showToast(`Welcome ${currentRole.name}! Login Successful`, 'success');
+        
+        // ✅ FIX: Use navigation.replace with correct screen name
         setTimeout(() => {
           navigation.replace(currentRole.navigateTo, {
             userData: userData,
@@ -508,9 +503,6 @@ const LoginScreen = ({ navigation }) => {
         joinDate: new Date().toLocaleDateString(),
       };
       await AsyncStorage.setItem('userData', JSON.stringify(userData));
-      // Also persist the session flags. AppNavigator checks these on
-      // app launch to keep the user logged in until they explicitly
-      // log out from Settings, instead of asking them to sign up again.
       await AsyncStorage.setItem('isLoggedIn', 'true');
       await AsyncStorage.setItem('userRole', role);
     } catch (error) {
@@ -546,7 +538,6 @@ const LoginScreen = ({ navigation }) => {
           end={{ x: 0, y: 1 }}
           style={styles.gradientBackground}
         >
-          {/* Toast Notification */}
           <ToastNotification 
             visible={toast.visible}
             message={toast.message}
@@ -569,9 +560,8 @@ const LoginScreen = ({ navigation }) => {
               bounces={false}
             >
               
-              {/* Logo Section with Backlight */}
+              {/* Logo Section */}
               <View style={styles.logoSection}>
-                {/* Glowing Backlight */}
                 <View style={styles.logoBacklight}>
                   <LinearGradient
                     colors={[COLORS.primary + '30', COLORS.primary + '10', 'transparent']}
@@ -662,7 +652,7 @@ const LoginScreen = ({ navigation }) => {
                 </View>
               </View>
 
-              {/* Fingerprint - Outside Container */}
+              {/* Fingerprint */}
               <TouchableOpacity style={styles.fingerprintContainer} onPress={handleFingerprintLogin} activeOpacity={0.7}>
                 <View style={[styles.fingerprintCircle, { borderColor: COLORS.primary + '40' }]}>
                   <LinearGradient
@@ -706,7 +696,6 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'ios' ? 20 : 10,
   },
 
-  // Toast Notification
   toastContainer: {
     position: 'absolute',
     top: Platform.OS === 'ios' ? 50 : 30,
@@ -732,7 +721,6 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
 
-  // Logo Section with Backlight
   logoSection: {
     alignItems: 'center',
     marginBottom: height * 0.04,
@@ -793,7 +781,6 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
 
-  // Form Container
   formContainer: {
     width: '100%',
     maxWidth: 420,
@@ -807,7 +794,6 @@ const styles = StyleSheet.create({
     ...SHADOWS.medium,
   },
 
-  // Input Styles
   inputGroup: {
     marginBottom: SIZES.md,
   },
@@ -840,7 +826,6 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
 
-  // Forgot Password
   forgotLink: {
     alignSelf: 'flex-end',
     marginBottom: SIZES.xl,
@@ -851,7 +836,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // Login Button
   loginButton: {
     borderRadius: 12,
     overflow: 'hidden',
@@ -870,7 +854,6 @@ const styles = StyleSheet.create({
     letterSpacing: 1.5,
   },
 
-  // Sign Up
   signupContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -885,7 +868,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 
-  // Fingerprint
   fingerprintContainer: {
     alignItems: 'center',
     marginTop: height * 0.035,
@@ -915,7 +897,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
 
-  // Version
   versionText: {
     textAlign: 'center',
     color: COLORS.textLight,

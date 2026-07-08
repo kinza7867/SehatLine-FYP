@@ -1,101 +1,182 @@
+// src/screens/doctor/DoctorAvailabilityScreen.js
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Switch } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Dimensions,
+  Platform,
+  StatusBar,
+  SafeAreaView,
+  Switch,
+} from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import CustomHeader from '../../components/CustomHeader';
+import { COLORS, SHADOWS } from '../../theme';
+
+const { width, height } = Dimensions.get('window');
+const wp = (p) => (width * p) / 100;
+const hp = (p) => (height * p) / 100;
 
 const DoctorAvailabilityScreen = ({ navigation }) => {
-  const [isAvailable, setIsAvailable] = useState(true);
-  const [todaySlots] = useState([
-    { time: "09:00 AM", status: "Booked", patient: "Ahmed Khan" },
-    { time: "09:30 AM", status: "Available", patient: "" },
-    { time: "10:00 AM", status: "Booked", patient: "Sana Malik" },
-    { time: "10:30 AM", status: "Available", patient: "" },
+  const [availability, setAvailability] = useState([
+    { day: 'Monday', start: '09:00', end: '17:00', available: true },
+    { day: 'Tuesday', start: '09:00', end: '17:00', available: true },
+    { day: 'Wednesday', start: '09:00', end: '17:00', available: true },
+    { day: 'Thursday', start: '09:00', end: '17:00', available: true },
+    { day: 'Friday', start: '09:00', end: '13:00', available: true },
+    { day: 'Saturday', start: '--:--', end: '--:--', available: false },
+    { day: 'Sunday', start: '--:--', end: '--:--', available: false },
   ]);
+
+  const toggleAvailability = (index) => {
+    const updated = [...availability];
+    updated[index].available = !updated[index].available;
+    setAvailability(updated);
+  };
 
   return (
     <View style={styles.container}>
-      <CustomHeader title="My Availability" navigation={navigation} />
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+      
+      <LinearGradient
+        colors={[COLORS.primary || '#1a73e8', COLORS.secondary || '#0d47a1']}
+        style={styles.headerGradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      />
 
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.statusCard}>
-          <Text style={styles.statusLabel}>Current Status</Text>
-          <View style={styles.statusRow}>
-            <Text style={[styles.statusText, isAvailable ? styles.available : styles.busy]}>
-              {isAvailable ? "AVAILABLE" : "BUSY"}
-            </Text>
-            <Switch
-              value={isAvailable}
-              onValueChange={setIsAvailable}
-              trackColor={{ false: '#EF4444', true: '#10B981' }}
-            />
-          </View>
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={wp(5)} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Availability</Text>
+          <TouchableOpacity>
+            <Text style={styles.saveText}>Save</Text>
+          </TouchableOpacity>
         </View>
 
-        <Text style={styles.sectionTitle}>Today's Schedule</Text>
-
-        {todaySlots.map((slot, index) => (
-          <View key={index} style={styles.slotCard}>
-            <Text style={styles.time}>{slot.time}</Text>
-            <View style={styles.slotInfo}>
-              <Text style={styles.patientName}>
-                {slot.patient ? slot.patient : "Slot Open"}
-              </Text>
-              <Text style={[styles.status, slot.status === "Available" ? styles.availableText : styles.bookedText]}>
-                {slot.status}
-              </Text>
-            </View>
+        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+          <View style={[styles.infoCard, SHADOWS?.medium || {}]}>
+            <Text style={styles.infoText}>
+              Set your working hours. Patients can book appointments during available hours.
+            </Text>
           </View>
-        ))}
 
-        <TouchableOpacity style={styles.updateButton}>
-          <Text style={styles.updateText}>Update Schedule</Text>
-        </TouchableOpacity>
-      </ScrollView>
+          {availability.map((item, index) => (
+            <View key={item.day} style={[styles.availabilityItem, SHADOWS?.small || {}]}>
+              <View style={styles.availabilityLeft}>
+                <Text style={[styles.dayText, !item.available && styles.dayTextDisabled]}>
+                  {item.day}
+                </Text>
+                {item.available ? (
+                  <Text style={styles.timeText}>{item.start} - {item.end}</Text>
+                ) : (
+                  <Text style={styles.unavailableText}>Unavailable</Text>
+                )}
+              </View>
+              <Switch
+                value={item.available}
+                onValueChange={() => toggleAvailability(index)}
+                trackColor={{ false: COLORS.border || '#e0e0e0', true: COLORS.primary || '#1a73e8' }}
+              />
+            </View>
+          ))}
+        </ScrollView>
+      </SafeAreaView>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
-  content: { padding: 20 },
-  statusCard: {
-    backgroundColor: '#fff',
-    padding: 25,
-    borderRadius: 20,
-    alignItems: 'center',
-    marginBottom: 30,
-    elevation: 5,
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background || '#f5f7fa',
   },
-  statusLabel: { fontSize: 16, color: '#64748B' },
-  statusRow: { flexDirection: 'row', alignItems: 'center', marginTop: 10 },
-  statusText: { fontSize: 24, fontWeight: 'bold', marginRight: 15 },
-  available: { color: '#10B981' },
-  busy: { color: '#EF4444' },
-  sectionTitle: { fontSize: 20, fontWeight: '600', color: '#1E3A8A', marginBottom: 15 },
-  slotCard: {
-    backgroundColor: '#fff',
-    padding: 18,
-    borderRadius: 16,
+  safeArea: {
+    flex: 1,
+  },
+  headerGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: Platform.OS === 'ios' ? 100 : 80,
+  },
+  header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
-    elevation: 3,
+    paddingHorizontal: wp(4),
+    paddingTop: Platform.OS === 'ios' ? 50 : 40,
+    paddingBottom: 12,
   },
-  time: { fontSize: 18, fontWeight: 'bold', color: '#1E3A8A' },
-  slotInfo: { alignItems: 'flex-end' },
-  patientName: { fontSize: 16, color: '#334155' },
-  status: { fontSize: 14, fontWeight: '600', marginTop: 4 },
-  availableText: { color: '#10B981' },
-  bookedText: { color: '#F59E0B' },
-  updateButton: {
-    backgroundColor: '#00D4FF',
-    padding: 16,
-    borderRadius: 16,
+  backBtn: {
+    padding: 8,
+  },
+  headerTitle: {
+    fontSize: wp(4.5),
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  saveText: {
+    fontSize: wp(3),
+    color: 'rgba(255,255,255,0.9)',
+    fontWeight: '600',
+  },
+  scrollView: {
+    flex: 1,
+    padding: wp(4),
+  },
+  infoCard: {
+    backgroundColor: '#fff',
+    borderRadius: wp(3),
+    padding: wp(4),
+    marginBottom: hp(1.5),
+    borderWidth: 1,
+    borderColor: COLORS.border || '#e0e0e0',
+  },
+  infoText: {
+    fontSize: wp(3.2),
+    color: COLORS.textSecondary || '#666',
+    textAlign: 'center',
+  },
+  availabilityItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 20,
+    backgroundColor: '#fff',
+    borderRadius: wp(3),
+    padding: wp(3.5),
+    marginBottom: hp(0.8),
+    borderWidth: 1,
+    borderColor: COLORS.border || '#e0e0e0',
   },
-  updateText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
+  availabilityLeft: {
+    flex: 1,
+  },
+  dayText: {
+    fontSize: wp(3.5),
+    fontWeight: '600',
+    color: COLORS.text || '#1a1a1a',
+  },
+  dayTextDisabled: {
+    color: COLORS.textLight || '#999',
+  },
+  timeText: {
+    fontSize: wp(2.8),
+    color: COLORS.textSecondary || '#666',
+    marginTop: hp(0.1),
+  },
+  unavailableText: {
+    fontSize: wp(2.8),
+    color: COLORS.textLight || '#999',
+    marginTop: hp(0.1),
+    fontStyle: 'italic',
+  },
 });
 
 export default DoctorAvailabilityScreen;

@@ -1,12 +1,12 @@
+// src/navigation/AppNavigator.js
 import React, { useState, useEffect } from 'react';
-import { View, ActivityIndicator, StyleSheet, Alert, TouchableOpacity, Text } from 'react-native';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { COLORS } from '../theme';
 
 // --- ADMIN ---
 import AdminDashboardScreen from '../screens/admin/AdminDashboardScreen';
-import ManageDoctorsScreen from '../screens/admin/ManageDoctorsScreen';
 import ManageUsersScreen from '../screens/admin/ManageUsersScreen';
 
 // --- AUTH ---
@@ -17,14 +17,14 @@ import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
 import PortalSelectionScreen from '../screens/auth/PortalSelectionScreen';
 
 // --- MAIN SHELL & HOME ---
-import DrawerNavigator from './DrawerNavigator'; 
+import DrawerNavigator from './DrawerNavigator';
 import HomeScreen from '../screens/home/HomeScreen';
 import NotificationsScreen from '../screens/home/NotificationsScreen';
 import AnnouncementsScreen from '../screens/home/AnnouncementsScreen';
 import HospitalTimingsScreen from '../screens/home/HospitalTimingsScreen';
-import AboutHospitalScreen from '../screens/home/AboutHospitalScreen'; 
-import ContactScreen from '../screens/home/ContactScreen'; 
-import HospitalDirectoryScreen from '../screens/home/HospitalDirectoryScreen'; 
+import AboutHospitalScreen from '../screens/home/AboutHospitalScreen';
+import ContactScreen from '../screens/home/ContactScreen';
+import HospitalDirectoryScreen from '../screens/home/HospitalDirectoryScreen';
 
 // --- PORTALS ---
 import PatientPortal from '../screens/portal/PatientPortal';
@@ -38,20 +38,35 @@ import AppointmentDetailScreen from '../screens/appointment/AppointmentDetailScr
 import LiveTokenQueueScreen from '../screens/queue/LiveTokenQueueScreen';
 import TokenDisplayScreen from '../screens/queue/TokenDisplayScreen';
 import OccupancyHeatmapScreen from '../screens/queue/OccupancyHeatmapScreen';
+import CheckInQRScreen from '../screens/appointment/CheckInQRScreen';
+import LiveQueueTrackerScreen from '../screens/appointment/LiveQueueTrackerScreen';
+import RescheduleScreen from '../screens/appointment/RescheduleScreen';
+import TokenTransferScreen from '../screens/appointment/TokenTransferScreen';
 
-// --- DOCTOR ---
+// --- DOCTOR SCREENS ---
 import DoctorListScreen from '../screens/doctor/DoctorListScreen';
 import DoctorDetailScreen from '../screens/doctor/DoctorDetailScreen';
 import DoctorScheduleScreen from '../screens/doctor/DoctorScheduleScreen';
 import DoctorDashboardScreen from '../screens/doctor/DoctorDashboardScreen';
+import DoctorPortalScreen from '../screens/doctor/DoctorPortalScreen';
 import CallNextPatientScreen from '../screens/doctor/CallNextPatientScreen';
-
+import TodayQueueScreen from '../screens/doctor/TodayQueueScreen';
+import ConsultationScreen from '../screens/doctor/ConsultationScreen';
+import PatientHistoryScreen from '../screens/doctor/PatientHistoryScreen';
+import PrescriptionScreen from '../screens/doctor/PrescriptionScreen';
+import PrescriptionTemplatesScreen from '../screens/doctor/PrescriptionTemplatesScreen';
+import DoctorProfileScreen from '../screens/doctor/DoctorProfileScreen';
+import DoctorSettingsScreen from '../screens/doctor/DoctorSettingsScreen';
+import DoctorNotificationsScreen from '../screens/doctor/DoctorNotificationsScreen';
+import DoctorAvailabilityScreen from '../screens/doctor/DoctorAvailabilityScreen';
 
 // --- AI & SMART ---
 import AISymptomCheckerScreen from '../screens/ai/AISymptomCheckerScreen';
 import AIHealthTipsScreen from '../screens/ai/AIHealthTipsScreen';
 import PredictiveWaitScreen from '../screens/ai/PredictiveWaitScreen';
 import AISeverityResultScreen from '../screens/ai/AISeverityResultScreen';
+import AIChronicMonitoringScreen from '../screens/ai/AIChronicMonitoringScreen';
+import AIPostConsultationScreen from '../screens/ai/AIPostConsultationScreen';
 
 // --- PHARMACY & REPORTS ---
 import PharmacyDashboardScreen from '../screens/pharmacy/PharmacyDashboardScreen';
@@ -64,6 +79,10 @@ import ReportsListScreen from '../screens/reports/ReportsListScreen';
 import ReportDetailScreen from '../screens/reports/ReportDetailScreen';
 import LabTestsPriceScreen from '../screens/reports/LabTestsPriceScreen';
 import MyPrescriptionsScreen from '../screens/prescription/MyPrescriptionsScreen';
+import OrderMedicineScreen from '../screens/pharmacy/OrderMedicineScreen';
+import DietPrecautionScreen from '../screens/pharmacy/DietPrecautionScreen';
+import UploadReportScreen from '../screens/reports/UploadReportScreen';
+import VitalsLoggerScreen from '../screens/reports/VitalsLoggerScreen';
 
 // --- PROFILE & SETTINGS ---
 import ProfileScreen from '../screens/profile/ProfileScreen';
@@ -71,35 +90,42 @@ import SettingsScreen from '../screens/settings/SettingsScreen';
 import HealthIDScreen from '../screens/patient/HealthIDScreen';
 import HealthMetricsScreen from '../screens/patient/HealthMetricsScreen';
 import HelpSupportScreen from '../screens/settings/HelpSupportScreen';
-import PoliciesScreen from '../screens/settings/PoliciesScreen'; 
+import PoliciesScreen from '../screens/settings/PoliciesScreen';
+import PrivacyScreen from '../screens/settings/PrivacyScreen';
+import FeedbackScreen from '../screens/settings/FeedbackScreen';
+import ActivityScreen from '../screens/profile/ActivityScreen';
 
 // --- AR & NAVIGATION ---
 import RoomDirectoryScreen from '../screens/ar/RoomDirectoryScreen';
 import ARHospitalNavigationScreen from '../screens/ar/ARHospitalNavigationScreen';
+import HospitalIndoorMapScreen from '../screens/ar/HospitalIndoorMapScreen';
+import QRScannerForARScreen from '../screens/ar/QRScannerForARScreen';
 
 // --- TOKEN ---
 import GenerateTokenScreen from '../screens/token/GenerateTokenScreen';
+import PriorityTokenAlertScreen from '../screens/queue/PriorityTokenAlertScreen';
+import DoctorLoadBalancerScreen from '../screens/queue/DoctorLoadBalancerScreen';
 
 // --- CONTEXT ---
 import { AppointmentProvider } from '../context/AppointmentContext';
 
 const Stack = createNativeStackNavigator();
 
-// Maps a persisted user role to the screen they should land on
+// ✅ FIXED: Maps a persisted user role to the screen they should land on
 const ROLE_HOME_SCREEN = {
   patient: 'PatientPortal',
-  doctor: 'DoctorDashboardScreen',
+  doctor: 'MainApp',  // ✅ CHANGED: DoctorPortalScreen → MainApp (DrawerNavigator)
   admin: 'AdminDashboardScreen',
 };
 
 // ─── MAIN NAVIGATOR ──────────────────────────────────────────────────────────
 function MainStack({ initialRouteName, initialParams }) {
   return (
-    <Stack.Navigator 
-      initialRouteName={initialRouteName || 'Welcome'} 
-      screenOptions={{ 
+    <Stack.Navigator
+      initialRouteName={initialRouteName || 'Welcome'}
+      screenOptions={{
         headerShown: false,
-        animation: 'slide_from_right' 
+        animation: 'slide_from_right',
       }}
     >
       {/* Auth Group */}
@@ -110,21 +136,12 @@ function MainStack({ initialRouteName, initialParams }) {
       <Stack.Screen name="PortalSelection" component={PortalSelectionScreen} />
 
       {/* Admin Flow */}
-      <Stack.Screen
-        name="AdminDashboardScreen"
-        component={AdminDashboardScreen}
-        initialParams={initialRouteName === 'AdminDashboardScreen' ? initialParams : undefined}
-      />
-      <Stack.Screen
-        name="ManageDoctorsScreen"
-        component={ManageDoctorsScreen}
-        initialParams={initialRouteName === 'ManageDoctorsScreen' ? initialParams : undefined}
-      />
+      <Stack.Screen name="AdminDashboardScreen" component={AdminDashboardScreen} />
       <Stack.Screen name="ManageUsersScreen" component={ManageUsersScreen} />
 
-      {/* The Main App Entrance */}
+      {/* ✅ The Main App Entrance - DrawerNavigator contains all screens */}
       <Stack.Screen name="MainApp" component={DrawerNavigator} />
-      
+
       {/* Home & General */}
       <Stack.Screen name="HomeScreen" component={HomeScreen} />
       <Stack.Screen name="Notifications" component={NotificationsScreen} />
@@ -135,11 +152,7 @@ function MainStack({ initialRouteName, initialParams }) {
       <Stack.Screen name="HospitalDirectoryScreen" component={HospitalDirectoryScreen} />
 
       {/* Portals */}
-      <Stack.Screen
-        name="PatientPortal"
-        component={PatientPortal}
-        initialParams={initialRouteName === 'PatientPortal' ? initialParams : undefined}
-      />
+      <Stack.Screen name="PatientPortal" component={PatientPortal} />
       <Stack.Screen name="ChronicPortal" component={ChronicPortal} />
       <Stack.Screen name="VisitorHome" component={VisitorHome} />
 
@@ -150,25 +163,41 @@ function MainStack({ initialRouteName, initialParams }) {
       <Stack.Screen name="LiveTokenQueueScreen" component={LiveTokenQueueScreen} />
       <Stack.Screen name="TokenDisplay" component={TokenDisplayScreen} />
       <Stack.Screen name="OccupancyHeatmapScreen" component={OccupancyHeatmapScreen} />
+      <Stack.Screen name="CheckInQRScreen" component={CheckInQRScreen} />
+      <Stack.Screen name="LiveQueueTrackerScreen" component={LiveQueueTrackerScreen} />
+      <Stack.Screen name="RescheduleScreen" component={RescheduleScreen} />
+      <Stack.Screen name="TokenTransferScreen" component={TokenTransferScreen} />
 
-      {/* Doctor Flow */}
+      {/* Doctor Flow - These screens are accessible from Drawer */}
       <Stack.Screen name="DoctorListScreen" component={DoctorListScreen} />
       <Stack.Screen name="DoctorDetailScreen" component={DoctorDetailScreen} />
       <Stack.Screen name="DoctorScheduleScreen" component={DoctorScheduleScreen} />
       <Stack.Screen name="DoctorDashboardScreen" component={DoctorDashboardScreen} />
+      <Stack.Screen name="DoctorPortalScreen" component={DoctorPortalScreen} />
       <Stack.Screen name="CallNextPatientScreen" component={CallNextPatientScreen} />
+      <Stack.Screen name="TodayQueueScreen" component={TodayQueueScreen} />
+      <Stack.Screen name="ConsultationScreen" component={ConsultationScreen} />
+      <Stack.Screen name="PatientHistoryScreen" component={PatientHistoryScreen} />
+      <Stack.Screen name="PrescriptionScreen" component={PrescriptionScreen} />
+      <Stack.Screen name="PrescriptionTemplatesScreen" component={PrescriptionTemplatesScreen} />
+      <Stack.Screen name="DoctorProfileScreen" component={DoctorProfileScreen} />
+      <Stack.Screen name="DoctorSettingsScreen" component={DoctorSettingsScreen} />
+      <Stack.Screen name="DoctorNotificationsScreen" component={DoctorNotificationsScreen} />
+      <Stack.Screen name="DoctorAvailabilityScreen" component={DoctorAvailabilityScreen} />
 
       {/* AI Services */}
       <Stack.Screen name="AISymptomCheckerScreen" component={AISymptomCheckerScreen} />
       <Stack.Screen name="AIHealthTipsScreen" component={AIHealthTipsScreen} />
       <Stack.Screen name="PredictiveWaitScreen" component={PredictiveWaitScreen} />
       <Stack.Screen name="AISeverityResultScreen" component={AISeverityResultScreen} />
+      <Stack.Screen name="AIChronicMonitoringScreen" component={AIChronicMonitoringScreen} />
+      <Stack.Screen name="AIPostConsultationScreen" component={AIPostConsultationScreen} />
 
       {/* Dashboards */}
       <Stack.Screen name="PharmacyDashboardScreen" component={PharmacyDashboardScreen} />
       <Stack.Screen name="LabDashboardScreen" component={LabDashboardScreen} />
       <Stack.Screen name="ChronicDashboardScreen" component={ChronicDashboardScreen} />
-      
+
       {/* Pharmacy, Insurance & Lab */}
       <Stack.Screen name="MedicineListScreen" component={MedicineListScreen} />
       <Stack.Screen name="Cart" component={CartScreen} />
@@ -177,6 +206,10 @@ function MainStack({ initialRouteName, initialParams }) {
       <Stack.Screen name="ReportDetail" component={ReportDetailScreen} />
       <Stack.Screen name="LabTestsPriceScreen" component={LabTestsPriceScreen} />
       <Stack.Screen name="MyPrescriptionsScreen" component={MyPrescriptionsScreen} />
+      <Stack.Screen name="OrderMedicineScreen" component={OrderMedicineScreen} />
+      <Stack.Screen name="DietPrecautionScreen" component={DietPrecautionScreen} />
+      <Stack.Screen name="UploadReportScreen" component={UploadReportScreen} />
+      <Stack.Screen name="VitalsLoggerScreen" component={VitalsLoggerScreen} />
 
       {/* Profile & Settings */}
       <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
@@ -185,13 +218,20 @@ function MainStack({ initialRouteName, initialParams }) {
       <Stack.Screen name="HealthMetricsScreen" component={HealthMetricsScreen} />
       <Stack.Screen name="HelpSupportScreen" component={HelpSupportScreen} />
       <Stack.Screen name="PoliciesScreen" component={PoliciesScreen} />
+      <Stack.Screen name="PrivacyScreen" component={PrivacyScreen} />
+      <Stack.Screen name="FeedbackScreen" component={FeedbackScreen} />
+      <Stack.Screen name="ActivityScreen" component={ActivityScreen} />
 
       {/* Indoor Navigation */}
       <Stack.Screen name="RoomDirectoryScreen" component={RoomDirectoryScreen} />
       <Stack.Screen name="ARNavigation" component={ARHospitalNavigationScreen} />
+      <Stack.Screen name="HospitalIndoorMapScreen" component={HospitalIndoorMapScreen} />
+      <Stack.Screen name="QRScannerForARScreen" component={QRScannerForARScreen} />
 
       {/* Token */}
       <Stack.Screen name="GenerateTokenScreen" component={GenerateTokenScreen} />
+      <Stack.Screen name="PriorityTokenAlertScreen" component={PriorityTokenAlertScreen} />
+      <Stack.Screen name="DoctorLoadBalancerScreen" component={DoctorLoadBalancerScreen} />
     </Stack.Navigator>
   );
 }
@@ -200,17 +240,11 @@ function MainStack({ initialRouteName, initialParams }) {
 export default function AppNavigator() {
   const [checkingSession, setCheckingSession] = useState(true);
   const [initialRoute, setInitialRoute] = useState('Welcome');
-  const [initialParams, setInitialParams] = useState(undefined);
 
   useEffect(() => {
-    // 🔥 SIMPLE FIX: Always show Welcome screen
-    // No need to check AsyncStorage at all
+    // Always show Welcome screen first
     setInitialRoute('Welcome');
     setCheckingSession(false);
-    
-    // (Optional) You can still clear data if you want
-    // AsyncStorage.clear();
-    
   }, []);
 
   if (checkingSession) {
@@ -223,7 +257,7 @@ export default function AppNavigator() {
 
   return (
     <AppointmentProvider>
-      <MainStack initialRouteName={initialRoute} initialParams={initialParams} />
+      <MainStack initialRouteName={initialRoute} />
     </AppointmentProvider>
   );
 }
