@@ -192,7 +192,7 @@ const LoginScreen = ({ navigation }) => {
       icon: 'medkit-outline',
       color: COLORS.warning,
       bgColor: COLORS.warning + '15',
-      navigateTo: 'DoctorPortalScreen',  // ✅ FIXED: Changed from DoctorPortalScreen to DoctorDashboardScreen
+      navigateTo: 'DoctorModule',  // ✅ FIXED: Changed from DoctorPortalScreen to DoctorDashboardScreen
       gradientColors: [COLORS.warning, '#F59E0B'],
       requiresSignup: false,
     },

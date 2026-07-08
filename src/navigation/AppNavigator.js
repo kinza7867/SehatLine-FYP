@@ -43,22 +43,32 @@ import LiveQueueTrackerScreen from '../screens/appointment/LiveQueueTrackerScree
 import RescheduleScreen from '../screens/appointment/RescheduleScreen';
 import TokenTransferScreen from '../screens/appointment/TokenTransferScreen';
 
-// --- DOCTOR SCREENS ---
+// --- DOCTOR ---
+// Only import the Drawer Navigator - all doctor screens are managed inside it
+import DoctorDrawerNavigator from '../screens/doctor/navigation/DoctorDrawerNavigator';
+
+// --- DOCTOR SCREENS (REMOVED - Now managed inside DoctorDrawerNavigator) ---
+// The following screens are now exclusively managed by DoctorDrawerNavigator:
+// - DoctorListScreen (kept - shared with patient)
+// - DoctorDetailScreen (kept - shared with patient)
+// - DoctorScheduleScreen (kept - shared with patient)
+// - DoctorPortalScreen
+// - DoctorDashboardScreen
+// - CallNextPatientScreen
+// - TodayQueueScreen
+// - ConsultationScreen
+// - PatientHistoryScreen
+// - PrescriptionScreen
+// - PrescriptionTemplatesScreen
+// - DoctorProfileScreen
+// - DoctorSettingsScreen
+// - DoctorNotificationsScreen
+// - DoctorAvailabilityScreen
+
+// --- DOCTOR SCREENS THAT ARE SHARED WITH PATIENT MODULE (KEPT) ---
 import DoctorListScreen from '../screens/doctor/DoctorListScreen';
 import DoctorDetailScreen from '../screens/doctor/DoctorDetailScreen';
 import DoctorScheduleScreen from '../screens/doctor/DoctorScheduleScreen';
-import DoctorDashboardScreen from '../screens/doctor/DoctorDashboardScreen';
-import DoctorPortalScreen from '../screens/doctor/DoctorPortalScreen';
-import CallNextPatientScreen from '../screens/doctor/CallNextPatientScreen';
-import TodayQueueScreen from '../screens/doctor/TodayQueueScreen';
-import ConsultationScreen from '../screens/doctor/ConsultationScreen';
-import PatientHistoryScreen from '../screens/doctor/PatientHistoryScreen';
-import PrescriptionScreen from '../screens/doctor/PrescriptionScreen';
-import PrescriptionTemplatesScreen from '../screens/doctor/PrescriptionTemplatesScreen';
-import DoctorProfileScreen from '../screens/doctor/DoctorProfileScreen';
-import DoctorSettingsScreen from '../screens/doctor/DoctorSettingsScreen';
-import DoctorNotificationsScreen from '../screens/doctor/DoctorNotificationsScreen';
-import DoctorAvailabilityScreen from '../screens/doctor/DoctorAvailabilityScreen';
 
 // --- AI & SMART ---
 import AISymptomCheckerScreen from '../screens/ai/AISymptomCheckerScreen';
@@ -111,10 +121,10 @@ import { AppointmentProvider } from '../context/AppointmentContext';
 
 const Stack = createNativeStackNavigator();
 
-// ✅ FIXED: Maps a persisted user role to the screen they should land on
+// Maps a persisted user role to the screen they should land on
 const ROLE_HOME_SCREEN = {
   patient: 'PatientPortal',
-  doctor: 'MainApp',  // ✅ CHANGED: DoctorPortalScreen → MainApp (DrawerNavigator)
+  doctor: 'DoctorModule',  // Doctor navigates to DoctorDrawerNavigator
   admin: 'AdminDashboardScreen',
 };
 
@@ -139,7 +149,7 @@ function MainStack({ initialRouteName, initialParams }) {
       <Stack.Screen name="AdminDashboardScreen" component={AdminDashboardScreen} />
       <Stack.Screen name="ManageUsersScreen" component={ManageUsersScreen} />
 
-      {/* ✅ The Main App Entrance - DrawerNavigator contains all screens */}
+      {/* The Main App Entrance - DrawerNavigator contains all screens */}
       <Stack.Screen name="MainApp" component={DrawerNavigator} />
 
       {/* Home & General */}
@@ -168,22 +178,13 @@ function MainStack({ initialRouteName, initialParams }) {
       <Stack.Screen name="RescheduleScreen" component={RescheduleScreen} />
       <Stack.Screen name="TokenTransferScreen" component={TokenTransferScreen} />
 
-      {/* Doctor Flow - These screens are accessible from Drawer */}
+      {/* Doctor Module - All doctor screens are now managed inside this Drawer */}
+      <Stack.Screen name="DoctorModule" component={DoctorDrawerNavigator} />
+
+      {/* Doctor screens that are shared with Patient Module */}
       <Stack.Screen name="DoctorListScreen" component={DoctorListScreen} />
       <Stack.Screen name="DoctorDetailScreen" component={DoctorDetailScreen} />
       <Stack.Screen name="DoctorScheduleScreen" component={DoctorScheduleScreen} />
-      <Stack.Screen name="DoctorDashboardScreen" component={DoctorDashboardScreen} />
-      <Stack.Screen name="DoctorPortalScreen" component={DoctorPortalScreen} />
-      <Stack.Screen name="CallNextPatientScreen" component={CallNextPatientScreen} />
-      <Stack.Screen name="TodayQueueScreen" component={TodayQueueScreen} />
-      <Stack.Screen name="ConsultationScreen" component={ConsultationScreen} />
-      <Stack.Screen name="PatientHistoryScreen" component={PatientHistoryScreen} />
-      <Stack.Screen name="PrescriptionScreen" component={PrescriptionScreen} />
-      <Stack.Screen name="PrescriptionTemplatesScreen" component={PrescriptionTemplatesScreen} />
-      <Stack.Screen name="DoctorProfileScreen" component={DoctorProfileScreen} />
-      <Stack.Screen name="DoctorSettingsScreen" component={DoctorSettingsScreen} />
-      <Stack.Screen name="DoctorNotificationsScreen" component={DoctorNotificationsScreen} />
-      <Stack.Screen name="DoctorAvailabilityScreen" component={DoctorAvailabilityScreen} />
 
       {/* AI Services */}
       <Stack.Screen name="AISymptomCheckerScreen" component={AISymptomCheckerScreen} />
