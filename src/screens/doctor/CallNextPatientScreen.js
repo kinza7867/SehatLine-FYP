@@ -1,74 +1,97 @@
-import React, { useState } from 'react';
-import { 
-  View, Text, TouchableOpacity, StyleSheet, ScrollView, 
-  SafeAreaView, StatusBar, Dimensions, Platform, Image, Alert, Modal, TextInput 
+// src/screens/doctor/CallNextPatientScreen.js
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  SafeAreaView,
+  StatusBar,
+  Dimensions,
+  Platform,
+  Image,
+  Alert,
+  Modal,
+  TextInput,
+  ActivityIndicator,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { COLORS, SHADOWS } from '../../theme';
 
 const { width, height } = Dimensions.get('window');
 const wp = (p) => (width * p) / 100;
 const hp = (p) => (height * p) / 100;
 
+const APPOINTMENTS_KEY = '@sehatline_appointments';
+const COMPLETED_PATIENTS_KEY = '@sehatline_completed_patients';
+const QUEUE_KEY = '@sehatline_queue';
+
 const CallNextPatientScreen = ({ navigation, route }) => {
-  const doctorData = route?.params?.doctorData || route?.params?.doctor || {};
+  // ── Get patient from route params ──────────────────────────────────
+  const patientFromParams = route?.params?.patient || route?.params?.patientData;
+  const doctorData = route?.params?.doctor || route?.params?.doctorData || {};
   const doctorName = doctorData.name || 'Dr. Doctor';
-  
-  // ✅ Cardiology-Specific Prescription Templates
+  const onComplete = route?.params?.onComplete;
+
+  // ── State ─────────────────────────────────────────────────────────────
+  const [patient, setPatient] = useState(patientFromParams || null);
+  const [loading, setLoading] = useState(false);
+  const [consultationNotes, setConsultationNotes] = useState('');
+  const [diagnosis, setDiagnosis] = useState('');
+  const [bloodPressure, setBloodPressure] = useState('');
+  const [heartRate, setHeartRate] = useState('');
+  const [temperature, setTemperature] = useState('');
+  const [weight, setWeight] = useState('');
+  const [selectedPrescription, setSelectedPrescription] = useState(null);
+  const [showPrescriptionModal, setShowPrescriptionModal] = useState(false);
+  const [customMedicines, setCustomMedicines] = useState('');
+  const [customDuration, setCustomDuration] = useState('');
+  const [customAdvice, setCustomAdvice] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // ── Prescription Templates ──────────────────────────────────────────
   const prescriptionTemplates = [
-    { 
-      id: '1', 
-      name: 'Chest Pain / Angina', 
+    {
+      id: '1',
+      name: 'Chest Pain / Angina',
       medicines: 'Aspirin 75mg (1x daily), Nitroglycerin 0.4mg (as needed), Atorvastatin 40mg (1x nightly)',
       duration: '30 days',
       advice: 'Rest, avoid exertion. Report if chest pain persists. Follow-up in 2 weeks.'
     },
-    { 
-      id: '2', 
-      name: 'Hypertension (High BP)', 
+    {
+      id: '2',
+      name: 'Hypertension (High BP)',
       medicines: 'Losartan 50mg (1x daily), Amlodipine 5mg (1x daily), Hydrochlorothiazide 12.5mg (1x daily)',
       duration: '30 days',
       advice: 'Monitor BP daily. Low salt diet. Avoid stress.'
     },
-    { 
-      id: '3', 
-      name: 'Heart Failure', 
+    {
+      id: '3',
+      name: 'Heart Failure',
       medicines: 'Furosemide 40mg (1x daily), Lisinopril 10mg (1x daily), Metoprolol 25mg (2x daily)',
       duration: '30 days',
       advice: 'Monitor weight daily. Report sudden weight gain. Low salt diet.'
     },
-    { 
-      id: '4', 
-      name: 'Arrhythmia / Palpitations', 
+    {
+      id: '4',
+      name: 'Arrhythmia / Palpitations',
       medicines: 'Amiodarone 200mg (1x daily), Bisoprolol 5mg (1x daily), Apixaban 5mg (2x daily)',
       duration: '30 days',
       advice: 'Avoid caffeine. Report palpitations. Follow-up in 1 week.'
     },
-    { 
-      id: '5', 
-      name: 'Cholesterol Management', 
+    {
+      id: '5',
+      name: 'Cholesterol Management',
       medicines: 'Atorvastatin 80mg (1x nightly), Ezetimibe 10mg (1x daily), Fenofibrate 145mg (1x daily)',
       duration: '30 days',
       advice: 'Cholesterol-lowering diet. Avoid fatty foods. Follow-up in 4 weeks.'
     },
-    { 
-      id: '6', 
-      name: 'Post-MI / Acute Coronary Syndrome', 
-      medicines: 'Aspirin 300mg (loading), Clopidogrel 75mg (1x daily), Atorvastatin 80mg (1x nightly)',
-      duration: '30 days',
-      advice: 'Complete bed rest. Cardiac rehabilitation. Follow-up in 1 week.'
-    },
-    { 
-      id: '7', 
-      name: 'Peripheral Artery Disease', 
-      medicines: 'Cilostazol 100mg (2x daily), Aspirin 75mg (1x daily), Atorvastatin 40mg (1x nightly)',
-      duration: '30 days',
-      advice: 'Walking exercise program. Stop smoking. Diabetes control.'
-    },
-    { 
-      id: '8', 
-      name: 'Custom Prescription', 
+    {
+      id: '6',
+      name: 'Custom Prescription',
       medicines: '',
       duration: '',
       advice: '',
@@ -76,310 +99,150 @@ const CallNextPatientScreen = ({ navigation, route }) => {
     },
   ];
 
-  // ✅ Patient Queue - More patients (8 patients for demo)
-  const [patients, setPatients] = useState([
-    {
-      id: '1',
-      token: "P-089",
-      name: "Fatima Bibi",
-      age: 67,
-      type: "New Patient",
-      priority: true,
-      symptoms: "Severe chest pain, shortness of breath",
-      department: doctorData.department || "Cardiology",
-      waitTime: "8 mins",
-      bedNumber: "B-12",
-      status: 'waiting'
-    },
-    {
-      id: '2',
-      token: "P-090",
-      name: "Muhammad Ali",
-      age: 52,
-      type: "Follow-up",
-      priority: false,
-      symptoms: "Mild chest discomfort, blood pressure check",
-      department: doctorData.department || "Cardiology",
-      waitTime: "12 mins",
-      bedNumber: "B-14",
-      status: 'waiting'
-    },
-    {
-      id: '3',
-      token: "P-091",
-      name: "Ayesha Khan",
-      age: 45,
-      type: "New Patient",
-      priority: false,
-      symptoms: "Persistent headache, blurred vision",
-      department: doctorData.department || "Cardiology",
-      waitTime: "18 mins",
-      bedNumber: "B-16",
-      status: 'waiting'
-    },
-    {
-      id: '4',
-      token: "P-092",
-      name: "Rashid Ahmed",
-      age: 71,
-      type: "Follow-up",
-      priority: true,
-      symptoms: "Chest tightness, palpitations, dizziness",
-      department: doctorData.department || "Cardiology",
-      waitTime: "22 mins",
-      bedNumber: "B-18",
-      status: 'waiting'
-    },
-    {
-      id: '5',
-      token: "P-093",
-      name: "Sana Tariq",
-      age: 38,
-      type: "New Patient",
-      priority: false,
-      symptoms: "Irregular heartbeat, fatigue, shortness of breath",
-      department: doctorData.department || "Cardiology",
-      waitTime: "25 mins",
-      bedNumber: "B-20",
-      status: 'waiting'
-    },
-    {
-      id: '6',
-      token: "P-094",
-      name: "Imran Khan",
-      age: 59,
-      type: "Follow-up",
-      priority: false,
-      symptoms: "BP fluctuation, mild chest discomfort",
-      department: doctorData.department || "Cardiology",
-      waitTime: "30 mins",
-      bedNumber: "B-22",
-      status: 'waiting'
-    },
-    {
-      id: '7',
-      token: "P-095",
-      name: "Nadia Hussain",
-      age: 44,
-      type: "New Patient",
-      priority: false,
-      symptoms: "Severe headache, high BP, vision problems",
-      department: doctorData.department || "Cardiology",
-      waitTime: "35 mins",
-      bedNumber: "B-24",
-      status: 'waiting'
-    },
-    {
-      id: '8',
-      token: "P-096",
-      name: "Aslam Malik",
-      age: 76,
-      type: "Follow-up",
-      priority: true,
-      symptoms: "Post-MI follow-up, chest pain on exertion",
-      department: doctorData.department || "Cardiology",
-      waitTime: "40 mins",
-      bedNumber: "B-26",
-      status: 'waiting'
-    },
-  ]);
-
-  const [currentPatientIndex, setCurrentPatientIndex] = useState(0);
-  const [isCalling, setIsCalling] = useState(false);
-  const [isConsulting, setIsConsulting] = useState(false);
-  const [showPrescriptionModal, setShowPrescriptionModal] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState(null);
-  const [customMedicines, setCustomMedicines] = useState('');
-  const [customDuration, setCustomDuration] = useState('');
-  const [customAdvice, setCustomAdvice] = useState('');
-  const [completedPatients, setCompletedPatients] = useState([]);
-  const [notificationCount, setNotificationCount] = useState(3);
-  const [showQueueCount, setShowQueueCount] = useState(false);
-
-  const currentPatient = patients[currentPatientIndex] || null;
-  
-  // ✅ Calculate waiting patients count (patients not completed yet)
-  const waitingPatientsCount = patients.filter(p => p.status !== 'completed').length;
-
-  // ✅ Show waiting patients count
-  const showWaitingPatients = () => {
-    const waitingList = patients
-      .filter(p => p.status !== 'completed')
-      .map((p, i) => `${i+1}. ${p.name} (${p.token}) - ${p.status === 'waiting' ? '⏳ Waiting' : p.status === 'called' ? '📞 Called' : '🔄 Consulting'}`)
-      .join('\n');
-    
-    Alert.alert(
-      `👥 Patients in Queue (${waitingPatientsCount})`,
-      waitingList || 'No patients waiting',
-      [{ text: "OK" }]
-    );
-  };
-
-  // ✅ Call Patient
-  const callPatient = () => {
-    if (!currentPatient) return;
-    
-    setIsCalling(true);
-    setPatients(prev => prev.map((p, i) => 
-      i === currentPatientIndex ? { ...p, status: 'called' } : p
-    ));
-    
-    setTimeout(() => {
-      setIsCalling(false);
-      setIsConsulting(true);
-      setPatients(prev => prev.map((p, i) => 
-        i === currentPatientIndex ? { ...p, status: 'consulting' } : p
-      ));
-      
-      Alert.alert(
-        "📢 Patient Called",
-        `${currentPatient.name} (${currentPatient.token}) is now in consultation.`,
-        [{ text: "Start Consultation", onPress: () => {} }]
-      );
-    }, 800);
-  };
-
-  // ✅ Open Prescription Modal
-  const openPrescription = () => {
-    setSelectedTemplate(null);
-    setCustomMedicines('');
-    setCustomDuration('');
-    setCustomAdvice('');
-    setShowPrescriptionModal(true);
-  };
-
-  // ✅ Select Template
-  const selectTemplate = (template) => {
-    setSelectedTemplate(template);
-  };
-
-  // ✅ Send to Pharmacy
-  const sendToPharmacy = () => {
-    let prescriptionText = '';
-    
-    if (selectedTemplate && !selectedTemplate.isCustom) {
-      prescriptionText = 
-        `💊 Medicines: ${selectedTemplate.medicines}\n` +
-        `📅 Duration: ${selectedTemplate.duration}\n` +
-        `💡 Advice: ${selectedTemplate.advice}`;
-    } else if (selectedTemplate && selectedTemplate.isCustom) {
-      if (!customMedicines.trim()) {
-        Alert.alert("⚠️ Required", "Please enter medicine details.");
-        return;
-      }
-      prescriptionText = 
-        `💊 Medicines: ${customMedicines}\n` +
-        `📅 Duration: ${customDuration || 'Not specified'}\n` +
-        `💡 Advice: ${customAdvice || 'None'}`;
-    } else {
-      Alert.alert("⚠️ Required", "Please select a prescription template.");
+  // ── Complete Consultation & Send to Pharmacy ──────────────────────
+  const completeConsultation = async () => {
+    if (!patient) {
+      Alert.alert('Error', 'No patient found.');
       return;
     }
 
-    const patient = currentPatient;
-    setShowPrescriptionModal(false);
-    
-    setPatients(prev => prev.map((p, i) => 
-      i === currentPatientIndex ? { ...p, status: 'completed' } : p
-    ));
-    
-    setCompletedPatients(prev => [...prev, { 
-      ...patient, 
-      prescription: prescriptionText,
-      completedAt: new Date().toISOString()
-    }]);
-    
-    setIsConsulting(false);
+    // Validate required fields
+    if (!diagnosis.trim()) {
+      Alert.alert('Required', 'Please enter a diagnosis.');
+      return;
+    }
 
-    Alert.alert(
-      "✅ Patient Sent to Pharmacy",
-      `${patient.name} has been treated.\n\n💊 Prescription sent.`,
-      [
-        { 
-          text: "📋 View Pharmacy", 
-          onPress: () => navigation.navigate('PharmacyDashboardScreen', {
-            patientName: patient.name,
-            patientToken: patient.token,
-            prescription: prescriptionText,
-            doctorName: doctorName,
-            fromDoctor: true
-          })
-        },
-        { 
-          text: "👨‍⚕️ Next Patient", 
-          onPress: () => loadNextPatient()
-        }
-      ]
-    );
-  };
+    if (!selectedPrescription && !customMedicines.trim()) {
+      Alert.alert('Required', 'Please select a prescription or enter custom medicines.');
+      return;
+    }
 
-  // ✅ Load Next Patient
-  const loadNextPatient = () => {
-    const nextIndex = patients.findIndex((p, i) => i > currentPatientIndex && p.status === 'waiting');
-    
-    if (nextIndex !== -1) {
-      setCurrentPatientIndex(nextIndex);
-      Alert.alert("👨‍⚕️ Next Patient", `${patients[nextIndex].name} is ready.`);
-    } else {
-      const allDone = patients.every(p => p.status === 'completed');
-      if (allDone) {
-        Alert.alert(
-          "🎉 All Patients Done!",
-          "All patients have been sent to pharmacy.",
-          [
-            { 
-              text: "Go to Dashboard", 
-              onPress: () => navigation.navigate('DoctorDashboardScreen', { doctor: doctorData })
-            }
-          ]
-        );
-      } else {
-        Alert.alert("⏳ No More Patients", "All waiting patients have been seen.");
+    setIsSubmitting(true);
+
+    try {
+      // Build prescription data
+      let prescriptionData = {};
+      if (selectedPrescription && !selectedPrescription.isCustom) {
+        prescriptionData = {
+          medicines: selectedPrescription.medicines,
+          duration: selectedPrescription.duration,
+          advice: selectedPrescription.advice,
+          templateName: selectedPrescription.name,
+        };
+      } else if (selectedPrescription?.isCustom) {
+        prescriptionData = {
+          medicines: customMedicines || 'Not specified',
+          duration: customDuration || 'Not specified',
+          advice: customAdvice || 'None',
+          templateName: 'Custom Prescription',
+        };
       }
+
+      const consultationData = {
+        patientId: patient.id,
+        patientName: patient.name,
+        patientToken: patient.token,
+        diagnosis: diagnosis,
+        bloodPressure: bloodPressure || 'Not recorded',
+        heartRate: heartRate || 'Not recorded',
+        temperature: temperature || 'Not recorded',
+        weight: weight || 'Not recorded',
+        consultationNotes: consultationNotes || 'No additional notes',
+        prescription: prescriptionData,
+        doctorName: doctorName,
+        department: doctorData.department || 'Cardiology',
+        completedAt: new Date().toISOString(),
+      };
+
+      // Save to completed patients
+      const existingCompleted = await AsyncStorage.getItem(COMPLETED_PATIENTS_KEY);
+      const completedList = existingCompleted ? JSON.parse(existingCompleted) : [];
+      completedList.unshift({
+        ...consultationData,
+        id: patient.id,
+      });
+      await AsyncStorage.setItem(COMPLETED_PATIENTS_KEY, JSON.stringify(completedList));
+
+      // Update queue - remove this patient
+      const existingQueue = await AsyncStorage.getItem(QUEUE_KEY);
+      if (existingQueue) {
+        const queueList = JSON.parse(existingQueue);
+        const updatedQueue = queueList.filter((p) => p.id !== patient.id);
+        await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(updatedQueue));
+      }
+
+      // Update appointments - mark as completed
+      const existingAppointments = await AsyncStorage.getItem(APPOINTMENTS_KEY);
+      if (existingAppointments) {
+        const apptList = JSON.parse(existingAppointments);
+        const updatedAppointments = apptList.map((a) =>
+          a.patient === patient.name && a.status === 'Current'
+            ? { ...a, status: 'Completed' }
+            : a
+        );
+        await AsyncStorage.setItem(APPOINTMENTS_KEY, JSON.stringify(updatedAppointments));
+      }
+
+      // Show success message
+      Alert.alert(
+        '✅ Patient Sent to Pharmacy',
+        `${patient.name} (${patient.token}) has been successfully sent to pharmacy.\n\n` +
+        `💊 Prescription: ${prescriptionData.medicines.substring(0, 50)}...`,
+        [
+          {
+            text: 'Back to Portal',
+            onPress: () => {
+              // Call the onComplete callback if provided
+              if (onComplete) {
+                onComplete(patient, consultationData);
+              }
+              // Navigate back to portal
+              navigation.navigate('DoctorHome');
+            },
+          },
+        ]
+      );
+
+    } catch (error) {
+      console.error('Error completing consultation:', error);
+      Alert.alert('Error', 'Failed to complete consultation. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  // ✅ Skip Patient
-  const skipPatient = () => {
-    Alert.alert(
-      "Skip Patient",
-      `Skip ${currentPatient?.name}?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        { 
-          text: "Skip", 
-          onPress: () => {
-            const patient = patients[currentPatientIndex];
-            setPatients(prev => {
-              const newPatients = [...prev];
-              newPatients.splice(currentPatientIndex, 1);
-              newPatients.push({ ...patient, status: 'waiting' });
-              return newPatients;
-            });
-            const nextIndex = patients.findIndex((p, i) => i > currentPatientIndex && p.status === 'waiting');
-            if (nextIndex !== -1) setCurrentPatientIndex(nextIndex);
-          }
+  // ── Load Next Patient ──────────────────────────────────────────────
+  const loadNextPatient = async () => {
+    try {
+      const existingQueue = await AsyncStorage.getItem(QUEUE_KEY);
+      if (existingQueue) {
+        const queueList = JSON.parse(existingQueue);
+        if (queueList.length > 0) {
+          const nextPatient = queueList[0];
+          navigation.replace('CallNextPatientScreen', {
+            patient: nextPatient,
+            doctor: doctorData,
+            onComplete: onComplete,
+          });
+        } else {
+          Alert.alert(
+            '🎉 Queue Empty',
+            'All patients have been attended to. Returning to portal.',
+            [
+              {
+                text: 'OK',
+                onPress: () => navigation.navigate('DoctorHome'),
+              },
+            ]
+          );
         }
-      ]
-    );
+      }
+    } catch (error) {
+      console.error('Error loading next patient:', error);
+    }
   };
 
-  // ✅ Show Notifications
-  const showNotifications = () => {
-    Alert.alert(
-      "🔔 Notifications",
-      `You have ${notificationCount} new notifications from admin.\n\n` +
-      "1. Pharmacy stock update\n" +
-      "2. New doctor added to team\n" +
-      "3. Hospital policy updated",
-      [
-        { text: "View All", onPress: () => navigation.navigate('Notifications') },
-        { text: "Dismiss", style: "cancel" }
-      ]
-    );
-  };
-
-  // ✅ Render Header
+  // ── Render Header ────────────────────────────────────────────────────
   const renderHeader = () => (
     <LinearGradient
       colors={[COLORS.primary, COLORS.secondary]}
@@ -389,270 +252,257 @@ const CallNextPatientScreen = ({ navigation, route }) => {
     >
       <SafeAreaView>
         <View style={styles.header}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.backBtn}
-            onPress={() => navigation.goBack()}
+            onPress={() => {
+              Alert.alert(
+                'Exit Consultation',
+                'Are you sure you want to exit? The patient will be returned to queue.',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Exit',
+                    style: 'destructive',
+                    onPress: () => navigation.navigate('DoctorHome'),
+                  },
+                ]
+              );
+            }}
           >
             <Ionicons name="arrow-back" size={24} color={COLORS.white} />
           </TouchableOpacity>
 
           <View style={styles.headerCenter}>
             <View style={styles.logoContainer}>
-              <Image 
-                source={require('../../../assets/logo.png')} 
-                style={styles.logoImage} 
+              <Image
+                source={require('../../../assets/logo.png')}
+                style={styles.logoImage}
                 resizeMode="contain"
               />
             </View>
             <View>
-              <Text style={styles.headerTitle}>Patient Queue</Text>
+              <Text style={styles.headerTitle}>Consultation</Text>
               <Text style={styles.headerSub}>👨‍⚕️ {doctorName}</Text>
             </View>
           </View>
 
-          {/* Notifications Button */}
-          <TouchableOpacity 
-            style={styles.notificationBtn}
-            onPress={showNotifications}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="notifications-outline" size={24} color={COLORS.white} />
-            {notificationCount > 0 && (
-              <View style={styles.notificationBadge}>
-                <Text style={styles.notificationBadgeText}>{notificationCount}</Text>
-              </View>
-            )}
-          </TouchableOpacity>
+          <View style={styles.headerRight}>
+            <View style={styles.liveBadge}>
+              <View style={styles.liveDot} />
+              <Text style={styles.liveText}>LIVE</Text>
+            </View>
+          </View>
         </View>
       </SafeAreaView>
     </LinearGradient>
   );
 
-  // ✅ Render Patient Card
-  const renderPatientCard = () => {
-    if (!currentPatient) {
+  // ── Render Patient Info ─────────────────────────────────────────────
+  const renderPatientInfo = () => {
+    if (!patient) {
       return (
         <View style={styles.emptyCard}>
-          <Ionicons name="checkmark-done-circle" size={wp(15)} color={COLORS.success} />
-          <Text style={styles.emptyTitle}>All Patients Done! 🎉</Text>
-          <Text style={styles.emptySub}>No more patients in queue</Text>
-          <TouchableOpacity 
+          <Ionicons name="people-outline" size={wp(15)} color={COLORS.textLight} />
+          <Text style={styles.emptyTitle}>No Patient</Text>
+          <Text style={styles.emptySub}>No patient data available</Text>
+          <TouchableOpacity
             style={[styles.emptyBtn, { backgroundColor: COLORS.primary }]}
-            onPress={() => navigation.navigate('DoctorDashboardScreen', { doctor: doctorData })}
+            onPress={() => navigation.navigate('DoctorHome')}
           >
-            <Text style={styles.emptyBtnText}>Go to Dashboard</Text>
+            <Text style={styles.emptyBtnText}>Go to Portal</Text>
           </TouchableOpacity>
         </View>
       );
     }
 
-    const isCalled = currentPatient.status === 'called' || currentPatient.status === 'consulting';
-    const isCompleted = currentPatient.status === 'completed';
-
     return (
       <View style={[styles.patientCard, SHADOWS.medium]}>
-        <LinearGradient
-          colors={[COLORS.primary + '12', COLORS.secondary + '08']}
-          style={styles.patientCardGradient}
-        >
-          <View style={styles.statusBadgeContainer}>
-            <View style={[
-              styles.statusBadge,
-              { 
-                backgroundColor: isCompleted ? '#10B981' : 
-                                isCalled ? '#8B5CF6' : 
-                                currentPatient.priority ? '#EF4444' : '#3B82F6'
-              }
-            ]}>
-              <Text style={styles.statusBadgeText}>
-                {isCompleted ? 'Completed' : 
-                 isCalled ? 'In Consultation' : 
-                 currentPatient.priority ? 'Priority' : 'Waiting'}
-              </Text>
-            </View>
-            <Text style={styles.queueNumber}>#{currentPatientIndex + 1}</Text>
-          </View>
-
-          <View style={styles.patientHeader}>
-            <View style={styles.avatarContainer}>
-              <Ionicons name="person" size={wp(12)} color={COLORS.primary} />
-            </View>
-            <View style={styles.patientInfo}>
-              <Text style={styles.tokenNumber}>{currentPatient.token}</Text>
-              <Text style={styles.patientName}>{currentPatient.name}</Text>
-              <Text style={styles.patientMeta}>
-                Age: {currentPatient.age} • {currentPatient.type}
-              </Text>
-            </View>
-          </View>
-
-          {currentPatient.priority && !isCompleted && (
-            <View style={styles.priorityBadge}>
-              <Ionicons name="alert-circle" size={wp(3)} color="#FFFFFF" />
-              <Text style={styles.priorityText}>CRITICAL PRIORITY</Text>
-            </View>
-          )}
-
-          <View style={styles.divider} />
-
-          <View style={styles.patientDetails}>
-            <View style={styles.detailItem}>
-              <Ionicons name="medkit-outline" size={wp(4)} color={COLORS.primary} />
-              <Text style={styles.detailLabel}>Department</Text>
-              <Text style={styles.detailValue}>{currentPatient.department}</Text>
-            </View>
-            <View style={styles.detailDivider} />
-            <View style={styles.detailItem}>
-              <Ionicons name="time-outline" size={wp(4)} color={COLORS.primary} />
-              <Text style={styles.detailLabel}>Wait Time</Text>
-              <Text style={styles.detailValue}>{currentPatient.waitTime}</Text>
-            </View>
-            <View style={styles.detailDivider} />
-            <View style={styles.detailItem}>
-              <Ionicons name="bed-outline" size={wp(4)} color={COLORS.primary} />
-              <Text style={styles.detailLabel}>Bed</Text>
-              <Text style={styles.detailValue}>{currentPatient.bedNumber}</Text>
-            </View>
-          </View>
-
-          <View style={styles.symptomsContainer}>
-            <Text style={styles.symptomsTitle}>📋 Reported Symptoms</Text>
-            <Text style={styles.symptomsText}>{currentPatient.symptoms}</Text>
-          </View>
-
-          {isCompleted && (
-            <View style={styles.completedBadge}>
-              <Ionicons name="checkmark-circle" size={wp(3)} color="#10B981" />
-              <Text style={styles.completedBadgeText}>✓ Sent to Pharmacy</Text>
-            </View>
-          )}
-        </LinearGradient>
-      </View>
-    );
-  };
-
-  // ✅ Render Action Buttons
-  const renderActionButtons = () => {
-    if (!currentPatient) return null;
-    
-    const isCalled = currentPatient.status === 'called' || currentPatient.status === 'consulting';
-    const isCompleted = currentPatient.status === 'completed';
-
-    return (
-      <View style={styles.actionContainer}>
-        {!isCalled && !isCompleted && (
-          <TouchableOpacity 
-            style={[styles.callButton, styles.cardShadow]}
-            onPress={callPatient}
-            activeOpacity={0.85}
-          >
-            <LinearGradient
-              colors={['#EF4444', '#DC2626']}
-              style={styles.callButtonGradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-            >
-              <Ionicons name="call" size={wp(5)} color={COLORS.white} />
-              <Text style={styles.callButtonText}>Call {currentPatient.name}</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-        )}
-
-        {isCalled && !isCompleted && (
-          <TouchableOpacity 
-            style={[styles.callButton, styles.cardShadow]}
-            onPress={openPrescription}
-            activeOpacity={0.85}
-          >
-            <LinearGradient
-              colors={['#10B981', '#059669']}
-              style={styles.callButtonGradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-            >
-              <Ionicons name="medkit" size={wp(5)} color={COLORS.white} />
-              <Text style={styles.callButtonText}>📝 Prescribe & Send</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-        )}
-
-        {isCompleted && (
-          <TouchableOpacity 
-            style={[styles.callButton, styles.cardShadow]}
-            onPress={loadNextPatient}
-            activeOpacity={0.85}
-          >
+        <View style={styles.patientHeader}>
+          <View style={styles.avatarContainer}>
             <LinearGradient
               colors={[COLORS.primary, COLORS.secondary]}
-              style={styles.callButtonGradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
+              style={styles.avatarGradient}
             >
-              <Ionicons name="arrow-forward" size={wp(5)} color={COLORS.white} />
-              <Text style={styles.callButtonText}>Next Patient →</Text>
+              <Text style={styles.avatarText}>
+                {patient.name?.charAt(0) || 'P'}
+              </Text>
             </LinearGradient>
-          </TouchableOpacity>
-        )}
-
-        <View style={styles.secondaryButtons}>
-          {!isCalled && !isCompleted && (
-            <TouchableOpacity 
-              style={[styles.secondaryBtn, SHADOWS.small]}
-              onPress={skipPatient}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="time-outline" size={wp(4)} color={COLORS.warning} />
-              <Text style={[styles.secondaryBtnText, { color: COLORS.warning }]}>Skip</Text>
-            </TouchableOpacity>
-          )}
-
-          {/* ✅ Queue Button - Shows count, no navigation */}
-          <TouchableOpacity 
-            style={[styles.secondaryBtn, styles.queueBtn, SHADOWS.small]}
-            onPress={showWaitingPatients}
-            activeOpacity={0.7}
-          >
-            <View style={styles.queueBtnContent}>
-              <Ionicons name="people-outline" size={wp(4)} color={COLORS.primary} />
-              <Text style={styles.secondaryBtnText}>Queue</Text>
-              <View style={styles.queueCountBadge}>
-                <Text style={styles.queueCountText}>{waitingPatientsCount}</Text>
+          </View>
+          <View style={styles.patientInfo}>
+            <View style={styles.tokenRow}>
+              <Text style={styles.tokenNumber}>{patient.token || 'T-00'}</Text>
+              <View style={[styles.priorityBadge, { backgroundColor: patient.priority === 'Emergency' ? COLORS.danger : COLORS.success }]}>
+                <Text style={styles.priorityText}>{patient.priority || 'Normal'}</Text>
               </View>
             </View>
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={[styles.secondaryBtn, SHADOWS.small]}
-            onPress={() => navigation.navigate('DoctorDashboardScreen', { doctor: doctorData })}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="grid-outline" size={wp(4)} color={COLORS.primary} />
-            <Text style={styles.secondaryBtnText}>Dashboard</Text>
-          </TouchableOpacity>
+            <Text style={styles.patientName}>{patient.name}</Text>
+            <Text style={styles.patientMeta}>
+              Age: {patient.age || 'N/A'} • {patient.gender || 'N/A'} • {patient.department || 'Cardiology'}
+            </Text>
+          </View>
         </View>
 
-        {completedPatients.length > 0 && (
-          <TouchableOpacity 
-            style={styles.completedToggle}
-            onPress={() => {
-              Alert.alert(
-                "✅ Completed Patients",
-                completedPatients.map((p, i) => 
-                  `${i+1}. ${p.name} (${p.token})`
-                ).join('\n')
-              );
-            }}
-          >
-            <Text style={styles.completedToggleText}>
-              📋 {completedPatients.length} patient{completedPatients.length > 1 ? 's' : ''} completed
-            </Text>
-          </TouchableOpacity>
+        <View style={styles.divider} />
+
+        <View style={styles.detailsGrid}>
+          <View style={styles.detailItem}>
+            <Ionicons name="medkit-outline" size={wp(3.5)} color={COLORS.primary} />
+            <Text style={styles.detailLabel}>Reason</Text>
+            <Text style={styles.detailValue}>{patient.reason || 'Checkup'}</Text>
+          </View>
+          <View style={styles.detailDivider} />
+          <View style={styles.detailItem}>
+            <Ionicons name="time-outline" size={wp(3.5)} color={COLORS.primary} />
+            <Text style={styles.detailLabel}>Wait Time</Text>
+            <Text style={styles.detailValue}>{patient.waitTime || '0 min'}</Text>
+          </View>
+          <View style={styles.detailDivider} />
+          <View style={styles.detailItem}>
+            <Ionicons name="calendar-outline" size={wp(3.5)} color={COLORS.primary} />
+            <Text style={styles.detailLabel}>Visits</Text>
+            <Text style={styles.detailValue}>{patient.previousVisits || 0}</Text>
+          </View>
+        </View>
+
+        {patient.allergies && patient.allergies !== 'None' && (
+          <View style={styles.allergyWarning}>
+            <Ionicons name="alert-circle" size={wp(3.5)} color={COLORS.danger} />
+            <Text style={styles.allergyText}>⚠️ Allergies: {patient.allergies}</Text>
+          </View>
         )}
       </View>
     );
   };
 
-  // ✅ Render Prescription Modal
+  // ── Render Consultation Form ────────────────────────────────────────
+  const renderConsultationForm = () => (
+    <View style={[styles.formCard, SHADOWS.small]}>
+      <Text style={styles.formTitle}>📋 Consultation Details</Text>
+
+      <View style={styles.formRow}>
+        <View style={[styles.formField, { flex: 1 }]}>
+          <Text style={styles.fieldLabel}>Blood Pressure</Text>
+          <TextInput
+            style={styles.fieldInput}
+            placeholder="e.g., 120/80"
+            placeholderTextColor={COLORS.textLight}
+            value={bloodPressure}
+            onChangeText={setBloodPressure}
+          />
+        </View>
+        <View style={[styles.formField, { flex: 1 }]}>
+          <Text style={styles.fieldLabel}>Heart Rate</Text>
+          <TextInput
+            style={styles.fieldInput}
+            placeholder="e.g., 72 bpm"
+            placeholderTextColor={COLORS.textLight}
+            value={heartRate}
+            onChangeText={setHeartRate}
+          />
+        </View>
+      </View>
+
+      <View style={styles.formRow}>
+        <View style={[styles.formField, { flex: 1 }]}>
+          <Text style={styles.fieldLabel}>Temperature</Text>
+          <TextInput
+            style={styles.fieldInput}
+            placeholder="e.g., 98.6°F"
+            placeholderTextColor={COLORS.textLight}
+            value={temperature}
+            onChangeText={setTemperature}
+          />
+        </View>
+        <View style={[styles.formField, { flex: 1 }]}>
+          <Text style={styles.fieldLabel}>Weight (kg)</Text>
+          <TextInput
+            style={styles.fieldInput}
+            placeholder="e.g., 72"
+            placeholderTextColor={COLORS.textLight}
+            value={weight}
+            onChangeText={setWeight}
+            keyboardType="numeric"
+          />
+        </View>
+      </View>
+
+      <View style={styles.formField}>
+        <Text style={styles.fieldLabel}>Diagnosis *</Text>
+        <TextInput
+          style={[styles.fieldInput, styles.fieldInputMultiline]}
+          placeholder="Enter diagnosis..."
+          placeholderTextColor={COLORS.textLight}
+          value={diagnosis}
+          onChangeText={setDiagnosis}
+          multiline
+          numberOfLines={2}
+        />
+      </View>
+
+      <View style={styles.formField}>
+        <Text style={styles.fieldLabel}>Consultation Notes</Text>
+        <TextInput
+          style={[styles.fieldInput, styles.fieldInputMultiline]}
+          placeholder="Additional notes..."
+          placeholderTextColor={COLORS.textLight}
+          value={consultationNotes}
+          onChangeText={setConsultationNotes}
+          multiline
+          numberOfLines={3}
+        />
+      </View>
+
+      <TouchableOpacity
+        style={styles.prescriptionBtn}
+        onPress={() => setShowPrescriptionModal(true)}
+        activeOpacity={0.7}
+      >
+        <Ionicons name="medkit-outline" size={wp(4)} color={COLORS.white} />
+        <Text style={styles.prescriptionBtnText}>
+          {selectedPrescription ? '📝 Change Prescription' : '💊 Select Prescription'}
+        </Text>
+        {selectedPrescription && (
+          <View style={styles.prescriptionSelected}>
+            <Text style={styles.prescriptionSelectedText}>✓</Text>
+          </View>
+        )}
+      </TouchableOpacity>
+
+      {selectedPrescription && (
+        <View style={styles.prescriptionPreview}>
+          <Text style={styles.previewLabel}>Selected: {selectedPrescription.name}</Text>
+          <Text style={styles.previewText} numberOfLines={2}>
+            {selectedPrescription.isCustom ? customMedicines : selectedPrescription.medicines}
+          </Text>
+        </View>
+      )}
+
+      <TouchableOpacity
+        style={[styles.submitBtn, isSubmitting && styles.submitBtnDisabled]}
+        onPress={completeConsultation}
+        disabled={isSubmitting}
+        activeOpacity={0.8}
+      >
+        <LinearGradient
+          colors={[COLORS.success, '#059669']}
+          style={styles.submitGradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+        >
+          {isSubmitting ? (
+            <ActivityIndicator color={COLORS.white} size="small" />
+          ) : (
+            <>
+              <Ionicons name="send-outline" size={wp(4.5)} color={COLORS.white} />
+              <Text style={styles.submitText}>Send to Pharmacy</Text>
+            </>
+          )}
+        </LinearGradient>
+      </TouchableOpacity>
+    </View>
+  );
+
+  // ── Render Prescription Modal ───────────────────────────────────────
   const renderPrescriptionModal = () => (
     <Modal
       visible={showPrescriptionModal}
@@ -675,24 +525,23 @@ const CallNextPatientScreen = ({ navigation, route }) => {
           </LinearGradient>
 
           <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
-            <Text style={styles.modalPatientName}>{currentPatient?.name}</Text>
-            <Text style={styles.modalPatientToken}>Token: {currentPatient?.token}</Text>
+            <Text style={styles.modalPatientName}>{patient?.name}</Text>
+            <Text style={styles.modalPatientToken}>Token: {patient?.token}</Text>
 
-            <Text style={styles.modalLabel}>Cardiology Templates</Text>
+            <Text style={styles.modalLabel}>Select Template</Text>
             <View style={styles.templatesGrid}>
               {prescriptionTemplates.map((template) => (
                 <TouchableOpacity
                   key={template.id}
                   style={[
                     styles.templateCard,
-                    selectedTemplate?.id === template.id && styles.templateCardActive,
-                    { borderColor: selectedTemplate?.id === template.id ? COLORS.primary : COLORS.border }
+                    selectedPrescription?.id === template.id && styles.templateCardActive,
                   ]}
-                  onPress={() => selectTemplate(template)}
+                  onPress={() => setSelectedPrescription(template)}
                 >
                   <Text style={[
                     styles.templateName,
-                    selectedTemplate?.id === template.id && { color: COLORS.primary }
+                    selectedPrescription?.id === template.id && { color: COLORS.primary }
                   ]}>
                     {template.name}
                   </Text>
@@ -708,9 +557,9 @@ const CallNextPatientScreen = ({ navigation, route }) => {
               ))}
             </View>
 
-            {selectedTemplate?.isCustom && (
+            {selectedPrescription?.isCustom && (
               <View style={styles.customFields}>
-                <Text style={styles.modalLabel}>Medicines</Text>
+                <Text style={styles.modalLabel}>Medicines *</Text>
                 <TextInput
                   style={styles.customInput}
                   placeholder="e.g., Aspirin 75mg (1x daily)"
@@ -729,7 +578,7 @@ const CallNextPatientScreen = ({ navigation, route }) => {
                 <Text style={styles.modalLabel}>Advice</Text>
                 <TextInput
                   style={[styles.customInput, styles.customInputMultiline]}
-                  placeholder="Additional advice for patient"
+                  placeholder="Additional advice..."
                   placeholderTextColor={COLORS.textLight}
                   multiline
                   numberOfLines={3}
@@ -739,38 +588,47 @@ const CallNextPatientScreen = ({ navigation, route }) => {
               </View>
             )}
 
-            {selectedTemplate && !selectedTemplate.isCustom && (
+            {selectedPrescription && !selectedPrescription.isCustom && (
               <View style={styles.templatePreviewCard}>
-                <Text style={styles.previewLabel}>📋 Prescription Preview</Text>
+                <Text style={styles.previewLabel}>📋 Preview</Text>
                 <View style={styles.previewItem}>
                   <Text style={styles.previewItemLabel}>Medicines:</Text>
-                  <Text style={styles.previewItemValue} numberOfLines={2}>
-                    {selectedTemplate.medicines}
-                  </Text>
+                  <Text style={styles.previewItemValue}>{selectedPrescription.medicines}</Text>
                 </View>
                 <View style={styles.previewItem}>
                   <Text style={styles.previewItemLabel}>Duration:</Text>
-                  <Text style={styles.previewItemValue}>{selectedTemplate.duration}</Text>
+                  <Text style={styles.previewItemValue}>{selectedPrescription.duration}</Text>
                 </View>
                 <View style={styles.previewItem}>
                   <Text style={styles.previewItemLabel}>Advice:</Text>
-                  <Text style={styles.previewItemValue}>{selectedTemplate.advice}</Text>
+                  <Text style={styles.previewItemValue}>{selectedPrescription.advice}</Text>
                 </View>
               </View>
             )}
 
             <View style={styles.modalActions}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[styles.modalBtn, { backgroundColor: COLORS.border }]}
                 onPress={() => setShowPrescriptionModal(false)}
               >
                 <Text style={[styles.modalBtnText, { color: COLORS.text }]}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[styles.modalBtn, { backgroundColor: COLORS.success }]}
-                onPress={sendToPharmacy}
+                onPress={() => {
+                  if (!selectedPrescription) {
+                    Alert.alert('Required', 'Please select a prescription template.');
+                    return;
+                  }
+                  if (selectedPrescription.isCustom && !customMedicines.trim()) {
+                    Alert.alert('Required', 'Please enter medicine details.');
+                    return;
+                  }
+                  setShowPrescriptionModal(false);
+                  Alert.alert('✅ Prescription Selected', 'Prescription has been set.');
+                }}
               >
-                <Text style={[styles.modalBtnText, { color: COLORS.white }]}>Send to Pharmacy</Text>
+                <Text style={[styles.modalBtnText, { color: COLORS.white }]}>Select</Text>
               </TouchableOpacity>
             </View>
           </ScrollView>
@@ -779,10 +637,30 @@ const CallNextPatientScreen = ({ navigation, route }) => {
     </Modal>
   );
 
+  if (!patient) {
+    return (
+      <View style={styles.container}>
+        <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} translucent={true} />
+        <LinearGradient
+          colors={[COLORS.primary, COLORS.secondary, COLORS.background]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 0.2 }}
+          style={styles.gradientBackground}
+        />
+        {renderHeader()}
+        <SafeAreaView style={styles.safeArea}>
+          <ScrollView contentContainerStyle={styles.scrollContent}>
+            {renderPatientInfo()}
+          </ScrollView>
+        </SafeAreaView>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} translucent={true} />
-      
+
       <LinearGradient
         colors={[COLORS.primary, COLORS.secondary, COLORS.background]}
         start={{ x: 0, y: 0 }}
@@ -793,14 +671,12 @@ const CallNextPatientScreen = ({ navigation, route }) => {
       {renderHeader()}
 
       <SafeAreaView style={styles.safeArea}>
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.content}>
-            {renderPatientCard()}
-            {renderActionButtons()}
-          </View>
+          {renderPatientInfo()}
+          {renderConsultationForm()}
 
           <View style={styles.footer}>
             <Text style={styles.footerText}>SehatLine • CDA Hospital Islamabad</Text>
@@ -819,7 +695,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-
   gradientBackground: {
     position: 'absolute',
     top: 0,
@@ -827,18 +702,16 @@ const styles = StyleSheet.create({
     right: 0,
     height: hp(25),
   },
-
   safeArea: {
     flex: 1,
   },
-
   scrollContent: {
     paddingHorizontal: wp(4),
     paddingBottom: hp(4),
     paddingTop: hp(0.5),
   },
 
-  // ─── Header ────────────────────────────────────────────────────────────
+  // ─── Header ──────────────────────────────────────────────────────────
   headerGradient: {
     paddingHorizontal: wp(4),
     paddingTop: Platform.OS === 'ios' ? hp(0.5) : hp(0.8),
@@ -890,136 +763,101 @@ const styles = StyleSheet.create({
     fontSize: wp(2.8),
     marginTop: hp(0.05),
   },
-
-  notificationBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+  headerRight: {
     alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
-    position: 'relative',
   },
-  notificationBadge: {
-    position: 'absolute',
-    top: -2,
-    right: -2,
-    backgroundColor: '#EF4444',
-    borderRadius: 10,
-    minWidth: 18,
-    height: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 4,
-    borderWidth: 2,
-    borderColor: COLORS.primary,
-  },
-  notificationBadgeText: {
-    color: COLORS.white,
-    fontSize: 10,
-    fontWeight: '700',
-  },
-
-  // ─── Content ──────────────────────────────────────────────────────────
-  content: {
-    flex: 1,
-    paddingTop: hp(1),
-  },
-
-  // ─── Patient Card ────────────────────────────────────────────────────
-  patientCard: {
-    borderRadius: wp(4),
-    overflow: 'hidden',
-    marginBottom: hp(2),
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  patientCardGradient: {
-    padding: wp(4),
-  },
-  statusBadgeContainer: {
+  liveBadge: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: hp(0.5),
-  },
-  statusBadge: {
-    paddingHorizontal: wp(3),
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    paddingHorizontal: wp(2),
     paddingVertical: hp(0.2),
     borderRadius: wp(2),
+    gap: wp(1),
   },
-  statusBadgeText: {
+  liveDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#00ff88',
+  },
+  liveText: {
     color: COLORS.white,
-    fontSize: wp(2.5),
+    fontSize: wp(2.2),
     fontWeight: '700',
   },
-  queueNumber: {
-    fontSize: wp(3),
-    color: COLORS.textSecondary,
-    fontWeight: '600',
+
+  // ─── Patient Card ──────────────────────────────────────────────────
+  patientCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: wp(4),
+    padding: wp(4),
+    marginBottom: hp(1.5),
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   patientHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: hp(1),
   },
   avatarContainer: {
-    width: wp(16),
-    height: wp(16),
-    borderRadius: wp(8),
-    backgroundColor: COLORS.primary + '15',
+    marginRight: wp(3),
+  },
+  avatarGradient: {
+    width: wp(14),
+    height: wp(14),
+    borderRadius: wp(7),
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: wp(3),
+  },
+  avatarText: {
+    color: COLORS.white,
+    fontSize: wp(5),
+    fontWeight: 'bold',
   },
   patientInfo: {
     flex: 1,
   },
+  tokenRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: wp(2),
+  },
   tokenNumber: {
-    fontSize: wp(5),
+    fontSize: wp(4.5),
     fontWeight: '800',
     color: COLORS.primary,
   },
+  priorityBadge: {
+    paddingHorizontal: wp(2),
+    paddingVertical: hp(0.15),
+    borderRadius: wp(1.5),
+  },
+  priorityText: {
+    color: COLORS.white,
+    fontSize: wp(2.2),
+    fontWeight: '700',
+  },
   patientName: {
-    fontSize: wp(5.5),
+    fontSize: wp(5),
     fontWeight: '700',
     color: COLORS.text,
   },
   patientMeta: {
-    fontSize: wp(3),
+    fontSize: wp(2.8),
     color: COLORS.textSecondary,
     marginTop: hp(0.1),
-  },
-
-  priorityBadge: {
-    flexDirection: 'row',
-    backgroundColor: '#EF4444',
-    paddingHorizontal: wp(3),
-    paddingVertical: hp(0.4),
-    borderRadius: wp(3),
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    gap: wp(1),
-    marginBottom: hp(0.8),
-  },
-  priorityText: {
-    color: COLORS.white,
-    fontSize: wp(2.8),
-    fontWeight: '700',
   },
 
   divider: {
     height: 1,
     backgroundColor: COLORS.border,
-    marginVertical: hp(0.8),
+    marginVertical: hp(1),
   },
 
-  patientDetails: {
+  detailsGrid: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    marginVertical: hp(0.5),
   },
   detailItem: {
     alignItems: 'center',
@@ -1031,53 +869,143 @@ const styles = StyleSheet.create({
     marginTop: hp(0.1),
   },
   detailValue: {
-    fontSize: wp(3.2),
+    fontSize: wp(3),
     fontWeight: '600',
     color: COLORS.text,
     marginTop: hp(0.05),
   },
   detailDivider: {
     width: 1,
-    height: hp(4),
+    height: hp(3.5),
     backgroundColor: COLORS.border,
   },
 
-  symptomsContainer: {
-    backgroundColor: COLORS.backgroundSecondary,
-    borderRadius: wp(2.5),
-    padding: wp(3),
+  allergyWarning: {
+    flexDirection: 'row',
+    backgroundColor: COLORS.danger + '12',
+    padding: wp(2),
+    borderRadius: wp(2),
     marginTop: hp(0.8),
+    alignItems: 'center',
+    gap: wp(1.5),
   },
-  symptomsTitle: {
-    fontSize: wp(3.2),
-    fontWeight: '600',
-    color: COLORS.text,
-    marginBottom: hp(0.2),
-  },
-  symptomsText: {
-    fontSize: wp(3),
-    color: COLORS.textSecondary,
-    lineHeight: hp(2),
+  allergyText: {
+    color: COLORS.danger,
+    fontSize: wp(2.8),
+    fontWeight: '500',
   },
 
-  completedBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#10B98115',
-    paddingHorizontal: wp(3),
-    paddingVertical: hp(0.4),
-    borderRadius: wp(3),
-    marginTop: hp(0.8),
-    gap: wp(1),
-    alignSelf: 'center',
+  // ─── Consultation Form ──────────────────────────────────────────────
+  formCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: wp(4),
+    padding: wp(4),
+    marginBottom: hp(1.5),
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
-  completedBadgeText: {
-    color: '#10B981',
+  formTitle: {
+    fontSize: wp(4),
+    fontWeight: '700',
+    color: COLORS.text,
+    marginBottom: hp(1.5),
+  },
+  formRow: {
+    flexDirection: 'row',
+    gap: wp(3),
+    marginBottom: hp(1),
+  },
+  formField: {
+    marginBottom: hp(1),
+  },
+  fieldLabel: {
     fontSize: wp(2.8),
     fontWeight: '600',
+    color: COLORS.textSecondary,
+    marginBottom: hp(0.2),
+  },
+  fieldInput: {
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: wp(2),
+    padding: wp(2.5),
+    fontSize: wp(3),
+    color: COLORS.text,
+    backgroundColor: COLORS.backgroundSecondary,
+  },
+  fieldInputMultiline: {
+    minHeight: hp(5),
+    textAlignVertical: 'top',
   },
 
-  // ─── Empty State ────────────────────────────────────────────────────
+  prescriptionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.primary,
+    padding: wp(3),
+    borderRadius: wp(2.5),
+    marginBottom: hp(1),
+    gap: wp(2),
+  },
+  prescriptionBtnText: {
+    color: COLORS.white,
+    fontSize: wp(3.2),
+    fontWeight: '600',
+    flex: 1,
+  },
+  prescriptionSelected: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: COLORS.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  prescriptionSelectedText: {
+    color: COLORS.success,
+    fontSize: wp(3.5),
+    fontWeight: 'bold',
+  },
+
+  prescriptionPreview: {
+    backgroundColor: COLORS.backgroundSecondary,
+    padding: wp(2.5),
+    borderRadius: wp(2),
+    marginBottom: hp(1),
+  },
+  previewLabel: {
+    fontSize: wp(2.8),
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  previewText: {
+    fontSize: wp(2.8),
+    color: COLORS.textSecondary,
+    marginTop: hp(0.1),
+  },
+
+  submitBtn: {
+    borderRadius: wp(2.5),
+    overflow: 'hidden',
+    marginTop: hp(0.5),
+  },
+  submitBtnDisabled: {
+    opacity: 0.7,
+  },
+  submitGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: hp(1.6),
+    gap: wp(2),
+  },
+  submitText: {
+    color: COLORS.white,
+    fontSize: wp(4),
+    fontWeight: '700',
+  },
+
+  // ─── Empty State ──────────────────────────────────────────────────────
   emptyCard: {
     alignItems: 'center',
     padding: wp(8),
@@ -1107,87 +1035,6 @@ const styles = StyleSheet.create({
   emptyBtnText: {
     color: COLORS.white,
     fontSize: wp(3.5),
-    fontWeight: '600',
-  },
-
-  // ─── Action Buttons ──────────────────────────────────────────────────
-  actionContainer: {
-    marginTop: hp(0.5),
-  },
-  callButton: {
-    borderRadius: wp(3),
-    overflow: 'hidden',
-    marginBottom: hp(1.5),
-    ...SHADOWS.medium,
-  },
-  callButtonGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: hp(1.8),
-    gap: wp(2),
-  },
-  callButtonText: {
-    color: COLORS.white,
-    fontSize: wp(4.5),
-    fontWeight: '700',
-  },
-  cardShadow: { ...SHADOWS.medium },
-
-  secondaryButtons: {
-    flexDirection: 'row',
-    gap: wp(2),
-  },
-  secondaryBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: COLORS.white,
-    paddingVertical: hp(1.2),
-    borderRadius: wp(3),
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    gap: wp(1.5),
-  },
-  secondaryBtnText: {
-    fontSize: wp(3.2),
-    color: COLORS.primary,
-    fontWeight: '600',
-  },
-
-  // ✅ Queue Button with Count
-  queueBtn: {
-    position: 'relative',
-  },
-  queueBtnContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: wp(1.5),
-  },
-  queueCountBadge: {
-    backgroundColor: COLORS.primary,
-    borderRadius: 10,
-    minWidth: 18,
-    height: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 4,
-  },
-  queueCountText: {
-    color: COLORS.white,
-    fontSize: 10,
-    fontWeight: '700',
-  },
-
-  completedToggle: {
-    alignItems: 'center',
-    marginTop: hp(1),
-    paddingVertical: hp(0.5),
-  },
-  completedToggleText: {
-    fontSize: wp(3),
-    color: COLORS.primary,
     fontWeight: '600',
   },
 
@@ -1267,6 +1114,7 @@ const styles = StyleSheet.create({
     padding: wp(2.5),
     borderRadius: wp(2.5),
     borderWidth: 1.5,
+    borderColor: COLORS.border,
     backgroundColor: COLORS.white,
   },
   templateCardActive: {
@@ -1308,12 +1156,6 @@ const styles = StyleSheet.create({
     padding: wp(3),
     marginTop: hp(0.5),
   },
-  previewLabel: {
-    fontSize: wp(3),
-    fontWeight: '600',
-    color: COLORS.text,
-    marginBottom: hp(0.3),
-  },
   previewItem: {
     paddingVertical: hp(0.15),
   },
@@ -1345,3 +1187,16 @@ const styles = StyleSheet.create({
 });
 
 export default CallNextPatientScreen;
+
+/*listen me
+is screen mn mtlab is code mn add kro limitation back py hr entry py, means abhi agr hint mn 120/80 likha hwa tw doctor just numbering add kry r / yeh etc khud hi add ho jay
+bakioo ka bhi aesy hi han chaieye
+doctor ko facilitate kro k wo km time lgayy r queue ko khtam kry wo, so plzz is cheez py focus kro
+cardiology ki bhut ziada diseases han r medicines han tw appointment ka ccording filter kr k add kro r bhut sari kro, thori si nahi, doctor medicine ka name search kry mg filter kry r add kr dy prescription mn, isi trah process ho k prescription bny
+prescription ka full template bhi hna chaieye like patient ka data r neechy doctor ki info r yeh wo, usy pharmacy py bheja jay
+
+entry k bad yeh process hny k bad buttn pr add ho k send to pharmacy like now, mtlab yeh button khud hi ana chiaye scroll ho k r doctor easily done kry 
+
+pharmacy send krny k bad yeh option mt lgao k back to portal, obviously patient done ho gya hai tw doctor ko portal py hi ajna hai, so usy udr hi bhejo plzz, yeh cheez ghalat lg rhi hai last notifi wali
+
+r han jo bhi add krp notifi/card/ template....everything must be in a theme foloow*/

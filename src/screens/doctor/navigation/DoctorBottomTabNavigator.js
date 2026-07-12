@@ -1,5 +1,8 @@
+// src/screens/doctor/navigation/DoctorBottomTabNavigator.js
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { View, StyleSheet, Platform } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 import { COLORS } from '../../../theme';
@@ -9,203 +12,121 @@ import DoctorProfileScreen from '../DoctorProfileScreen';
 import DoctorNotificationsScreen from '../DoctorNotificationsScreen';
 import DoctorSettingsScreen from '../DoctorSettingsScreen';
 
-
 const Tab = createBottomTabNavigator();
 
-
+// Custom Tab Bar Background Component with Gradient
+const TabBarBackground = () => (
+  <LinearGradient
+    colors={[COLORS.primary, COLORS.secondary]}
+    start={{ x: 0, y: 0 }}
+    end={{ x: 1, y: 0 }}
+    style={StyleSheet.absoluteFillObject}
+  />
+);
 
 export default function DoctorBottomTabNavigator() {
-
   return (
-
     <Tab.Navigator
-
       initialRouteName="DoctorPortal"
-
       screenOptions={({ route }) => ({
+        headerShown: false,
 
-        headerShown:false,
+        tabBarActiveTintColor: COLORS.white,
+        tabBarInactiveTintColor: 'rgba(255,255,255,0.6)',
 
-
-        tabBarActiveTintColor: COLORS.primary,
-
-        tabBarInactiveTintColor:'#9CA3AF',
-
-
-        tabBarStyle:{
-
-          height:68,
-
-          paddingBottom:8,
-
-          paddingTop:8,
-
-          backgroundColor:'#FFFFFF',
-
-          borderTopWidth:1,
-
-          borderTopColor:'#E5E7EB',
-
+        tabBarStyle: {
+          height: Platform.OS === 'ios' ? 85 : 72,
+          paddingBottom: Platform.OS === 'ios' ? 20 : 10,
+          paddingTop: 10,
+          backgroundColor: 'transparent',
+          borderTopWidth: 0,
+          elevation: 20,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -4 },
+          shadowOpacity: 0.25,
+          shadowRadius: 12,
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          borderTopLeftRadius: 24,
+          borderTopRightRadius: 24,
+          overflow: 'hidden',
         },
 
+        tabBarBackground: () => <TabBarBackground />,
 
-        tabBarLabelStyle:{
-
-          fontSize:11,
-
-          fontWeight:'600',
-
+        tabBarLabelStyle: {
+          fontSize: 10,
+          fontWeight: '700',
+          letterSpacing: 0.3,
+          marginTop: 4,
+          textTransform: 'uppercase',
         },
 
-
-        tabBarIcon:({color,size})=>{
-
-
+        tabBarIcon: ({ color, size, focused }) => {
           let iconName;
 
-
-          switch(route.name){
-
-
+          switch (route.name) {
             case 'DoctorPortal':
-
-              iconName='home-outline';
-
+              iconName = focused ? 'home' : 'home-outline';
               break;
-
-
-
             case 'DoctorNotifications':
-
-              iconName='notifications-outline';
-
+              iconName = focused ? 'notifications' : 'notifications-outline';
               break;
-
-
-
             case 'DoctorProfile':
-
-              iconName='person-circle-outline';
-
+              iconName = focused ? 'person' : 'person-outline';
               break;
-
-
-
             case 'DoctorSettings':
-
-              iconName='settings-outline';
-
+              iconName = focused ? 'settings' : 'settings-outline';
               break;
-
-
-
             default:
-
-              iconName='ellipse-outline';
-
+              iconName = 'ellipse-outline';
           }
 
-
-
           return (
-
             <Ionicons
-
               name={iconName}
-
-              size={size}
-
+              size={focused ? 26 : 22}
               color={color}
-
             />
-
           );
-
-
         },
-
-
       })}
-
-
     >
-
-
-
       <Tab.Screen
-
         name="DoctorPortal"
-
         component={DoctorPortalScreen}
-
         options={{
-
-          title:'Home',
-
+          title: 'Home',
         }}
-
       />
 
-
-
-
-
       <Tab.Screen
-
         name="DoctorNotifications"
-
         component={DoctorNotificationsScreen}
-
         options={{
-
-          title:'Alerts',
-
+          title: 'Alerts',
         }}
-
       />
 
-
-
-
-
       <Tab.Screen
-
         name="DoctorProfile"
-
         component={DoctorProfileScreen}
-
         options={{
-
-          title:'Profile',
-
+          title: 'Profile',
         }}
-
       />
-
-
-
-
 
       <Tab.Screen
-
         name="DoctorSettings"
-
         component={DoctorSettingsScreen}
-
         options={{
-
-          title:'Settings',
-
+          title: 'Settings',
         }}
-
       />
-
-
-
-
     </Tab.Navigator>
-
-
   );
-
 }
+
+const styles = StyleSheet.create({});
