@@ -1,292 +1,202 @@
-import React, { useState } from 'react';
+// src/screens/doctor/DoctorScheduleScreen.js
+import React, { useState, useEffect } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Dimensions, Platform, StatusBar,
-  SafeAreaView, TextInput
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Dimensions,
+  Platform,
+  StatusBar,
+  SafeAreaView,
+  Image,
+  RefreshControl,
+  ActivityIndicator,
 } from 'react-native';
-import Ionicons from 'react-native-vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS, SIZES, SHADOWS } from '../../theme';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { COLORS, SHADOWS } from '../../theme';
 
 const { width, height } = Dimensions.get('window');
+const wp = (p) => (width * p) / 100;
+const hp = (p) => (height * p) / 100;
 
-// Responsive sizing
-const isTablet = width >= 768;
-const wp = (percentage) => (width * percentage) / 100;
-const hp = (percentage) => (height * percentage) / 100;
+const USER_DATA_KEY = '@sehatline_userData';
 
 const DoctorScheduleScreen = ({ navigation }) => {
-  const [selectedDay, setSelectedDay] = useState('All');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [doctor, setDoctor] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const days = ['All', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  useEffect(() => {
+    loadDoctorData();
+  }, []);
 
-  const schedules = [
-    { 
-      id: 1, name: 'Dr. Arshad Khan', dept: 'Cardiology', 
-      days: ['Monday', 'Wednesday', 'Friday'], 
-      time: '09:00 AM - 01:00 PM',
-      room: 'Room 101-C',
-      experience: '15+ years',
-      qualification: 'FCPS Cardiology',
-      patients: '12+ patients/day',
-      image: '👨‍⚕️'
-    },
-    { 
-      id: 2, name: 'Dr. Sarah Ahmed', dept: 'Neurology', 
-      days: ['Tuesday', 'Thursday', 'Saturday'], 
-      time: '11:00 AM - 04:00 PM',
-      room: 'Room 108-N',
-      experience: '10+ years',
-      qualification: 'FCPS Neurology',
-      patients: '10+ patients/day',
-      image: '👩‍⚕️'
-    },
-    { 
-      id: 3, name: 'Dr. Fatima Hassan', dept: 'Pediatrics', 
-      days: ['Monday', 'Tuesday', 'Thursday'], 
-      time: '10:00 AM - 02:00 PM',
-      room: 'Room 201-P',
-      experience: '8+ years',
-      qualification: 'MBBS, FCPS Pediatrics',
-      patients: '15+ patients/day',
-      image: '👩‍⚕️'
-    },
-    { 
-      id: 4, name: 'Dr. Omar Farooq', dept: 'Orthopedics', 
-      days: ['Wednesday', 'Friday', 'Saturday'],
-      time: '02:00 PM - 06:00 PM',
-      room: 'Room 108-OR',
-      experience: '12+ years',
-      qualification: 'MS Orthopedics',
-      patients: '8+ patients/day',
-      image: '👨‍⚕️'
-    },
-    { 
-      id: 5, name: 'Dr. Zainab Ali', dept: 'Gynecology', 
-      days: ['Monday', 'Wednesday', 'Thursday'],
-      time: '09:00 AM - 01:00 PM',
-      room: 'Room 208-G',
-      experience: '9+ years',
-      qualification: 'FCPS Gynecology',
-      patients: '18+ patients/day',
-      image: '👩‍⚕️'
-    },
-    { 
-      id: 6, name: 'Dr. Usman Chaudhry', dept: 'Dermatology', 
-      days: ['Tuesday', 'Thursday', 'Friday'],
-      time: '01:00 PM - 05:00 PM',
-      room: 'Room 117-D',
-      experience: '7+ years',
-      qualification: 'FCPS Dermatology',
-      patients: '20+ patients/day',
-      image: '👨‍⚕️'
-    },
-    { 
-      id: 7, name: 'Dr. Amna Tariq', dept: 'Ophthalmology', 
-      days: ['Monday', 'Wednesday', 'Saturday'],
-      time: '10:00 AM - 02:00 PM',
-      room: 'Room 118-O',
-      experience: '11+ years',
-      qualification: 'FCPS Ophthalmology',
-      patients: '14+ patients/day',
-      image: '👩‍⚕️'
-    },
-    { 
-      id: 8, name: 'Dr. Bilal Raza', dept: 'ENT', 
-      days: ['Tuesday', 'Thursday', 'Friday'],
-      time: '02:00 PM - 06:00 PM',
-      room: 'Room 112-E',
-      experience: '6+ years',
-      qualification: 'FCPS ENT',
-      patients: '10+ patients/day',
-      image: '👨‍⚕️'
-    },
-  ];
-
-  const filteredSchedules = schedules.filter(doctor => {
-    const matchesDay = selectedDay === 'All' || doctor.days.includes(selectedDay);
-    const matchesSearch = doctor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          doctor.dept.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesDay && matchesSearch;
-  });
-
-  const getDepartmentColor = (dept) => {
-    const colors = {
-      'Cardiology': COLORS.danger,
-      'Neurology': COLORS.appointment,
-      'Pediatrics': COLORS.success,
-      'Orthopedics': COLORS.warning,
-      'Gynecology': '#EC4899',
-      'Dermatology': COLORS.info,
-      'Ophthalmology': '#3B82F6',
-      'ENT': '#F97316',
-    };
-    return colors[dept] || COLORS.primary;
+  const loadDoctorData = async () => {
+    try {
+      const userData = await AsyncStorage.getItem(USER_DATA_KEY);
+      if (userData) {
+        const parsed = JSON.parse(userData);
+        setDoctor(parsed);
+      } else {
+        // Fallback mock data
+        setDoctor({
+          name: 'Dr. Ahmed Hassan',
+          specialty: 'Consultant Cardiologist',
+          department: 'Cardiology Department',
+          hospital: 'Capital Hospital CDA',
+          room: 'Room 12',
+          shift: '08:30 AM – 02:00 PM',
+          break: '12:30 PM – 01:00 PM',
+          workingDays: 'Monday - Friday',
+          patientsPerDay: '45-50',
+          isOnline: true,
+          avatar: 'AH',
+          color: COLORS.primary,
+          color2: COLORS.secondary,
+        });
+      }
+    } catch (error) {
+      console.error('Error loading doctor:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const getDepartmentIcon = (dept) => {
-    const icons = {
-      'Cardiology': 'heart-outline',
-      'Neurology': 'pulse-outline',
-      'Pediatrics': 'happy-outline',
-      'Orthopedics': 'fitness-outline',
-      'Gynecology': 'female-outline',
-      'Dermatology': 'color-palette-outline',
-      'Ophthalmology': 'eye-outline',
-      'ENT': 'ear-outline',
-    };
-    return icons[dept] || 'medical-outline';
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadDoctorData();
+    setRefreshing(false);
   };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+        <Text style={styles.loadingText}>Loading Schedule...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-      
-      <LinearGradient
-        colors={[COLORS.primary, COLORS.secondary, COLORS.background]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0, y: 0.25 }}
-        style={styles.gradientBackground}
-      />
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
 
       <SafeAreaView style={styles.safeArea}>
-        {/* Header */}
-        <View style={styles.headerContainer}>
-          <View style={styles.topHeader}>
-            <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-              <Ionicons name="arrow-back" size={wp(5.5)} color={COLORS.white} />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Doctor Schedule</Text>
-            <View style={{ width: wp(10) }} />
-          </View>
+        {/* ─── HEADER ───────────────────────────────────────────────────── */}
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.menuBtn} onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={wp(5.5)} color={COLORS.text} />
+          </TouchableOpacity>
 
-          {/* Search Bar */}
-          <View style={styles.searchContainer}>
-            <Ionicons name="search-outline" size={wp(4.5)} color={COLORS.textSecondary} />
-            <TextInput 
-              style={styles.searchInput}
-              placeholder="Search by doctor name or department..."
-              placeholderTextColor={COLORS.textLight}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
+          <View style={styles.headerCenter}>
+            <Image 
+              source={require('../../../assets/logo.png')} 
+              style={styles.headerLogo} 
+              resizeMode="contain" 
             />
-            {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => setSearchQuery('')}>
-                <Ionicons name="close-circle" size={wp(4)} color={COLORS.textSecondary} />
-              </TouchableOpacity>
-            )}
+            <Text style={styles.headerTitle}>My Schedule</Text>
           </View>
+
+          <View style={styles.headerRight} />
         </View>
 
-        {/* Day Filter */}
-        <View style={styles.filterContainer}>
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.filterScroll}
-          >
-            {days.map((day, index) => (
-              <TouchableOpacity
-                key={index}
-                style={[styles.filterChip, selectedDay === day && styles.filterChipActive]}
-                onPress={() => setSelectedDay(day)}
-              >
-                <Text style={[styles.filterText, selectedDay === day && styles.filterTextActive]}>
-                  {day}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-
-        {/* Schedule List */}
         <ScrollView 
+          style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />
+          }
           showsVerticalScrollIndicator={false}
         >
-          {filteredSchedules.length > 0 ? (
-            filteredSchedules.map((doctor) => (
-              <TouchableOpacity key={doctor.id} style={[styles.doctorCard, styles.cardShadow]} activeOpacity={0.85}>
-                <View style={styles.cardContent}>
-                  {/* Doctor Avatar */}
-                  <View style={[styles.avatarContainer, { backgroundColor: getDepartmentColor(doctor.dept) + '20' }]}>
-                    <Text style={styles.doctorEmoji}>{doctor.image}</Text>
-                  </View>
+          {/* ─── DOCTOR INFO ────────────────────────────────────────────── */}
+          <View style={[styles.doctorCard, SHADOWS.medium]}>
+            <LinearGradient
+              colors={[doctor?.color || COLORS.primary, doctor?.color2 || COLORS.secondary]}
+              style={styles.doctorAvatar}
+            >
+              <Text style={styles.doctorAvatarText}>{doctor?.avatar || 'DR'}</Text>
+            </LinearGradient>
 
-                  {/* Doctor Info */}
-                  <View style={styles.doctorInfo}>
-                    <Text style={styles.doctorName}>{doctor.name}</Text>
-                    <View style={styles.deptBadge}>
-                      <Ionicons name={getDepartmentIcon(doctor.dept)} size={wp(3)} color={getDepartmentColor(doctor.dept)} />
-                      <Text style={[styles.department, { color: getDepartmentColor(doctor.dept) }]}>
-                        {doctor.dept}
-                      </Text>
-                    </View>
-                    
-                    {/* Schedule Details */}
-                    <View style={styles.scheduleGrid}>
-                      <View style={styles.scheduleItem}>
-                        <Ionicons name="calendar-outline" size={wp(3)} color={COLORS.primary} />
-                        <Text style={styles.scheduleText} numberOfLines={1}>
-                          {doctor.days.join(', ')}
-                        </Text>
-                      </View>
-                      <View style={styles.scheduleItem}>
-                        <Ionicons name="time-outline" size={wp(3)} color={COLORS.primary} />
-                        <Text style={styles.scheduleText}>{doctor.time}</Text>
-                      </View>
-                      <View style={styles.scheduleItem}>
-                        <Ionicons name="location-outline" size={wp(3)} color={COLORS.primary} />
-                        <Text style={styles.scheduleText}>{doctor.room}</Text>
-                      </View>
-                    </View>
-
-                    {/* Qualification & Experience */}
-                    <View style={styles.qualificationRow}>
-                      <View style={styles.qualBadge}>
-                        <Ionicons name="school-outline" size={wp(2.5)} color={COLORS.success} />
-                        <Text style={styles.qualText}>{doctor.qualification}</Text>
-                      </View>
-                      <View style={styles.qualBadge}>
-                        <Ionicons name="star-outline" size={wp(2.5)} color={COLORS.warning} />
-                        <Text style={styles.qualText}>{doctor.experience}</Text>
-                      </View>
-                      <View style={styles.qualBadge}>
-                        <Ionicons name="people-outline" size={wp(2.5)} color={COLORS.primary} />
-                        <Text style={styles.qualText}>{doctor.patients}</Text>
-                      </View>
-                    </View>
-                  </View>
-
-                  {/* Book Button */}
-                  <TouchableOpacity 
-                    style={[styles.bookButton, { backgroundColor: getDepartmentColor(doctor.dept) }]}
-                    onPress={() => navigation.navigate('BookAppointmentScreen', { doctor: doctor })}
-                  >
-                    <Text style={styles.bookButtonText}>Book</Text>
-                    <Ionicons name="arrow-forward" size={wp(3)} color={COLORS.white} />
-                  </TouchableOpacity>
-                </View>
-              </TouchableOpacity>
-            ))
-          ) : (
-            <View style={styles.emptyState}>
-              <Ionicons name="calendar-outline" size={wp(12)} color={COLORS.border} />
-              <Text style={styles.emptyTitle}>No Doctors Found</Text>
-              <Text style={styles.emptySubtitle}>Try selecting a different day or search term</Text>
+            <View style={styles.doctorInfo}>
+              <Text style={styles.doctorName}>{doctor?.name}</Text>
+              <Text style={styles.doctorSpecialty}>{doctor?.specialty}</Text>
+              <Text style={styles.doctorDept}>{doctor?.department}</Text>
+              <Text style={styles.doctorHospital}>{doctor?.hospital}</Text>
             </View>
-          )}
-          
-          {/* Info Note */}
-          <View style={styles.infoNote}>
-            <Ionicons name="information-circle" size={wp(4)} color={COLORS.primary} />
-            <Text style={styles.infoNoteText}>
-              Timings may vary on public holidays. Please call ahead to confirm.
-            </Text>
           </View>
-          
-          <View style={{ height: hp(10) }} />
+
+          {/* ─── WORKING DAYS ───────────────────────────────────────────── */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Working Days</Text>
+            <View style={[styles.infoCard, SHADOWS.small]}>
+              <View style={styles.infoRow}>
+                <Ionicons name="calendar-outline" size={wp(4.5)} color={COLORS.primary} />
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>Days of Attendance</Text>
+                  <Text style={styles.infoValue}>{doctor?.workingDays || 'Monday - Friday'}</Text>
+                </View>
+              </View>
+            </View>
+          </View>
+
+          {/* ─── DUTY HOURS ────────────────────────────────────────────── */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Duty Hours</Text>
+            <View style={[styles.infoCard, SHADOWS.small]}>
+              <View style={styles.infoRow}>
+                <Ionicons name="time-outline" size={wp(4.5)} color={COLORS.primary} />
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>Shift</Text>
+                  <Text style={styles.infoValue}>{doctor?.shift || '08:30 AM – 02:00 PM'}</Text>
+                </View>
+              </View>
+
+              <View style={styles.divider} />
+
+              <View style={styles.infoRow}>
+                <Ionicons name="cafe-outline" size={wp(4.5)} color={COLORS.warning} />
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>Break</Text>
+                  <Text style={styles.infoValue}>{doctor?.break || '12:30 PM – 01:00 PM'}</Text>
+                </View>
+              </View>
+            </View>
+          </View>
+
+          {/* ─── LOCATION ───────────────────────────────────────────────── */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Location</Text>
+            <View style={[styles.infoCard, SHADOWS.small]}>
+              <View style={styles.infoRow}>
+                <Ionicons name="location-outline" size={wp(4.5)} color={COLORS.primary} />
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>Room</Text>
+                  <Text style={styles.infoValue}>{doctor?.room || 'Room 12'}</Text>
+                </View>
+              </View>
+            </View>
+          </View>
+
+          {/* ─── STATUS ────────────────────────────────────────────────── */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Status</Text>
+            <View style={[styles.statusCard, SHADOWS.small]}>
+              <View style={[styles.statusBadge, doctor?.isOnline && styles.statusOnline]}>
+                <View style={[styles.statusDot, doctor?.isOnline && styles.statusDotOnline]} />
+                <Text style={[styles.statusText, doctor?.isOnline && styles.statusTextOnline]}>
+                  {doctor?.isOnline ? 'On Duty' : 'Off Duty'}
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {/* ─── FOOTER ────────────────────────────────────────────────── */}
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>SehatLine v2.0.1</Text>
+          </View>
         </ScrollView>
       </SafeAreaView>
     </View>
@@ -294,232 +204,218 @@ const DoctorScheduleScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: COLORS.background 
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background,
   },
-  gradientBackground: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: '100%',
+  safeArea: {
+    flex: 1,
   },
-  safeArea: { 
-    flex: 1 
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.background,
+  },
+  loadingText: {
+    marginTop: hp(1),
+    fontSize: wp(3.5),
+    color: COLORS.textSecondary,
   },
 
-  cardShadow: { ...SHADOWS.medium },
-
-  // Header
-  headerContainer: {
-    paddingBottom: hp(1),
-  },
-  topHeader: {
+  // ── Header ────────────────────────────────────────────────────────
+  header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: wp(5),
-    paddingTop: Platform.OS === 'ios' ? hp(1) : StatusBar.currentHeight + hp(1),
-    paddingBottom: hp(1.5),
+    paddingHorizontal: wp(4),
+    paddingVertical: hp(1.5),
+    backgroundColor: COLORS.white,
+    borderBottomWidth: 2,
+    borderBottomColor: COLORS.primary + '20',
   },
-  backBtn: {
+  menuBtn: {
+    width: wp(9),
+    height: wp(9),
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerCenter: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: wp(2),
+  },
+  headerLogo: {
     width: wp(10),
     height: wp(10),
-    borderRadius: wp(3),
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
+    resizeMode: 'contain',
   },
-  headerTitle: { 
-    color: COLORS.white, 
-    fontSize: wp(5), 
-    fontWeight: 'bold',
+  headerTitle: {
+    fontSize: wp(4.8),
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  headerRight: {
+    width: wp(9),
   },
 
-  searchContainer: {
+  // ── Scroll ────────────────────────────────────────────────────────
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: hp(4),
+  },
+
+  // ── Section ──────────────────────────────────────────────────────
+  section: {
+    paddingHorizontal: wp(4),
+    marginTop: hp(2),
+  },
+  sectionTitle: {
+    fontSize: wp(3.8),
+    fontWeight: '700',
+    color: COLORS.text,
+    marginBottom: hp(1),
+  },
+
+  // ── Doctor Card ──────────────────────────────────────────────────
+  doctorCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.white,
-    marginHorizontal: wp(5),
+    marginHorizontal: wp(4),
     marginTop: hp(1.5),
-    paddingHorizontal: wp(3.5),
+    padding: wp(3.5),
     borderRadius: wp(3.5),
     borderWidth: 1,
     borderColor: COLORS.border,
-    gap: wp(2),
-    ...SHADOWS.small,
   },
-  searchInput: { 
-    flex: 1, 
-    color: COLORS.text, 
-    fontSize: wp(3.5), 
-    paddingVertical: hp(1.2),
-  },
-
-  filterContainer: {
-    paddingVertical: hp(1),
-    backgroundColor: COLORS.white,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  filterScroll: {
-    paddingHorizontal: wp(4),
-    gap: wp(2),
-  },
-  filterChip: {
-    paddingHorizontal: wp(4),
-    paddingVertical: hp(0.8),
-    borderRadius: wp(5),
-    backgroundColor: COLORS.backgroundSecondary,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  filterChipActive: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
-  },
-  filterText: {
-    color: COLORS.textSecondary,
-    fontSize: wp(3),
-    fontWeight: '500',
-  },
-  filterTextActive: {
-    color: COLORS.white,
-  },
-
-  scrollContent: { 
-    padding: wp(4), 
-    paddingBottom: hp(5),
-  },
-
-  doctorCard: {
-    marginBottom: hp(1.5),
-    borderRadius: wp(4),
-    overflow: 'hidden',
-    backgroundColor: COLORS.white,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  cardContent: {
-    flexDirection: 'row',
-    padding: wp(3.5),
-    gap: wp(3),
-  },
-
-  avatarContainer: {
+  doctorAvatar: {
     width: wp(14),
     height: wp(14),
-    borderRadius: wp(3.5),
+    borderRadius: wp(7),
     justifyContent: 'center',
     alignItems: 'center',
   },
-  doctorEmoji: {
-    fontSize: wp(7),
+  doctorAvatarText: {
+    color: COLORS.white,
+    fontSize: wp(4.5),
+    fontWeight: '700',
   },
-
   doctorInfo: {
     flex: 1,
-    gap: hp(0.5),
+    marginLeft: wp(3),
   },
   doctorName: {
+    fontSize: wp(4.2),
+    fontWeight: '700',
     color: COLORS.text,
-    fontSize: wp(4),
-    fontWeight: 'bold',
   },
-  deptBadge: {
+  doctorSpecialty: {
+    fontSize: wp(3),
+    color: COLORS.textSecondary,
+    marginTop: hp(0.1),
+  },
+  doctorDept: {
+    fontSize: wp(2.8),
+    color: COLORS.textLight,
+    marginTop: hp(0.1),
+  },
+  doctorHospital: {
+    fontSize: wp(2.6),
+    color: COLORS.textLight,
+    marginTop: hp(0.2),
+  },
+
+  // ── Info Card ────────────────────────────────────────────────────
+  infoCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: wp(3.5),
+    padding: wp(3.5),
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: wp(1),
+    paddingVertical: hp(0.3),
   },
-  department: {
+  infoContent: {
+    flex: 1,
+    marginLeft: wp(3),
+  },
+  infoLabel: {
+    fontSize: wp(2.6),
+    color: COLORS.textLight,
+    fontWeight: '500',
+  },
+  infoValue: {
+    fontSize: wp(3.2),
+    fontWeight: '600',
+    color: COLORS.text,
+    marginTop: hp(0.1),
+  },
+  divider: {
+    height: 1,
+    backgroundColor: COLORS.border,
+    marginVertical: hp(0.3),
+  },
+
+  // ── Status Card ──────────────────────────────────────────────────
+  statusCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: wp(3.5),
+    padding: wp(3.5),
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    alignItems: 'center',
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: wp(4),
+    paddingVertical: hp(0.6),
+    borderRadius: wp(4),
+    backgroundColor: COLORS.backgroundSecondary,
+    gap: wp(1.5),
+  },
+  statusOnline: {
+    backgroundColor: COLORS.success + '15',
+  },
+  statusDot: {
+    width: wp(2),
+    height: wp(2),
+    borderRadius: wp(1),
+    backgroundColor: COLORS.textLight,
+  },
+  statusDotOnline: {
+    backgroundColor: COLORS.success,
+  },
+  statusText: {
     fontSize: wp(3),
+    color: COLORS.textSecondary,
     fontWeight: '600',
   },
-
-  scheduleGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: wp(1.5),
-    marginTop: hp(0.3),
-  },
-  scheduleItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: wp(1),
-    backgroundColor: COLORS.backgroundSecondary,
-    paddingHorizontal: wp(2),
-    paddingVertical: hp(0.3),
-    borderRadius: wp(2),
-  },
-  scheduleText: {
-    color: COLORS.textSecondary,
-    fontSize: wp(2.5),
+  statusTextOnline: {
+    color: COLORS.success,
   },
 
-  qualificationRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: wp(2),
-    marginTop: hp(0.3),
-  },
-  qualBadge: {
-    flexDirection: 'row',
+  // ── Footer ──────────────────────────────────────────────────────
+  footer: {
     alignItems: 'center',
-    gap: wp(1),
+    marginTop: hp(3),
+    paddingTop: hp(1.5),
+    paddingBottom: hp(1),
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+    marginHorizontal: wp(4),
   },
-  qualText: {
-    color: COLORS.textSecondary,
-    fontSize: wp(2.5),
-  },
-
-  bookButton: {
-    alignSelf: 'center',
-    paddingHorizontal: wp(2.5),
-    paddingVertical: hp(0.6),
-    borderRadius: wp(3),
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: wp(1),
-  },
-  bookButtonText: {
-    color: COLORS.white,
-    fontSize: wp(2.8),
-    fontWeight: 'bold',
-  },
-
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: hp(8),
-  },
-  emptyTitle: {
-    color: COLORS.text,
-    fontSize: wp(4),
-    fontWeight: 'bold',
-    marginTop: hp(2),
-  },
-  emptySubtitle: {
-    color: COLORS.textSecondary,
-    fontSize: wp(3.2),
-    marginTop: hp(1),
-  },
-
-  infoNote: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.primary + '10',
-    padding: wp(3),
-    borderRadius: wp(3),
-    gap: wp(2),
-    marginTop: hp(2),
-  },
-  infoNoteText: {
-    color: COLORS.textSecondary,
-    fontSize: wp(2.8),
-    flex: 1,
+  footerText: {
+    fontSize: wp(2.6),
+    color: COLORS.textLight,
   },
 });
 
