@@ -25,42 +25,269 @@ const hp = (p) => (height * p) / 100;
 
 const QUEUE_KEY = '@sehatline_queue';
 const COMPLETED_PATIENTS_KEY = '@sehatline_completed_patients';
+const APPOINTMENTS_KEY = '@sehatline_appointments';
 
 const TodayQueueScreen = ({ navigation }) => {
   const [queue, setQueue] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState('All');
   const [stats, setStats] = useState({ total: 0, waiting: 0, completed: 0 });
+  const [currentDate, setCurrentDate] = useState('');
+  const [todayAppointments, setTodayAppointments] = useState([]);
 
   useEffect(() => {
     loadData();
+    getTodayDate();
   }, []);
+
+  const getTodayDate = () => {
+    const today = new Date();
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const dayName = days[today.getDay()];
+    const dateStr = today.toLocaleDateString('en-PK', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+    setCurrentDate(`${dayName}, ${dateStr}`);
+  };
 
   const loadData = async () => {
     try {
-      // Load queue
-      const queueData = await AsyncStorage.getItem(QUEUE_KEY);
-      if (queueData) {
-        const parsed = JSON.parse(queueData);
-        setQueue(parsed);
-      } else {
-        // Mock data for demo
-        const mockQueue = [
-          { id: '1', name: 'Muhammad Usman', age: 45, token: 3, priority: 'Normal', status: 'Waiting', reason: 'Chest Pain', time: '09:30 AM' },
-          { id: '2', name: 'Saima Ahmed', age: 32, token: 2, priority: 'Urgent', status: 'Waiting', reason: 'Palpitations', time: '09:15 AM' },
-          { id: '3', name: 'Ali Raza', age: 28, token: 1, priority: 'Emergency', status: 'In Consultation', reason: 'Breathing Issue', time: '09:00 AM' },
-          { id: '4', name: 'Fatima Noor', age: 55, token: 4, priority: 'Normal', status: 'Waiting', reason: 'Follow Up', time: '09:45 AM' },
-          { id: '5', name: 'Usman Chaudhry', age: 38, token: 5, priority: 'Urgent', status: 'Completed', reason: 'Diabetes', time: '10:00 AM' },
-        ];
-        setQueue(mockQueue);
-        await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(mockQueue));
+      // ── Load Appointments ──────────────────────────────────────────
+      const appointmentsData = await AsyncStorage.getItem(APPOINTMENTS_KEY);
+      let allAppointments = [];
+      if (appointmentsData) {
+        allAppointments = JSON.parse(appointmentsData);
       }
 
-      // Load completed count
+      // ── Get Today's Date (Tuesday) ─────────────────────────────────
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const todayStr = today.toDateString();
+
+      // ── Filter Today's Appointments ──────────────────────────────
+      const todayApps = allAppointments.filter(app => {
+        const appDate = new Date(app.date || app.createdAt || app.appointmentDate);
+        appDate.setHours(0, 0, 0, 0);
+        return appDate.toDateString() === todayStr;
+      });
+
+      // ── Sort by time (morning to evening) ─────────────────────────
+      const sortedTodayApps = todayApps.sort((a, b) => {
+        const timeA = a.time || a.slot || '09:00';
+        const timeB = b.time || b.slot || '09:00';
+        return timeA.localeCompare(timeB);
+      });
+
+      setTodayAppointments(sortedTodayApps);
+
+      // ── Load Queue ─────────────────────────────────────────────────
+      const queueData = await AsyncStorage.getItem(QUEUE_KEY);
+      let queueList = [];
+      
+      if (queueData) {
+        queueList = JSON.parse(queueData);
+      }
+
+      // ── Filter Queue for Today ─────────────────────────────────────
+      const todayQueue = queueList.filter(item => {
+        const itemDate = new Date(item.date || item.createdAt || Date.now());
+        itemDate.setHours(0, 0, 0, 0);
+        return itemDate.toDateString() === todayStr;
+      });
+
+      // ── Add mock patients if queue is empty ──────────────────────
+      if (todayQueue.length === 0 && todayApps.length === 0) {
+        // Tuesday mock data (2 PM slot)
+        const mockTuesdayQueue = [
+          { 
+            id: '1', 
+            name: 'Muhammad Usman', 
+            age: 45, 
+            token: 3, 
+            priority: 'Normal', 
+            status: 'Waiting', 
+            reason: 'Chest Pain', 
+            time: '09:30 AM',
+            date: today.toISOString(),
+            phone: '0333-1234567'
+          },
+          { 
+            id: '2', 
+            name: 'Saima Ahmed', 
+            age: 32, 
+            token: 2, 
+            priority: 'Urgent', 
+            status: 'Waiting', 
+            reason: 'Palpitations', 
+            time: '09:15 AM',
+            date: today.toISOString(),
+            phone: '0333-7654321'
+          },
+          { 
+            id: '3', 
+            name: 'Ali Raza', 
+            age: 28, 
+            token: 1, 
+            priority: 'Emergency', 
+            status: 'In Consultation', 
+            reason: 'Breathing Issue', 
+            time: '09:00 AM',
+            date: today.toISOString(),
+            phone: '0333-9876543'
+          },
+          { 
+            id: '4', 
+            name: 'Fatima Noor', 
+            age: 55, 
+            token: 4, 
+            priority: 'Normal', 
+            status: 'Waiting', 
+            reason: 'Follow Up', 
+            time: '09:45 AM',
+            date: today.toISOString(),
+            phone: '0333-4567890'
+          },
+          { 
+            id: '5', 
+            name: 'Usman Chaudhry', 
+            age: 38, 
+            token: 5, 
+            priority: 'Urgent', 
+            status: 'Waiting', 
+            reason: 'Diabetes Checkup', 
+            time: '10:00 AM',
+            date: today.toISOString(),
+            phone: '0333-7890123'
+          },
+          { 
+            id: '6', 
+            name: 'Ayesha Khan', 
+            age: 29, 
+            token: 6, 
+            priority: 'Normal', 
+            status: 'Waiting', 
+            reason: 'Palpitations', 
+            time: '10:30 AM',
+            date: today.toISOString(),
+            phone: '0333-2345678'
+          },
+          { 
+            id: '7', 
+            name: 'Muhammad Bilal', 
+            age: 52, 
+            token: 7, 
+            priority: 'Normal', 
+            status: 'Waiting', 
+            reason: 'Hypertension', 
+            time: '11:00 AM',
+            date: today.toISOString(),
+            phone: '0333-3456789'
+          },
+          { 
+            id: '8', 
+            name: 'Zainab Ali', 
+            age: 41, 
+            token: 8, 
+            priority: 'Urgent', 
+            status: 'Waiting', 
+            reason: 'Chest Discomfort', 
+            time: '11:30 AM',
+            date: today.toISOString(),
+            phone: '0333-4567890'
+          },
+          { 
+            id: '9', 
+            name: 'Hamza Ahmed', 
+            age: 35, 
+            token: 9, 
+            priority: 'Normal', 
+            status: 'Waiting', 
+            reason: 'Routine Checkup', 
+            time: '12:00 PM',
+            date: today.toISOString(),
+            phone: '0333-5678901'
+          },
+          { 
+            id: '10', 
+            name: 'Sadia Malik', 
+            age: 48, 
+            token: 10, 
+            priority: 'Normal', 
+            status: 'Waiting', 
+            reason: 'High Cholesterol', 
+            time: '12:30 PM',
+            date: today.toISOString(),
+            phone: '0333-6789012'
+          },
+          { 
+            id: '11', 
+            name: 'Rana Shahid', 
+            age: 62, 
+            token: 11, 
+            priority: 'Urgent', 
+            status: 'Waiting', 
+            reason: 'Heart Failure Follow-up', 
+            time: '01:00 PM',
+            date: today.toISOString(),
+            phone: '0333-7890123'
+          },
+          { 
+            id: '12', 
+            name: 'Nadia Tariq', 
+            age: 39, 
+            token: 12, 
+            priority: 'Normal', 
+            status: 'Waiting', 
+            reason: 'Palpitations', 
+            time: '01:30 PM',
+            date: today.toISOString(),
+            phone: '0333-8901234'
+          },
+        ];
+        
+        // Filter to keep only patients up to 2 PM
+        const filteredMockQueue = mockTuesdayQueue.filter(item => {
+          const timeStr = item.time;
+          const hour = parseInt(timeStr.split(':')[0]);
+          const minute = parseInt(timeStr.split(':')[1].split(' ')[0]);
+          const isPM = timeStr.includes('PM');
+          
+          // Convert to 24-hour format
+          let hour24 = hour;
+          if (isPM && hour !== 12) hour24 = hour + 12;
+          if (!isPM && hour === 12) hour24 = 0;
+          
+          // Keep only appointments up to 2 PM (14:00)
+          return hour24 < 14 || (hour24 === 14 && minute === 0);
+        });
+
+        setQueue(filteredMockQueue);
+        await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(filteredMockQueue));
+        
+        // Update stats
+        const waiting = filteredMockQueue.filter(q => q.status === 'Waiting' || q.status === 'In Consultation').length;
+        const completed = filteredMockQueue.filter(q => q.status === 'Completed').length;
+        setStats({
+          total: filteredMockQueue.length + completed,
+          waiting: waiting,
+          completed: completed,
+        });
+        
+        return;
+      }
+
+      // ── Use actual queue data ──────────────────────────────────────
+      setQueue(todayQueue);
+
+      // ── Load completed patients ────────────────────────────────────
       const completedData = await AsyncStorage.getItem(COMPLETED_PATIENTS_KEY);
       const completedList = completedData ? JSON.parse(completedData) : [];
       
-      updateStats(queueData ? JSON.parse(queueData) : queue, completedList);
+      updateStats(todayQueue, completedList);
+
     } catch (error) {
       console.error('Error loading data:', error);
     }
@@ -139,7 +366,8 @@ const TodayQueueScreen = ({ navigation }) => {
       style={[
         styles.queueItem, 
         SHADOWS.small,
-        item.priority === 'Emergency' && styles.emergencyItem
+        item.priority === 'Emergency' && styles.emergencyItem,
+        item.status === 'Completed' && styles.completedItem
       ]}
       onPress={() => handlePatientPress(item)}
       activeOpacity={0.7}
@@ -149,13 +377,20 @@ const TodayQueueScreen = ({ navigation }) => {
           <Text style={styles.tokenText}>{item.token}</Text>
         </View>
         <View style={styles.queueItemInfo}>
-          <Text style={styles.queueItemName}>{item.name}</Text>
+          <Text style={[styles.queueItemName, item.status === 'Completed' && styles.completedText]}>
+            {item.name}
+          </Text>
           <Text style={styles.queueItemDetail}>
             {item.age || 'N/A'} yrs • {item.priority}
           </Text>
           {item.reason && (
             <Text style={styles.queueItemReason}>
               <Ionicons name="medical-outline" size={wp(2.5)} color={COLORS.textLight} /> {item.reason}
+            </Text>
+          )}
+          {item.phone && (
+            <Text style={styles.queueItemPhone}>
+              <Ionicons name="call-outline" size={wp(2)} color={COLORS.textLight} /> {item.phone}
             </Text>
           )}
         </View>
@@ -189,12 +424,23 @@ const TodayQueueScreen = ({ navigation }) => {
               style={styles.headerLogo} 
               resizeMode="contain" 
             />
-            <Text style={styles.headerTitle}>Today's Queue</Text>
+            <View>
+              <Text style={styles.headerTitle}>Today's Queue</Text>
+              <Text style={styles.headerDate}>{currentDate}</Text>
+            </View>
           </View>
 
           <TouchableOpacity style={styles.refreshBtn} onPress={onRefresh}>
             <Ionicons name="refresh-outline" size={wp(5)} color={COLORS.primary} />
           </TouchableOpacity>
+        </View>
+
+        {/* ─── INFO BANNER ────────────────────────────────────────────── */}
+        <View style={styles.infoBanner}>
+          <Ionicons name="time-outline" size={wp(4)} color={COLORS.primary} />
+          <Text style={styles.infoText}>
+            Tuesday Clinic • Patients up to 2:00 PM
+          </Text>
         </View>
 
         {/* ─── STATS ───────────────────────────────────────────────────── */}
@@ -254,7 +500,7 @@ const TodayQueueScreen = ({ navigation }) => {
 
         {/* ─── FOOTER ────────────────────────────────────────────────── */}
         <View style={styles.footer}>
-          <Text style={styles.footerText}>SehatLine v2.0.1</Text>
+          <Text style={styles.footerText}>SehatLine v2.0.1 • Tuesday Clinic</Text>
         </View>
       </SafeAreaView>
     </View>
@@ -300,15 +546,33 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
   },
   headerTitle: {
-    fontSize: wp(4.8),
+    fontSize: wp(4.5),
     fontWeight: '700',
     color: COLORS.text,
   },
-  refreshBtn: {
-    width: wp(9),
-    height: wp(9),
-    justifyContent: 'center',
+  headerDate: {
+    fontSize: wp(2.6),
+    color: COLORS.textSecondary,
+    fontWeight: '500',
+  },
+
+  // ── Info Banner ──────────────────────────────────────────────────
+  infoBanner: {
+    flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: COLORS.primary + '10',
+    marginHorizontal: wp(4),
+    marginTop: hp(1),
+    padding: wp(2.5),
+    borderRadius: wp(2),
+    gap: wp(1.5),
+    borderWidth: 1,
+    borderColor: COLORS.primary + '20',
+  },
+  infoText: {
+    fontSize: wp(2.8),
+    color: COLORS.primary,
+    fontWeight: '500',
   },
 
   // ── Stats ────────────────────────────────────────────────────────
@@ -316,7 +580,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: COLORS.white,
     marginHorizontal: wp(4),
-    marginTop: hp(1.5),
+    marginTop: hp(1),
     borderRadius: wp(3.5),
     borderWidth: 1,
     borderColor: COLORS.border,
@@ -402,6 +666,10 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     borderLeftColor: COLORS.danger,
   },
+  completedItem: {
+    opacity: 0.7,
+    backgroundColor: COLORS.backgroundSecondary,
+  },
   queueItemLeft: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -428,6 +696,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.text,
   },
+  completedText: {
+    textDecorationLine: 'line-through',
+    color: COLORS.textLight,
+  },
   queueItemDetail: {
     fontSize: wp(2.6),
     color: COLORS.textSecondary,
@@ -437,6 +709,11 @@ const styles = StyleSheet.create({
     fontSize: wp(2.4),
     color: COLORS.textLight,
     marginTop: hp(0.1),
+  },
+  queueItemPhone: {
+    fontSize: wp(2.2),
+    color: COLORS.textLight,
+    marginTop: hp(0.05),
   },
   queueItemRight: {
     alignItems: 'flex-end',

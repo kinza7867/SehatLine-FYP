@@ -7,12 +7,13 @@ import {
   TouchableOpacity,
   StatusBar,
   SafeAreaView,
-  ScrollView,
   Image,
   RefreshControl,
   ActivityIndicator,
   FlatList,
   Dimensions,
+  Alert,
+  ScrollView,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -25,47 +26,115 @@ const hp = (p) => (height * p) / 100;
 
 const COMPLETED_PATIENTS_KEY = '@sehatline_completed_patients';
 
-const PatientHistoryScreen = ({ navigation }) => {
+// ─── FORCE CLEAN DUPLICATE DATA ──────────────────────────────────────
+const forceCleanDuplicateData = async () => {
+  try {
+    const data = await AsyncStorage.getItem(COMPLETED_PATIENTS_KEY);
+    if (data) {
+      const parsed = JSON.parse(data);
+      // Force new unique IDs for ALL records
+      const cleaned = parsed.map((item, index) => ({
+        ...item,
+        // OVERRIDE with completely new unique ID
+        historyId: `hist_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 8)}`
+      }));
+      await AsyncStorage.setItem(COMPLETED_PATIENTS_KEY, JSON.stringify(cleaned));
+      console.log('✅ Duplicate data cleaned! Total records:', cleaned.length);
+      return cleaned;
+    }
+    return [];
+  } catch (error) {
+    console.error('Error cleaning duplicates:', error);
+    return [];
+  }
+};
+
+const PatientHistoryScreen = ({ navigation, route }) => {
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState('all');
 
   const filters = [
-    { id: 'all', label: 'All' },
+    { id: 'all', label: 'All Records' },
     { id: 'pharmacy', label: 'Pharmacy' },
     { id: 'lab', label: 'Lab' },
+    { id: 'consultation', label: 'Consultation' },
   ];
 
+  // ─── INIT ──────────────────────────────────────────────────────────
   useEffect(() => {
-    loadPatientHistory();
+    const init = async () => {
+      setLoading(true);
+      // FORCE clean duplicate data first
+      const cleanedData = await forceCleanDuplicateData();
+      if (cleanedData && cleanedData.length > 0) {
+        setPatients(cleanedData);
+      } else {
+        await loadPatientHistory();
+      }
+      setLoading(false);
+    };
+    init();
   }, []);
 
+  // ─── LOAD PATIENT HISTORY ──────────────────────────────────────────
   const loadPatientHistory = async () => {
     try {
       const data = await AsyncStorage.getItem(COMPLETED_PATIENTS_KEY);
       if (data) {
         const parsed = JSON.parse(data);
-        setPatients(parsed);
+        // Ensure every item has a unique historyId
+        const withUniqueIds = parsed.map((item, index) => ({
+          ...item,
+          historyId: item.historyId || `hist_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 8)}`
+        }));
+        setPatients(withUniqueIds);
       } else {
         setPatients([]);
       }
     } catch (error) {
       console.error('Error loading patient history:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadPatientHistory();
+    // Force clean on refresh too
+    const cleanedData = await forceCleanDuplicateData();
+    if (cleanedData && cleanedData.length > 0) {
+      setPatients(cleanedData);
+    } else {
+      await loadPatientHistory();
+    }
     setRefreshing(false);
   };
 
   const getFilteredPatients = () => {
-    if (selectedFilter === 'all') return patients;
-    return patients.filter(p => p.type === selectedFilter);
+    let filtered = [...patients];
+
+    if (selectedFilter === 'pharmacy') {
+      filtered = filtered.filter(item => 
+        item.type === 'pharmacy' || 
+        (item.prescriptions && item.prescriptions.length > 0)
+      );
+    } else if (selectedFilter === 'lab') {
+      filtered = filtered.filter(item => 
+        item.type === 'lab' || 
+        item.testReferral
+      );
+    } else if (selectedFilter === 'consultation') {
+      filtered = filtered.filter(item => 
+        !item.type || 
+        (item.type !== 'pharmacy' && item.type !== 'lab')
+      );
+    }
+
+    return filtered.sort((a, b) => {
+      const dateA = a.completedAt ? new Date(a.completedAt).getTime() : 0;
+      const dateB = b.completedAt ? new Date(b.completedAt).getTime() : 0;
+      return dateB - dateA;
+    });
   };
 
   const formatDate = (dateString) => {
@@ -75,69 +144,140 @@ const PatientHistoryScreen = ({ navigation }) => {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
+    });
+  };
+
+  const formatTime = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit',
     });
   };
 
-  const renderPatientCard = ({ item }) => (
-    <TouchableOpacity
-      style={[styles.historyCard, SHADOWS.small]}
-      activeOpacity={0.7}
-      onPress={() => {
-        // Navigate to patient detail
-        Alert.alert(
-          'Patient Details',
-          `${item.patientName}\n\nDiagnosis: ${item.diagnosis}\nMedicines: ${item.medicines}\nDate: ${formatDate(item.completedAt)}`
-        );
-      }}
-    >
-      <View style={styles.cardHeader}>
-        <View style={styles.patientAvatar}>
-          <Text style={styles.avatarText}>
-            {item.patientName?.charAt(0) || 'P'}
-          </Text>
-        </View>
-        <View style={styles.cardInfo}>
-          <Text style={styles.patientName}>{item.patientName}</Text>
-          <Text style={styles.patientToken}>Token #{item.patientToken || '—'}</Text>
-        </View>
-        <View style={[styles.typeBadge, { backgroundColor: item.type === 'pharmacy' ? COLORS.success + '15' : COLORS.info + '15' }]}>
-          <Text style={[styles.typeText, { color: item.type === 'pharmacy' ? COLORS.success : COLORS.info }]}>
-            {item.type === 'pharmacy' ? '💊 Pharmacy' : '🧪 Lab'}
-          </Text>
-        </View>
-      </View>
+  const getTypeIcon = (item) => {
+    if (item.type === 'pharmacy' || (item.prescriptions && item.prescriptions.length > 0)) {
+      return 'medkit-outline';
+    }
+    if (item.type === 'lab' || item.testReferral) {
+      return 'flask-outline';
+    }
+    return 'clipboard-outline';
+  };
 
-      <View style={styles.cardBody}>
-        <View style={styles.detailRow}>
-          <Ionicons name="clipboard-outline" size={wp(3.5)} color={COLORS.primary} />
-          <Text style={styles.detailLabel}>Diagnosis:</Text>
-          <Text style={styles.detailValue}>{item.diagnosis || 'N/A'}</Text>
-        </View>
-        <View style={styles.detailRow}>
-          <Ionicons name="medkit-outline" size={wp(3.5)} color={COLORS.primary} />
-          <Text style={styles.detailLabel}>Medicines:</Text>
-          <Text style={styles.detailValue} numberOfLines={2}>
-            {item.medicines?.split('\n').slice(0, 2).join(', ') || 'N/A'}
-          </Text>
-        </View>
-        <View style={styles.detailRow}>
-          <Ionicons name="time-outline" size={wp(3.5)} color={COLORS.primary} />
-          <Text style={styles.detailLabel}>Date:</Text>
-          <Text style={styles.detailValue}>{formatDate(item.completedAt)}</Text>
-        </View>
-      </View>
+  const getTypeLabel = (item) => {
+    if (item.type === 'pharmacy' || (item.prescriptions && item.prescriptions.length > 0)) {
+      return 'Pharmacy';
+    }
+    if (item.type === 'lab' || item.testReferral) {
+      return 'Lab';
+    }
+    return 'Consultation';
+  };
 
-      <View style={styles.cardFooter}>
-        <Text style={styles.doctorName}>👨‍⚕️ {item.doctorName || 'Dr. Unknown'}</Text>
-        <TouchableOpacity style={styles.viewBtn}>
-          <Text style={styles.viewBtnText}>View Details</Text>
-          <Ionicons name="chevron-forward" size={wp(3)} color={COLORS.primary} />
-        </TouchableOpacity>
-      </View>
-    </TouchableOpacity>
-  );
+  const getTypeColor = (item) => {
+    if (item.type === 'pharmacy' || (item.prescriptions && item.prescriptions.length > 0)) {
+      return COLORS.success;
+    }
+    if (item.type === 'lab' || item.testReferral) {
+      return '#3B82F6';
+    }
+    return COLORS.primary;
+  };
+
+  const renderPatientCard = ({ item }) => {
+    const typeLabel = getTypeLabel(item);
+    const typeColor = getTypeColor(item);
+    const typeIcon = getTypeIcon(item);
+
+    return (
+      <TouchableOpacity
+        style={[styles.historyCard, SHADOWS.small]}
+        activeOpacity={0.7}
+        onPress={() => {
+          Alert.alert(
+            'Patient Record',
+            `Patient: ${item.patientName}\n\n` +
+            `Token: ${item.patientToken || '—'}\n` +
+            `Diagnosis: ${item.diagnosis || 'N/A'}\n` +
+            `Medicines: ${item.prescriptions?.length || 0} item(s)\n` +
+            `Date: ${formatDate(item.completedAt)}\n` +
+            `Time: ${formatTime(item.completedAt)}\n` +
+            `Doctor: ${item.doctorName || 'Dr. Unknown'}`
+          );
+        }}
+      >
+        <View style={styles.cardHeader}>
+          <LinearGradient
+            colors={[COLORS.primary, COLORS.secondary]}
+            style={styles.patientAvatar}
+          >
+            <Text style={styles.avatarText}>
+              {item.patientName?.charAt(0) || 'P'}
+            </Text>
+          </LinearGradient>
+          <View style={styles.cardInfo}>
+            <Text style={styles.patientName}>{item.patientName}</Text>
+            <Text style={styles.patientToken}>Token #{item.patientToken || '—'}</Text>
+          </View>
+          <View style={[styles.typeBadge, { backgroundColor: typeColor + '15' }]}>
+            <Ionicons name={typeIcon} size={wp(2.5)} color={typeColor} />
+            <Text style={[styles.typeText, { color: typeColor }]}>
+              {typeLabel}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.cardBody}>
+          <View style={styles.detailRow}>
+            <Ionicons name="clipboard-outline" size={wp(3.5)} color={COLORS.primary} />
+            <Text style={styles.detailLabel}>Diagnosis:</Text>
+            <Text style={styles.detailValue} numberOfLines={1}>
+              {item.diagnosis || 'N/A'}
+            </Text>
+          </View>
+
+          <View style={styles.detailRow}>
+            <Ionicons name="medkit-outline" size={wp(3.5)} color={COLORS.primary} />
+            <Text style={styles.detailLabel}>Prescriptions:</Text>
+            <Text style={styles.detailValue} numberOfLines={1}>
+              {item.prescriptions?.length || 0} item(s)
+            </Text>
+          </View>
+
+          {item.testReferral && (
+            <View style={styles.detailRow}>
+              <Ionicons name="flask-outline" size={wp(3.5)} color={COLORS.primary} />
+              <Text style={styles.detailLabel}>Test Referral:</Text>
+              <Text style={styles.detailValue} numberOfLines={1}>
+                {item.testReferral}
+              </Text>
+            </View>
+          )}
+
+          <View style={styles.detailRow}>
+            <Ionicons name="time-outline" size={wp(3.5)} color={COLORS.primary} />
+            <Text style={styles.detailLabel}>Date:</Text>
+            <Text style={styles.detailValue}>
+              {formatDate(item.completedAt)} at {formatTime(item.completedAt)}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.cardFooter}>
+          <Text style={styles.doctorName}>
+            <Ionicons name="person-outline" size={wp(2.5)} color={COLORS.textLight} />
+            {' '}{item.doctorName || 'Dr. Unknown'}
+          </Text>
+          <TouchableOpacity style={styles.viewBtn}>
+            <Text style={styles.viewBtnText}>View Details</Text>
+            <Ionicons name="chevron-forward" size={wp(3)} color={COLORS.primary} />
+          </TouchableOpacity>
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   if (loading) {
     return (
@@ -149,6 +289,12 @@ const PatientHistoryScreen = ({ navigation }) => {
   }
 
   const filteredPatients = getFilteredPatients();
+  const stats = {
+    total: filteredPatients.length,
+    pharmacy: filteredPatients.filter(p => getTypeLabel(p) === 'Pharmacy').length,
+    lab: filteredPatients.filter(p => getTypeLabel(p) === 'Lab').length,
+    consultation: filteredPatients.filter(p => getTypeLabel(p) === 'Consultation').length,
+  };
 
   return (
     <View style={styles.container}>
@@ -167,12 +313,38 @@ const PatientHistoryScreen = ({ navigation }) => {
               style={styles.headerLogo} 
               resizeMode="contain" 
             />
-            <Text style={styles.headerTitle}>Patient History</Text>
+            <View>
+              <Text style={styles.headerTitle}>Patient History</Text>
+              <Text style={styles.headerSub}>All Consultation Records</Text>
+            </View>
           </View>
 
           <TouchableOpacity style={styles.refreshBtn} onPress={onRefresh}>
             <Ionicons name="refresh-outline" size={wp(5)} color={COLORS.primary} />
           </TouchableOpacity>
+        </View>
+
+        {/* ─── STATS BANNER ───────────────────────────────────────────── */}
+        <View style={[styles.statsBanner, SHADOWS.small]}>
+          <View style={styles.statItem}>
+            <Text style={styles.statNumber}>{stats.total}</Text>
+            <Text style={styles.statLabel}>Total Records</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={[styles.statNumber, { color: COLORS.success }]}>{stats.pharmacy}</Text>
+            <Text style={styles.statLabel}>Pharmacy</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={[styles.statNumber, { color: '#3B82F6' }]}>{stats.lab}</Text>
+            <Text style={styles.statLabel}>Lab</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={[styles.statNumber, { color: COLORS.warning }]}>{stats.consultation}</Text>
+            <Text style={styles.statLabel}>Consult</Text>
+          </View>
         </View>
 
         {/* ─── FILTERS ─────────────────────────────────────────────────── */}
@@ -195,7 +367,15 @@ const PatientHistoryScreen = ({ navigation }) => {
         {/* ─── PATIENT LIST ───────────────────────────────────────────── */}
         <FlatList
           data={filteredPatients}
-          keyExtractor={(item, index) => item.id + index}
+          keyExtractor={(item, index) => {
+            // ✅ ULTIMATE FIX: Force unique key
+            // Always use historyId if available, else generate from index
+            if (item.historyId) {
+              return `hist_${item.historyId}`;
+            }
+            // Fallback: use index + timestamp (guaranteed unique)
+            return `key_${index}_${Date.now()}`;
+          }}
           renderItem={renderPatientCard}
           contentContainerStyle={styles.listContent}
           refreshControl={
@@ -205,7 +385,7 @@ const PatientHistoryScreen = ({ navigation }) => {
             <View style={styles.emptyState}>
               <Ionicons name="folder-outline" size={wp(15)} color={COLORS.textLight} />
               <Text style={styles.emptyTitle}>No History Found</Text>
-              <Text style={styles.emptySub}>Patients you attend will appear here</Text>
+              <Text style={styles.emptySub}>Patient records will appear here</Text>
             </View>
           }
         />
@@ -213,6 +393,7 @@ const PatientHistoryScreen = ({ navigation }) => {
         {/* ─── FOOTER ────────────────────────────────────────────────── */}
         <View style={styles.footer}>
           <Text style={styles.footerText}>SehatLine v2.0.1</Text>
+          <Text style={styles.footerSub}>Patient History Module</Text>
         </View>
       </SafeAreaView>
     </View>
@@ -239,7 +420,6 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
   },
 
-  // ── Header ────────────────────────────────────────────────────────
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -269,9 +449,14 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
   },
   headerTitle: {
-    fontSize: wp(4.8),
+    fontSize: wp(4.5),
     fontWeight: '700',
     color: COLORS.text,
+  },
+  headerSub: {
+    fontSize: wp(2.4),
+    color: COLORS.textLight,
+    marginTop: -hp(0.2),
   },
   refreshBtn: {
     width: wp(9),
@@ -280,10 +465,42 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  // ─── Filters ──────────────────────────────────────────────────────
+  statsBanner: {
+    flexDirection: 'row',
+    backgroundColor: COLORS.white,
+    marginHorizontal: wp(4),
+    marginTop: hp(1),
+    borderRadius: wp(3),
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    overflow: 'hidden',
+  },
+  statItem: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: hp(0.8),
+  },
+  statNumber: {
+    fontSize: wp(4.5),
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  statLabel: {
+    fontSize: wp(2.2),
+    color: COLORS.textSecondary,
+    marginTop: hp(0.1),
+    textAlign: 'center',
+  },
+  statDivider: {
+    width: 1,
+    height: hp(3.5),
+    backgroundColor: COLORS.border,
+    alignSelf: 'center',
+  },
+
   filterContainer: {
     backgroundColor: COLORS.white,
-    paddingVertical: hp(1),
+    paddingVertical: hp(0.8),
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
     ...SHADOWS.small,
@@ -294,7 +511,7 @@ const styles = StyleSheet.create({
   },
   filterChip: {
     paddingHorizontal: wp(4),
-    paddingVertical: hp(0.6),
+    paddingVertical: hp(0.5),
     borderRadius: wp(5),
     backgroundColor: COLORS.backgroundSecondary,
     borderWidth: 1,
@@ -313,13 +530,11 @@ const styles = StyleSheet.create({
     color: COLORS.white,
   },
 
-  // ─── List ─────────────────────────────────────────────────────────
   listContent: {
     padding: wp(4),
     paddingBottom: hp(2),
   },
 
-  // ─── History Card ──────────────────────────────────────────────────
   historyCard: {
     backgroundColor: COLORS.white,
     borderRadius: wp(3.5),
@@ -337,7 +552,6 @@ const styles = StyleSheet.create({
     width: wp(10),
     height: wp(10),
     borderRadius: wp(5),
-    backgroundColor: COLORS.primary + '20',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: wp(2.5),
@@ -345,7 +559,7 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: wp(4),
     fontWeight: '700',
-    color: COLORS.primary,
+    color: COLORS.white,
   },
   cardInfo: {
     flex: 1,
@@ -360,9 +574,12 @@ const styles = StyleSheet.create({
     color: COLORS.textLight,
   },
   typeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: wp(2.5),
     paddingVertical: hp(0.2),
     borderRadius: wp(2),
+    gap: wp(0.5),
   },
   typeText: {
     fontSize: wp(2.4),
@@ -382,6 +599,7 @@ const styles = StyleSheet.create({
     fontSize: wp(2.6),
     color: COLORS.textSecondary,
     fontWeight: '500',
+    width: wp(18),
   },
   detailValue: {
     flex: 1,
@@ -414,7 +632,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // ─── Empty State ──────────────────────────────────────────────────
   emptyState: {
     alignItems: 'center',
     marginTop: hp(10),
@@ -433,7 +650,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  // ─── Footer ──────────────────────────────────────────────────────
   footer: {
     alignItems: 'center',
     paddingTop: hp(1.5),
@@ -445,6 +661,11 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: wp(2.6),
     color: COLORS.textLight,
+  },
+  footerSub: {
+    fontSize: wp(2.2),
+    color: COLORS.textLight,
+    marginTop: hp(0.1),
   },
 });
 

@@ -13,8 +13,8 @@ import {
   Switch,
   Alert,
   Image,
-  TextInput,
   Modal,
+  TextInput,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -26,7 +26,6 @@ const wp = (p) => (width * p) / 100;
 const hp = (p) => (height * p) / 100;
 
 const THEME_KEY = '@sehatline_theme';
-const USER_DATA_KEY = '@sehatline_userData';
 
 const DoctorSettingsScreen = ({ navigation }) => {
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -36,13 +35,6 @@ const DoctorSettingsScreen = ({ navigation }) => {
   const [adminMessages, setAdminMessages] = useState(true);
   const [vibrationEnabled, setVibrationEnabled] = useState(true);
 
-  // ─── Password Change State ──────────────────────────────────────
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [isPasswordLoading, setIsPasswordLoading] = useState(false);
-
   // ─── PIN Lock State ─────────────────────────────────────────────
   const [showPinModal, setShowPinModal] = useState(false);
   const [pinCode, setPinCode] = useState('');
@@ -50,9 +42,24 @@ const DoctorSettingsScreen = ({ navigation }) => {
   const [isPinLoading, setIsPinLoading] = useState(false);
   const [hasPin, setHasPin] = useState(false);
 
+  // ─── Clinical Preferences (On-Screen) ──────────────────────────
+  const [consultationDuration, setConsultationDuration] = useState('15');
+  const [prescriptionLanguage, setPrescriptionLanguage] = useState('English');
+  const [notesTemplate, setNotesTemplate] = useState('General Checkup');
+  const [autoSaveNotes, setAutoSaveNotes] = useState(true);
+  const [showDurationPicker, setShowDurationPicker] = useState(false);
+  const [showLanguagePicker, setShowLanguagePicker] = useState(false);
+  const [showTemplatePicker, setShowTemplatePicker] = useState(false);
+
+  // ─── Doctor Availability (On-Screen) ────────────────────────────
+  const [isAvailable, setIsAvailable] = useState(true);
+  const [acceptEmergency, setAcceptEmergency] = useState(true);
+
   useEffect(() => {
     loadSettings();
     checkPinStatus();
+    loadClinicalPreferences();
+    loadAvailability();
   }, []);
 
   const loadSettings = async () => {
@@ -91,6 +98,36 @@ const DoctorSettingsScreen = ({ navigation }) => {
     }
   };
 
+  const loadClinicalPreferences = async () => {
+    try {
+      const duration = await AsyncStorage.getItem('@sehatline_consultation_duration');
+      if (duration) setConsultationDuration(duration);
+      
+      const lang = await AsyncStorage.getItem('@sehatline_prescription_language');
+      if (lang) setPrescriptionLanguage(lang);
+      
+      const template = await AsyncStorage.getItem('@sehatline_notes_template');
+      if (template) setNotesTemplate(template);
+      
+      const autoSave = await AsyncStorage.getItem('@sehatline_auto_save_notes');
+      if (autoSave !== null) setAutoSaveNotes(JSON.parse(autoSave));
+    } catch (error) {
+      console.error('Error loading clinical preferences:', error);
+    }
+  };
+
+  const loadAvailability = async () => {
+    try {
+      const available = await AsyncStorage.getItem('@sehatline_doctor_available');
+      if (available !== null) setIsAvailable(JSON.parse(available));
+      
+      const emergency = await AsyncStorage.getItem('@sehatline_accept_emergency');
+      if (emergency !== null) setAcceptEmergency(JSON.parse(emergency));
+    } catch (error) {
+      console.error('Error loading availability:', error);
+    }
+  };
+
   const checkPinStatus = async () => {
     try {
       const savedPin = await AsyncStorage.getItem('@sehatline_pin');
@@ -105,7 +142,6 @@ const DoctorSettingsScreen = ({ navigation }) => {
     setIsDarkMode(value);
     try {
       await AsyncStorage.setItem(THEME_KEY, value ? 'dark' : 'light');
-      Alert.alert('Theme Updated', `Switched to ${value ? 'Dark' : 'Light'} mode.`);
     } catch (error) {
       console.error('Error saving theme:', error);
     }
@@ -148,7 +184,6 @@ const DoctorSettingsScreen = ({ navigation }) => {
     }
   };
 
-  // ─── VIBRATION ────────────────────────────────────────────────────
   const toggleVibration = async (value) => {
     setVibrationEnabled(value);
     try {
@@ -158,56 +193,29 @@ const DoctorSettingsScreen = ({ navigation }) => {
     }
   };
 
-  // ─── CHANGE PASSWORD ─────────────────────────────────────────────
-  const handleChangePassword = () => {
-    setCurrentPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
-    setShowPasswordModal(true);
+  // ─── CLINICAL PREFERENCES (On-Screen) ────────────────────────────
+  const saveClinicalPreferences = async () => {
+    try {
+      await AsyncStorage.setItem('@sehatline_consultation_duration', consultationDuration);
+      await AsyncStorage.setItem('@sehatline_prescription_language', prescriptionLanguage);
+      await AsyncStorage.setItem('@sehatline_notes_template', notesTemplate);
+      await AsyncStorage.setItem('@sehatline_auto_save_notes', JSON.stringify(autoSaveNotes));
+      Alert.alert('Success', 'Clinical preferences saved!');
+    } catch (error) {
+      console.error('Error saving clinical preferences:', error);
+      Alert.alert('Error', 'Failed to save preferences.');
+    }
   };
 
-  const handlePasswordSubmit = async () => {
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      Alert.alert('Error', 'Please fill all fields.');
-      return;
-    }
-
-    if (newPassword.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters.');
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match.');
-      return;
-    }
-
-    setIsPasswordLoading(true);
+  // ─── AVAILABILITY (On-Screen) ─────────────────────────────────────
+  const saveAvailability = async () => {
     try {
-      const userData = await AsyncStorage.getItem(USER_DATA_KEY);
-      if (userData) {
-        const parsed = JSON.parse(userData);
-        if (parsed.password && parsed.password !== currentPassword) {
-          Alert.alert('Error', 'Current password is incorrect.');
-          setIsPasswordLoading(false);
-          return;
-        }
-      }
-
-      const existingData = userData ? JSON.parse(userData) : {};
-      const updatedData = { ...existingData, password: newPassword };
-      await AsyncStorage.setItem(USER_DATA_KEY, JSON.stringify(updatedData));
-
-      Alert.alert('Success', 'Password changed successfully!');
-      setShowPasswordModal(false);
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
+      await AsyncStorage.setItem('@sehatline_doctor_available', JSON.stringify(isAvailable));
+      await AsyncStorage.setItem('@sehatline_accept_emergency', JSON.stringify(acceptEmergency));
+      Alert.alert('Success', 'Availability updated!');
     } catch (error) {
-      console.error('Error changing password:', error);
-      Alert.alert('Error', 'Failed to change password.');
-    } finally {
-      setIsPasswordLoading(false);
+      console.error('Error saving availability:', error);
+      Alert.alert('Error', 'Failed to update availability.');
     }
   };
 
@@ -274,14 +282,18 @@ const DoctorSettingsScreen = ({ navigation }) => {
     );
   };
 
-  // ─── HELP & SUPPORT ──────────────────────────────────────────────
-  const handleHelp = () => {
-    navigation.navigate('HelpSupport');
-  };
-
   // ─── PRIVACY POLICY ──────────────────────────────────────────────
   const handlePrivacy = () => {
-    navigation.navigate('PrivacyScreen');
+    Alert.alert(
+      'Privacy Policy',
+      'SehatLine is committed to protecting your privacy.\n\n' +
+      '• Your data is stored securely\n' +
+      '• Only authorized hospital staff can access patient records\n' +
+      '• All communications are encrypted\n' +
+      '• Data is used only for healthcare purposes\n\n' +
+      'For more information, contact Hospital Administration.',
+      [{ text: 'OK' }]
+    );
   };
 
   // ─── LOGOUT ──────────────────────────────────────────────────────
@@ -329,83 +341,42 @@ const DoctorSettingsScreen = ({ navigation }) => {
     primary: COLORS.primary,
   };
 
-  // ─── Password Modal ──────────────────────────────────────────────
-  const renderPasswordModal = () => (
-    <Modal visible={showPasswordModal} transparent animationType="slide">
+  // ─── Option Picker Modal ──────────────────────────────────────────
+  const renderOptionPicker = (visible, options, selected, onSelect, onClose, title) => (
+    <Modal visible={visible} transparent animationType="slide">
       <View style={styles.modalOverlay}>
-        <View style={[styles.modalContainer, { backgroundColor: colors.card }]}>
-          <View style={styles.modalHeader}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>Change Password</Text>
-            <TouchableOpacity onPress={() => setShowPasswordModal(false)}>
+        <View style={[styles.pickerModal, { backgroundColor: colors.card }]}>
+          <View style={styles.pickerHeader}>
+            <Text style={[styles.pickerTitle, { color: colors.text }]}>{title}</Text>
+            <TouchableOpacity onPress={onClose}>
               <Ionicons name="close" size={wp(5)} color={colors.text} />
             </TouchableOpacity>
           </View>
-
-          <View style={styles.modalBody}>
-            <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Current Password</Text>
-              <TextInput
-                style={[styles.input, { 
-                  backgroundColor: colors.background,
-                  color: colors.text,
-                  borderColor: colors.border,
-                }]}
-                placeholder="Enter current password"
-                placeholderTextColor={colors.textLight}
-                secureTextEntry
-                value={currentPassword}
-                onChangeText={setCurrentPassword}
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>New Password</Text>
-              <TextInput
-                style={[styles.input, { 
-                  backgroundColor: colors.background,
-                  color: colors.text,
-                  borderColor: colors.border,
-                }]}
-                placeholder="Enter new password (min 6 chars)"
-                placeholderTextColor={colors.textLight}
-                secureTextEntry
-                value={newPassword}
-                onChangeText={setNewPassword}
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Confirm New Password</Text>
-              <TextInput
-                style={[styles.input, { 
-                  backgroundColor: colors.background,
-                  color: colors.text,
-                  borderColor: colors.border,
-                }]}
-                placeholder="Confirm new password"
-                placeholderTextColor={colors.textLight}
-                secureTextEntry
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-              />
-            </View>
-
-            <TouchableOpacity
-              style={[styles.modalSubmitBtn, isPasswordLoading && styles.modalSubmitDisabled]}
-              onPress={handlePasswordSubmit}
-              disabled={isPasswordLoading}
-              activeOpacity={0.7}
-            >
-              <LinearGradient
-                colors={[COLORS.primary, COLORS.secondary]}
-                style={styles.modalSubmitGradient}
+          <ScrollView style={styles.pickerOptions}>
+            {options.map((option) => (
+              <TouchableOpacity
+                key={option}
+                style={[
+                  styles.pickerOption,
+                  selected === option && styles.pickerOptionActive,
+                ]}
+                onPress={() => {
+                  onSelect(option);
+                  onClose();
+                }}
               >
-                <Text style={styles.modalSubmitText}>
-                  {isPasswordLoading ? 'Updating...' : 'Update Password'}
+                <Text style={[
+                  styles.pickerOptionText,
+                  selected === option && styles.pickerOptionTextActive,
+                ]}>
+                  {option}
                 </Text>
-              </LinearGradient>
-            </TouchableOpacity>
-          </View>
+                {selected === option && (
+                  <Ionicons name="checkmark" size={wp(4)} color={COLORS.primary} />
+                )}
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
         </View>
       </View>
     </Modal>
@@ -619,23 +590,6 @@ const DoctorSettingsScreen = ({ navigation }) => {
             }, SHADOWS.small]}>
               <TouchableOpacity 
                 style={styles.row}
-                onPress={handleChangePassword}
-                activeOpacity={0.7}
-              >
-                <View style={styles.rowLeft}>
-                  <View style={[styles.rowIcon, { backgroundColor: colors.iconBg }]}>
-                    <Ionicons name="lock-closed-outline" size={wp(4)} color={colors.primary} />
-                  </View>
-                  <View style={styles.rowContent}>
-                    <Text style={[styles.rowLabel, { color: colors.text }]}>Change Password</Text>
-                    <Text style={[styles.rowDesc, { color: colors.textLight }]}>Update your account password</Text>
-                  </View>
-                </View>
-                <Ionicons name="chevron-forward" size={wp(4)} color={colors.textLight} />
-              </TouchableOpacity>
-              <Divider colors={colors} />
-              <TouchableOpacity 
-                style={styles.row}
                 onPress={handlePinLock}
                 activeOpacity={0.7}
               >
@@ -655,30 +609,154 @@ const DoctorSettingsScreen = ({ navigation }) => {
             </View>
           </View>
 
-          {/* ─── SUPPORT ─────────────────────────────────────────────── */}
+          {/* ─── CLINICAL PREFERENCES (On-Screen) ────────────────────── */}
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Support</Text>
+            <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Clinical Preferences</Text>
             <View style={[styles.card, { 
               backgroundColor: colors.card,
               borderColor: colors.border,
             }, SHADOWS.small]}>
+              
               <TouchableOpacity 
                 style={styles.row}
-                onPress={handleHelp}
+                onPress={() => setShowDurationPicker(true)}
                 activeOpacity={0.7}
               >
                 <View style={styles.rowLeft}>
                   <View style={[styles.rowIcon, { backgroundColor: colors.iconBg }]}>
-                    <Ionicons name="help-circle-outline" size={wp(4)} color={colors.primary} />
+                    <Ionicons name="time-outline" size={wp(4)} color={colors.primary} />
                   </View>
                   <View style={styles.rowContent}>
-                    <Text style={[styles.rowLabel, { color: colors.text }]}>Help & Support</Text>
-                    <Text style={[styles.rowDesc, { color: colors.textLight }]}>FAQs and troubleshooting</Text>
+                    <Text style={[styles.rowLabel, { color: colors.text }]}>Consultation Duration</Text>
+                    <Text style={[styles.rowDesc, { color: colors.textLight }]}>{consultationDuration} minutes</Text>
                   </View>
                 </View>
                 <Ionicons name="chevron-forward" size={wp(4)} color={colors.textLight} />
               </TouchableOpacity>
+
               <Divider colors={colors} />
+
+              <TouchableOpacity 
+                style={styles.row}
+                onPress={() => setShowLanguagePicker(true)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.rowLeft}>
+                  <View style={[styles.rowIcon, { backgroundColor: colors.iconBg }]}>
+                    <Ionicons name="language-outline" size={wp(4)} color={colors.primary} />
+                  </View>
+                  <View style={styles.rowContent}>
+                    <Text style={[styles.rowLabel, { color: colors.text }]}>Prescription Language</Text>
+                    <Text style={[styles.rowDesc, { color: colors.textLight }]}>{prescriptionLanguage}</Text>
+                  </View>
+                </View>
+                <Ionicons name="chevron-forward" size={wp(4)} color={colors.textLight} />
+              </TouchableOpacity>
+
+              <Divider colors={colors} />
+
+              <TouchableOpacity 
+                style={styles.row}
+                onPress={() => setShowTemplatePicker(true)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.rowLeft}>
+                  <View style={[styles.rowIcon, { backgroundColor: colors.iconBg }]}>
+                    <Ionicons name="document-text-outline" size={wp(4)} color={colors.primary} />
+                  </View>
+                  <View style={styles.rowContent}>
+                    <Text style={[styles.rowLabel, { color: colors.text }]}>Notes Template</Text>
+                    <Text style={[styles.rowDesc, { color: colors.textLight }]}>{notesTemplate}</Text>
+                  </View>
+                </View>
+                <Ionicons name="chevron-forward" size={wp(4)} color={colors.textLight} />
+              </TouchableOpacity>
+
+              <Divider colors={colors} />
+
+              <SettingItem
+                icon="save-outline"
+                label="Auto Save Notes"
+                description="Automatically save consultation notes"
+                type="switch"
+                value={autoSaveNotes}
+                onValueChange={setAutoSaveNotes}
+                colors={colors}
+              />
+
+              <Divider colors={colors} />
+
+              <TouchableOpacity 
+                style={styles.saveButton}
+                onPress={saveClinicalPreferences}
+                activeOpacity={0.7}
+              >
+                <LinearGradient
+                  colors={[COLORS.primary, COLORS.secondary]}
+                  style={styles.saveGradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                >
+                  <Ionicons name="save-outline" size={wp(3.5)} color={COLORS.white} />
+                  <Text style={styles.saveButtonText}>Save Preferences</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* ─── AVAILABILITY (On-Screen) ────────────────────────────── */}
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Doctor Availability</Text>
+            <View style={[styles.card, { 
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+            }, SHADOWS.small]}>
+              <SettingItem
+                icon="checkmark-circle-outline"
+                label="Available Today"
+                description={isAvailable ? "You are available for consultations" : "You are currently unavailable"}
+                type="switch"
+                value={isAvailable}
+                onValueChange={setIsAvailable}
+                colors={colors}
+              />
+              <Divider colors={colors} />
+              <SettingItem
+                icon="alert-circle-outline"
+                label="Accept Emergency Cases"
+                description={acceptEmergency ? "Emergency cases accepted" : "Emergency cases not accepted"}
+                type="switch"
+                value={acceptEmergency}
+                onValueChange={setAcceptEmergency}
+                colors={colors}
+                disabled={!isAvailable}
+              />
+              <Divider colors={colors} />
+              <TouchableOpacity 
+                style={styles.saveButton}
+                onPress={saveAvailability}
+                activeOpacity={0.7}
+              >
+                <LinearGradient
+                  colors={[COLORS.primary, COLORS.secondary]}
+                  style={styles.saveGradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                >
+                  <Ionicons name="save-outline" size={wp(3.5)} color={COLORS.white} />
+                  <Text style={styles.saveButtonText}>Update Status</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* ─── LEGAL ────────────────────────────────────────────────── */}
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Legal</Text>
+            <View style={[styles.card, { 
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+            }, SHADOWS.small]}>
               <TouchableOpacity 
                 style={styles.row}
                 onPress={handlePrivacy}
@@ -716,8 +794,35 @@ const DoctorSettingsScreen = ({ navigation }) => {
       </SafeAreaView>
 
       {/* Modals */}
-      {renderPasswordModal()}
       {renderPinModal()}
+
+      {/* Option Pickers */}
+      {renderOptionPicker(
+        showDurationPicker,
+        ['10', '15', '20', '30', '45', '60'],
+        consultationDuration,
+        setConsultationDuration,
+        () => setShowDurationPicker(false),
+        'Consultation Duration'
+      )}
+
+      {renderOptionPicker(
+        showLanguagePicker,
+        ['English', 'Urdu', 'English/Urdu'],
+        prescriptionLanguage,
+        setPrescriptionLanguage,
+        () => setShowLanguagePicker(false),
+        'Prescription Language'
+      )}
+
+      {renderOptionPicker(
+        showTemplatePicker,
+        ['General Checkup', 'Chronic Care', 'Follow-up', 'Emergency'],
+        notesTemplate,
+        setNotesTemplate,
+        () => setShowTemplatePicker(false),
+        'Notes Template'
+      )}
     </View>
   );
 };
@@ -875,6 +980,26 @@ const styles = StyleSheet.create({
     transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }],
   },
 
+  // ── Save Button ──────────────────────────────────────────────────
+  saveButton: {
+    marginHorizontal: wp(3.5),
+    marginVertical: hp(0.8),
+    borderRadius: wp(2.5),
+    overflow: 'hidden',
+  },
+  saveGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: hp(0.8),
+    gap: wp(1.5),
+  },
+  saveButtonText: {
+    color: COLORS.white,
+    fontSize: wp(3),
+    fontWeight: '600',
+  },
+
   // ── Logout ──────────────────────────────────────────────────────
   logoutButton: {
     flexDirection: 'row',
@@ -911,7 +1036,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 
-  // ── Modal ──────────────────────────────────────────────────────
+  // ─── Modal ──────────────────────────────────────────────────────
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -984,6 +1109,52 @@ const styles = StyleSheet.create({
   removePinText: {
     color: COLORS.danger,
     fontSize: wp(3.2),
+    fontWeight: '600',
+  },
+
+  // ─── Picker Modal ──────────────────────────────────────────────────
+  pickerModal: {
+    width: width * 0.88,
+    backgroundColor: COLORS.white,
+    borderRadius: wp(4),
+    overflow: 'hidden',
+    ...SHADOWS.large,
+    maxHeight: height * 0.6,
+  },
+  pickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: wp(4),
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  pickerTitle: {
+    fontSize: wp(3.8),
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  pickerOptions: {
+    paddingVertical: hp(0.5),
+  },
+  pickerOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: hp(1.2),
+    paddingHorizontal: wp(4),
+    borderBottomWidth: 0.5,
+    borderBottomColor: COLORS.border,
+  },
+  pickerOptionActive: {
+    backgroundColor: COLORS.primary + '05',
+  },
+  pickerOptionText: {
+    fontSize: wp(3.2),
+    color: COLORS.text,
+  },
+  pickerOptionTextActive: {
+    color: COLORS.primary,
     fontWeight: '600',
   },
 });

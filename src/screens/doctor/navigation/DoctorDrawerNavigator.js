@@ -22,6 +22,7 @@ import DoctorBottomTabNavigator from './DoctorBottomTabNavigator';
 import TodayQueueScreen from '../TodayQueueScreen';
 import ConsultationScreen from '../ConsultationScreen';
 import PatientHistoryScreen from '../PatientHistoryScreen';
+import TodayHistoryScreen from '../TodayHistoryScreen';
 import PrescriptionScreen from '../PrescriptionScreen';
 import PrescriptionTemplatesScreen from '../PrescriptionTemplatesScreen';
 import DoctorScheduleScreen from '../DoctorScheduleScreen';
@@ -29,6 +30,7 @@ import CallNextPatientScreen from '../CallNextPatientScreen';
 import DoctorProfileScreen from '../DoctorProfileScreen';
 import DoctorEditProfileScreen from '../DoctorEditProfileScreen';
 import DoctorNotificationsScreen from '../DoctorNotificationsScreen';
+import AdminNotificationsScreen from '../AdminNotificationsScreen';
 import DoctorSettingsScreen from '../DoctorSettingsScreen';
 import DoctorReviewsScreen from '../DoctorReviewsScreen';
 import DoctorAvailabilityScreen from '../DoctorAvailabilityScreen';
@@ -313,6 +315,12 @@ export default function DoctorDrawerNavigator() {
       />
 
       <Drawer.Screen
+        name="TodayHistory"
+        component={TodayHistoryScreen}
+        options={{ title: "Today's History" }}
+      />
+
+      <Drawer.Screen
         name="Prescription"
         component={PrescriptionScreen}
         options={{ title: 'Prescription' }}
@@ -387,6 +395,14 @@ export default function DoctorDrawerNavigator() {
         }}
       />
 
+        <Drawer.Screen
+          name="AdminNotifications"
+          component={AdminNotificationsScreen}
+          options={{ 
+            title: 'Admin Notifications',
+            drawerItemStyle: { display: 'none' } // Hidden from drawer
+          }}
+        />
       {/* ─── HIDDEN / EXTRA SCREENS ──────────────────────────────────── */}
       {/* These screens exist for navigation but are not shown in drawer */}
       <Drawer.Screen

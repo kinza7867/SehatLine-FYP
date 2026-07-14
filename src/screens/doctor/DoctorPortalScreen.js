@@ -74,9 +74,48 @@ const MOCK_WORK_LOG = [
   { id: '4', type: 'followup', patient: 'Fatima Noor', time: '10:20 AM', details: 'Scheduled for next week' },
 ];
 
+// ─── Admin Notifications Mock Data ────────────────────────────────────
 const MOCK_NOTIFICATIONS = [
-  { id: 'n1', title: 'Department Meeting', body: 'Cardiology meeting at 2:00 PM, Conference Room B', time: '1 hr ago', priority: 'High', type: 'meeting' },
-  { id: 'n2', title: 'System Maintenance', body: 'EMR system maintenance tonight 10:00 PM – 2:00 AM', time: '3 hrs ago', priority: 'Medium', type: 'system' },
+  { 
+    id: 'n1', 
+    title: 'Department Meeting', 
+    body: 'Cardiology department meeting today at 2:00 PM in Conference Room B. All doctors must attend.', 
+    time: '1 hr ago', 
+    priority: 'High', 
+    type: 'meeting' 
+  },
+  { 
+    id: 'n2', 
+    title: 'EMR System Maintenance', 
+    body: 'EMR system will be updated tonight from 10:00 PM to 2:00 AM. Please save all your work.', 
+    time: '3 hrs ago', 
+    priority: 'Medium', 
+    type: 'system' 
+  },
+  { 
+    id: 'n3', 
+    title: 'OPD Schedule Change', 
+    body: 'OPD timings for Cardiology have been changed to 8:30 AM - 2:00 PM effective from next week.', 
+    time: '5 hrs ago', 
+    priority: 'Medium', 
+    type: 'schedule' 
+  },
+  { 
+    id: 'n4', 
+    title: 'Duty Roster Update', 
+    body: 'Weekend duty roster has been updated. Please check the new schedule on the portal.', 
+    time: '1 day ago', 
+    priority: 'High', 
+    type: 'duty' 
+  },
+  { 
+    id: 'n5', 
+    title: 'Hospital Circular', 
+    body: 'All departments are requested to submit monthly reports by 20th of each month.', 
+    time: '2 days ago', 
+    priority: 'Normal', 
+    type: 'circular' 
+  },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -165,7 +204,6 @@ const DoctorPortalScreen = ({ navigation }) => {
 
   // ─── CALL BUTTON ANIMATION ──────────────────────────────────────────
   const scaleAnim = useRef(new Animated.Value(1)).current;
-  const pulseAnim = useRef(new Animated.Value(1)).current;
   const isAnimating = useRef(false);
 
   // ── LIFECYCLE ──────────────────────────────────────────────────────────
@@ -188,7 +226,6 @@ const DoctorPortalScreen = ({ navigation }) => {
     if (isAnimating.current) return;
     isAnimating.current = true;
 
-    // Slow pulsing zoom animation
     const animate = () => {
       Animated.sequence([
         Animated.timing(scaleAnim, {
@@ -292,7 +329,6 @@ const DoctorPortalScreen = ({ navigation }) => {
       const raw = await AsyncStorage.getItem(ACTIVITIES_KEY);
       if (raw) {
         const data = JSON.parse(raw);
-        // Ensure all items have required fields
         const sanitizedData = data.map(item => ({
           ...item,
           type: item.type || 'consultation',
@@ -310,6 +346,7 @@ const DoctorPortalScreen = ({ navigation }) => {
     }
   };
 
+  // ─── LOAD ADMIN NOTIFICATIONS ────────────────────────────────────────
   const loadNotifications = async () => {
     try {
       const raw = await AsyncStorage.getItem(ADMIN_UPDATES_KEY);
@@ -331,17 +368,31 @@ const DoctorPortalScreen = ({ navigation }) => {
     ]).start();
   };
 
-  // ── NAVIGATION HELPERS ────────────────────────────────────────────────
+  // ─── NAVIGATION HELPERS ──────────────────────────────────────────────
   const navigateToScreen = (screenName, params = {}) => {
     const parent = navigation.getParent();
+    
     if (parent) {
       parent.navigate(screenName, params);
     } else {
-      navigation.navigate(screenName, params);
+      try {
+        navigation.navigate(screenName, params);
+      } catch (error) {
+        const root = navigation.getRootState();
+        if (root && root.routes.length > 0) {
+          const drawerRoute = root.routes.find(r => r.name === 'DoctorDrawerNavigator' || r.name === 'DoctorHome');
+          if (drawerRoute) {
+            navigation.navigate(drawerRoute.name, {
+              screen: screenName,
+              params: params,
+            });
+          }
+        }
+      }
     }
   };
 
-  // ── SEARCH ─────────────────────────────────────────────────────────────
+  // ─── SEARCH ─────────────────────────────────────────────────────────────
   const handleSearch = (query) => {
     setSearchQuery(query);
     if (!query.trim()) {
@@ -370,18 +421,18 @@ const DoctorPortalScreen = ({ navigation }) => {
     setSearchQuery('');
     setSearchResults([]);
     if (item.patient) {
-      navigateToScreen('PatientHistoryScreen', { patient: item.patient });
+      navigateToScreen('PatientHistory', { patient: item.patient });
     }
   };
 
-  // ── HANDLERS ──────────────────────────────────────────────────────────
+  // ─── HANDLERS ──────────────────────────────────────────────────────────
   const handleCallNextPatient = () => {
     if (queuePatients.length === 0) {
       Alert.alert('Queue Empty', 'No patients waiting.');
       return;
     }
     const patient = queuePatients[0];
-    navigateToScreen('CallNextPatientScreen', { patient, doctor });
+    navigateToScreen('CallNextPatientScreen', { patient, doctorData: doctor });
   };
 
   const handleToggleStatus = async () => {
@@ -445,6 +496,26 @@ const DoctorPortalScreen = ({ navigation }) => {
     }
   };
 
+  // ─── NOTIFICATION HELPERS ─────────────────────────────────────────────
+  const getNotificationIcon = (type) => {
+    switch (type) {
+      case 'meeting': return 'people-outline';
+      case 'schedule': return 'calendar-outline';
+      case 'system': return 'construct-outline';
+      case 'duty': return 'briefcase-outline';
+      case 'circular': return 'document-text-outline';
+      default: return 'notifications-outline';
+    }
+  };
+
+  const getNotificationColor = (priority) => {
+    switch (priority) {
+      case 'High': return COLORS.danger;
+      case 'Medium': return COLORS.warning;
+      default: return COLORS.primary;
+    }
+  };
+
   if (!doctor) {
     return (
       <View style={styles.loadingContainer}>
@@ -484,7 +555,7 @@ const DoctorPortalScreen = ({ navigation }) => {
           <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
 
             {/* ═══ SECTION 1: DOCTOR PROFILE CARD ═══════════════════════ */}
-            <TouchableOpacity style={[styles.profileCard, SHADOWS.medium]} onPress={() => navigateToScreen('DoctorProfileScreen')} activeOpacity={0.85}>
+            <TouchableOpacity style={[styles.profileCard, SHADOWS.medium]} onPress={() => navigateToScreen('DoctorProfile')} activeOpacity={0.85}>
               <LinearGradient colors={[doctor.color || COLORS.primary, doctor.color2 || COLORS.secondary]} style={styles.profileAvatar}>
                 {doctor.profileImage ? (
                   <Image source={{ uri: doctor.profileImage }} style={styles.profileAvatarImage} />
@@ -519,7 +590,7 @@ const DoctorPortalScreen = ({ navigation }) => {
             {/* ═══ SECTION 2: STATISTICS CARDS ══════════════════════════ */}
             <View style={styles.statsSection}>
               <View style={styles.statsGrid}>
-                <TouchableOpacity style={[styles.statCard, SHADOWS.small]} onPress={() => navigateToScreen('DoctorScheduleScreen')}>
+                <TouchableOpacity style={[styles.statCard, SHADOWS.small]} onPress={() => navigateToScreen('DoctorSchedule')}>
                   <View style={[styles.statIcon, { backgroundColor: COLORS.primary + '15' }]}>
                     <Ionicons name="calendar-outline" size={wp(4.5)} color={COLORS.primary} />
                   </View>
@@ -527,7 +598,7 @@ const DoctorPortalScreen = ({ navigation }) => {
                   <Text style={styles.statLabel}>Appointments</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={[styles.statCard, SHADOWS.small]} onPress={() => navigateToScreen('PatientHistoryScreen', { filter: 'today' })}>
+                <TouchableOpacity style={[styles.statCard, SHADOWS.small]} onPress={() => navigateToScreen('PatientHistory', { filter: 'today' })}>
                   <View style={[styles.statIcon, { backgroundColor: COLORS.success + '15' }]}>
                     <Ionicons name="checkmark-done-outline" size={wp(4.5)} color={COLORS.success} />
                   </View>
@@ -535,7 +606,7 @@ const DoctorPortalScreen = ({ navigation }) => {
                   <Text style={styles.statLabel}>Completed</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={[styles.statCard, SHADOWS.small]} onPress={() => navigateToScreen('TodayQueueScreen')}>
+                <TouchableOpacity style={[styles.statCard, SHADOWS.small]} onPress={() => navigateToScreen('TodayQueue')}>
                   <View style={[styles.statIcon, { backgroundColor: COLORS.warning + '15' }]}>
                     <Ionicons name="hourglass-outline" size={wp(4.5)} color={COLORS.warning} />
                   </View>
@@ -544,7 +615,7 @@ const DoctorPortalScreen = ({ navigation }) => {
                 </TouchableOpacity>
 
                 <TouchableOpacity style={[styles.statCard, SHADOWS.small]} onPress={() => {
-                  if (queuePatients.length > 0) navigateToScreen('PatientHistoryScreen', { patient: queuePatients[0] });
+                  if (queuePatients.length > 0) navigateToScreen('PatientHistory', { patient: queuePatients[0] });
                 }}>
                   <View style={[styles.statIcon, { backgroundColor: COLORS.primary + '15' }]}>
                     <Ionicons name="pricetag-outline" size={wp(4.5)} color={COLORS.primary} />
@@ -623,7 +694,7 @@ const DoctorPortalScreen = ({ navigation }) => {
             <View style={styles.queueSection}>
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>Upcoming Queue</Text>
-                <TouchableOpacity onPress={() => navigateToScreen('RealTimeQueueScreen')}>
+                <TouchableOpacity onPress={() => navigateToScreen('TodayQueue')}>
                   <Text style={styles.sectionLink}>View All →</Text>
                 </TouchableOpacity>
               </View>
@@ -632,7 +703,7 @@ const DoctorPortalScreen = ({ navigation }) => {
                 <TouchableOpacity
                   key={patient.id}
                   style={[styles.queueItem, SHADOWS.tiny]}
-                  onPress={() => navigateToScreen('PatientHistoryScreen', { patient })}
+                  onPress={() => navigateToScreen('PatientHistory', { patient })}
                   activeOpacity={0.7}
                 >
                   <View style={styles.queueTokenBadge}>
@@ -660,7 +731,7 @@ const DoctorPortalScreen = ({ navigation }) => {
             <View style={styles.scheduleSection}>
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>Today's Schedule</Text>
-                <TouchableOpacity onPress={() => navigateToScreen('DoctorScheduleScreen')}>
+                <TouchableOpacity onPress={() => navigateToScreen('DoctorSchedule')}>
                   <Text style={styles.sectionLink}>Manage →</Text>
                 </TouchableOpacity>
               </View>
@@ -727,7 +798,7 @@ const DoctorPortalScreen = ({ navigation }) => {
             <View style={styles.workLogSection}>
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>Work Log</Text>
-                <TouchableOpacity onPress={() => navigateToScreen('PatientHistoryScreen', { filter: 'today' })}>
+                <TouchableOpacity onPress={() => navigateToScreen('TodayHistory', { filter: 'today' })}>
                   <Text style={styles.sectionLink}>View All →</Text>
                 </TouchableOpacity>
               </View>
@@ -768,45 +839,54 @@ const DoctorPortalScreen = ({ navigation }) => {
               )}
             </View>
 
-            {/* ═══ SECTION 7: NOTIFICATIONS ═════════════════════════════ */}
+            {/* ═══ SECTION 7: ADMIN NOTIFICATIONS ═══════════════════════ */}
             <View style={styles.notificationSection}>
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Notifications</Text>
-                <TouchableOpacity onPress={() => navigateToScreen('DoctorNotificationsScreen')}>
+                <Text style={styles.sectionTitle}>Admin Notifications</Text>
+                <TouchableOpacity onPress={() => navigateToScreen('AdminNotifications')}>
                   <Text style={styles.sectionLink}>View All →</Text>
                 </TouchableOpacity>
               </View>
 
-              {notifications.slice(0, 2).map((notification) => (
-                <TouchableOpacity
-                  key={notification.id}
-                  style={[styles.notificationCard, SHADOWS.small, notification.priority === 'High' && styles.notificationCardHigh]}
-                  onPress={() => navigateToScreen('DoctorNotificationsScreen')}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.notificationLeft}>
-                    <View style={[styles.notificationIcon, { backgroundColor: notification.priority === 'High' ? COLORS.danger + '15' : COLORS.primary + '15' }]}>
-                      <Ionicons name={notification.type === 'meeting' ? 'people' : 'construct'} size={wp(4)} color={notification.priority === 'High' ? COLORS.danger : COLORS.primary} />
-                    </View>
-                    <View style={styles.notificationInfo}>
-                      <Text style={styles.notificationTitle}>{notification.title}</Text>
-                      <Text style={styles.notificationBody} numberOfLines={1}>{notification.body}</Text>
-                    </View>
-                  </View>
-                  <View style={styles.notificationRight}>
-                    <Text style={styles.notificationTime}>{notification.time}</Text>
-                    {notification.priority === 'High' && (
-                      <View style={styles.notificationBadge}>
-                        <Text style={styles.notificationBadgeText}>Urgent</Text>
+              {notifications.slice(0, 2).map((notification) => {
+                const notifColor = getNotificationColor(notification.priority);
+                const notifIcon = getNotificationIcon(notification.type);
+                
+                return (
+                  <TouchableOpacity
+                    key={notification.id}
+                    style={[
+                      styles.notificationCard, 
+                      SHADOWS.small, 
+                      notification.priority === 'High' && styles.notificationCardHigh
+                    ]}
+                    onPress={() => navigateToScreen('AdminNotifications')}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.notificationLeft}>
+                      <View style={[styles.notificationIcon, { backgroundColor: notifColor + '15' }]}>
+                        <Ionicons name={notifIcon} size={wp(4)} color={notifColor} />
                       </View>
-                    )}
-                  </View>
-                </TouchableOpacity>
-              ))}
+                      <View style={styles.notificationInfo}>
+                        <Text style={styles.notificationTitle}>{notification.title}</Text>
+                        <Text style={styles.notificationBody} numberOfLines={1}>{notification.body}</Text>
+                      </View>
+                    </View>
+                    <View style={styles.notificationRight}>
+                      <Text style={styles.notificationTime}>{notification.time}</Text>
+                      {notification.priority === 'High' && (
+                        <View style={[styles.notificationBadge, { backgroundColor: COLORS.danger }]}>
+                          <Text style={styles.notificationBadgeText}>Urgent</Text>
+                        </View>
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
               {notifications.length === 0 && (
                 <View style={styles.emptyNotifications}>
                   <Ionicons name="notifications-outline" size={wp(8)} color={COLORS.textLight} />
-                  <Text style={styles.emptyNotificationsText}>No notifications</Text>
+                  <Text style={styles.emptyNotificationsText}>No admin notifications</Text>
                 </View>
               )}
             </View>
@@ -898,8 +978,6 @@ const styles = StyleSheet.create({
   profileStatusDotOnline: { backgroundColor: COLORS.success },
   profileStatusText: { fontSize: wp(2.4), color: COLORS.textSecondary, fontWeight: '500' },
   profileStatusTextOnline: { color: COLORS.success },
-  profileArrow: { flexDirection: 'row', alignItems: 'center', gap: wp(0.5) },
-  profileArrowText: { fontSize: wp(2.6), color: COLORS.primary, fontWeight: '500' },
 
   // ── SECTION 2: Statistics ───────────────────────────────────────
   statsSection: { paddingHorizontal: wp(4), marginTop: hp(1.5) },
@@ -1025,7 +1103,7 @@ const styles = StyleSheet.create({
   emptyWorkLog: { backgroundColor: COLORS.white, padding: wp(3), borderRadius: wp(2.5), borderWidth: 1, borderColor: COLORS.border, alignItems: 'center', gap: hp(0.5) },
   emptyWorkLogText: { fontSize: wp(3), color: COLORS.textLight },
 
-  // ── SECTION 7: Notifications ─────────────────────────────────────
+  // ── SECTION 7: Admin Notifications ──────────────────────────────
   notificationSection: { paddingHorizontal: wp(4), marginTop: hp(2) },
   notificationCard: {
     flexDirection: 'row',
@@ -1038,18 +1116,67 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
   },
-  notificationCardHigh: { borderLeftWidth: 4, borderLeftColor: COLORS.danger },
-  notificationLeft: { flexDirection: 'row', alignItems: 'center', flex: 1, gap: wp(2) },
-  notificationIcon: { width: wp(8), height: wp(8), borderRadius: wp(2.5), justifyContent: 'center', alignItems: 'center' },
-  notificationInfo: { flex: 1 },
-  notificationTitle: { fontSize: wp(3), fontWeight: '600', color: COLORS.text },
-  notificationBody: { fontSize: wp(2.6), color: COLORS.textSecondary, marginTop: hp(0.1) },
-  notificationRight: { alignItems: 'flex-end', gap: hp(0.2) },
-  notificationTime: { fontSize: wp(2.2), color: COLORS.textLight },
-  notificationBadge: { backgroundColor: COLORS.danger, paddingHorizontal: wp(1.5), paddingVertical: hp(0.1), borderRadius: wp(1.5) },
-  notificationBadgeText: { fontSize: wp(1.8), color: COLORS.white, fontWeight: '600' },
-  emptyNotifications: { backgroundColor: COLORS.white, padding: wp(3), borderRadius: wp(2.5), borderWidth: 1, borderColor: COLORS.border, alignItems: 'center', gap: hp(0.5) },
-  emptyNotificationsText: { fontSize: wp(3), color: COLORS.textLight },
+  notificationCardHigh: { 
+    borderLeftWidth: 4, 
+    borderLeftColor: COLORS.danger,
+  },
+  notificationLeft: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    flex: 1, 
+    gap: wp(2) 
+  },
+  notificationIcon: { 
+    width: wp(8), 
+    height: wp(8), 
+    borderRadius: wp(2.5), 
+    justifyContent: 'center', 
+    alignItems: 'center' 
+  },
+  notificationInfo: { 
+    flex: 1 
+  },
+  notificationTitle: { 
+    fontSize: wp(3), 
+    fontWeight: '600', 
+    color: COLORS.text 
+  },
+  notificationBody: { 
+    fontSize: wp(2.6), 
+    color: COLORS.textSecondary, 
+    marginTop: hp(0.1) 
+  },
+  notificationRight: { 
+    alignItems: 'flex-end', 
+    gap: hp(0.2) 
+  },
+  notificationTime: { 
+    fontSize: wp(2.2), 
+    color: COLORS.textLight 
+  },
+  notificationBadge: { 
+    paddingHorizontal: wp(1.5), 
+    paddingVertical: hp(0.1), 
+    borderRadius: wp(1.5) 
+  },
+  notificationBadgeText: { 
+    fontSize: wp(1.8), 
+    color: COLORS.white, 
+    fontWeight: '600' 
+  },
+  emptyNotifications: { 
+    backgroundColor: COLORS.white, 
+    padding: wp(3), 
+    borderRadius: wp(2.5), 
+    borderWidth: 1, 
+    borderColor: COLORS.border, 
+    alignItems: 'center', 
+    gap: hp(0.5) 
+  },
+  emptyNotificationsText: { 
+    fontSize: wp(3), 
+    color: COLORS.textLight 
+  },
 
   // ── Footer ────────────────────────────────────────────────────────
   footer: { alignItems: 'center', marginTop: hp(3), paddingTop: hp(1.5), paddingBottom: hp(1), borderTopWidth: 1, borderTopColor: COLORS.border, marginHorizontal: wp(4) },
