@@ -1,44 +1,55 @@
 // src/theme/index.js
 
 export const COLORS = {
-  // Main Brand Colors - Updated to match the image
-  primary: '#00B4D8', // Bright Cyan/Turquoise - for the "S" 
-  secondary: '#0077B6', // Deep Navy Blue - for the "L"
-  accent: '#48CAE4', // Lighter Cyan for accents
-  
-  // New colors from the image
-  navy: '#023E8A', // Dark Navy
-  navyDark: '#03045E', // Very Dark Navy
-  cyan: '#00B4D8', // Bright Cyan
-  cyanLight: '#48CAE4', // Light Cyan
-  cyanLighter: '#90E0EF', // Lighter Cyan
-  cyanLightest: '#CAF0F8', // Lightest Cyan
+  // ---- Brand palette ----
+  // TEAL is the primary: brand identity, buttons, active states, key highlights.
+  // MINT is the secondary: backgrounds, icon containers, subtle accents.
+  // DARK SLATE carries headings and body text for strong contrast on white.
+  primary: '#0BAA9D',        // TEAL
+  secondary: '#0BAA9D',      // TEAL (kept equal so gradients read as one hue)
+  accent: '#C8F3E7',         // MINT
 
-  // Backgrounds
-  background: '#FFFFFF', // Pure White background
-  backgroundSecondary: '#F8FAFC',
+  // Tints of the primary, light → dark.
+  tealDark: '#089082',
+  teal: '#0BAA9D',
+  tealLight: '#5FC9BF',
+  mint: '#C8F3E7',
+  mintLight: '#E4F9F3',
+  mintLightest: '#F2FCF9',
+
+  // Legacy aliases — older screens still import these names.
+  navy: '#1F2937',
+  navyDark: '#1F2937',
+  cyan: '#0BAA9D',
+  cyanLight: '#5FC9BF',
+  cyanLighter: '#C8F3E7',
+  cyanLightest: '#E4F9F3',
+
+  // ---- Backgrounds ----
+  background: '#FFFFFF',
+  backgroundSecondary: '#F7FCFB',
   card: '#FFFFFF',
-  surface: '#F0F4F8',
+  surface: '#F2FCF9',
 
-  // Text - Dark colors for light backgrounds
-  text: '#03045E', // Very Dark Navy for primary text
-  textSecondary: '#023E8A', // Navy for secondary text
-  textLight: '#0077B6', // Medium blue for light text
+  // ---- Text ----
+  text: '#1F2937',           // DARK SLATE
+  textSecondary: '#4B5563',
+  textLight: '#6B7280',
   white: '#FFFFFF',
 
   // Status Colors
   success: '#10B981',
   warning: '#F59E0B',
   danger: '#EF4444',
-  info: '#00B4D8',
+  info: '#0BAA9D',
 
   // Borders
   border: '#E2E8F0',
   borderLight: '#F0F4F8',
 
   // Healthcare Gradients
-  gradientStart: '#00B4D8',
-  gradientEnd: '#0077B6',
+  gradientStart: '#0BAA9D',
+  gradientEnd: '#089082',
 
   // Emergency
   emergency: '#EF4444',
@@ -57,7 +68,7 @@ export const COLORS = {
   pharmacyLight: '#DCFCE7',
 
   // AI
-  ai: '#00B4D8',
+  ai: '#0BAA9D',
   aiLight: '#CAF0F8',
 
   // Reports
@@ -82,7 +93,7 @@ export const COLORS = {
   doctorCardBorder: '#E2E8F0',
 
   // Appointment Status
-  upcoming: '#00B4D8',
+  upcoming: '#0BAA9D',
   upcomingLight: '#CAF0F8',
   completed: '#10B981',
   completedLight: '#DCFCE7',
@@ -91,36 +102,36 @@ export const COLORS = {
 
   // Price Tag
   priceBg: '#F0F4F8',
-  priceText: '#03045E',
+  priceText: '#1F2937',
 
   // Button Colors
-  changeBg: '#00B4D8',
+  changeBg: '#0BAA9D',
   changeText: '#FFFFFF',
-  bookBg: '#00B4D8',
+  bookBg: '#0BAA9D',
   bookText: '#FFFFFF',
-  rescheduleBg: '#00B4D8',
+  rescheduleBg: '#0BAA9D',
   rescheduleText: '#FFFFFF',
   viewProfileBg: 'transparent',
-  viewProfileText: '#00B4D8',
+  viewProfileText: '#0BAA9D',
 
   // See All
-  seeAll: '#00B4D8',
+  seeAll: '#0BAA9D',
 
   // View Details
-  viewDetails: '#00B4D8',
+  viewDetails: '#0BAA9D',
 
   // Notification Badge
   badge: '#EF4444',
 
   // Lab Result Banner
-  labResultBg: '#00B4D8',
+  labResultBg: '#0BAA9D',
   labResultText: '#FFFFFF',
 
   // Avatar Colors
-  avatar1: '#00B4D8',
-  avatar2: '#0077B6',
-  avatar3: '#023E8A',
-  avatar4: '#03045E',
+  avatar1: '#0BAA9D',
+  avatar2: '#089082',
+  avatar3: '#1F2937',
+  avatar4: '#1F2937',
   avatar5: '#48CAE4',
   avatar6: '#90E0EF',
 
@@ -223,7 +234,7 @@ export const SHADOWS = {
   },
 
   button: {
-    shadowColor: '#00B4D8',
+    shadowColor: '#0BAA9D',
     shadowOffset: {
       width: 0,
       height: 4,
