@@ -1,7 +1,6 @@
 // src/screens/doctor/DoctorPortalScreen.js
 // ═══════════════════════════════════════════════════════════════════════════
-// SEHATLINE — DOCTOR PORTAL (Working Desk)
-// Government CDA Hospital OPD Queue Management System
+// SEHATLINE — DOCTOR PORTAL (HomeScreen Design Pattern)
 // ═══════════════════════════════════════════════════════════════════════════
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
@@ -17,7 +16,6 @@ import {
   StatusBar,
   Alert,
   ActivityIndicator,
-  SafeAreaView,
   Image,
   TextInput,
   Modal,
@@ -26,7 +24,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { COLORS, SHADOWS } from '../../theme';
+import { COLORS } from '../../theme';
 
 const { width, height } = Dimensions.get('window');
 const wp = (p) => (width * p) / 100;
@@ -55,6 +53,8 @@ const MOCK_DOCTOR = {
   isOnline: true,
   dutyStatus: 'Active',
   patientsPerDay: '45-50',
+  experience: '15+ Years',
+  education: 'MBBS, FCPS (Cardiology)',
 };
 
 const MOCK_QUEUE = [
@@ -70,7 +70,7 @@ const MOCK_NOTIFICATIONS = [
   { 
     id: 'n1', 
     title: 'Department Meeting', 
-    body: 'Cardiology department meeting today at 2:00 PM in Conference Room B. All doctors must attend.', 
+    body: 'Cardiology department meeting today at 2:00 PM in Conference Room B.', 
     time: '1 hr ago', 
     priority: 'High', 
     type: 'meeting' 
@@ -78,7 +78,7 @@ const MOCK_NOTIFICATIONS = [
   { 
     id: 'n2', 
     title: 'EMR System Maintenance', 
-    body: 'EMR system will be updated tonight from 10:00 PM to 2:00 AM. Please save all your work.', 
+    body: 'EMR system will be updated tonight from 10:00 PM to 2:00 AM.', 
     time: '3 hrs ago', 
     priority: 'Medium', 
     type: 'system' 
@@ -86,7 +86,7 @@ const MOCK_NOTIFICATIONS = [
   { 
     id: 'n3', 
     title: 'OPD Schedule Change', 
-    body: 'OPD timings for Cardiology have been changed to 8:30 AM - 2:00 PM effective from next week.', 
+    body: 'OPD timings for Cardiology have been changed to 8:30 AM - 2:00 PM.', 
     time: '5 hrs ago', 
     priority: 'Medium', 
     type: 'schedule' 
@@ -94,7 +94,7 @@ const MOCK_NOTIFICATIONS = [
   { 
     id: 'n4', 
     title: 'Duty Roster Update', 
-    body: 'Weekend duty roster has been updated. Please check the new schedule on the portal.', 
+    body: 'Weekend duty roster has been updated. Please check the new schedule.', 
     time: '1 day ago', 
     priority: 'High', 
     type: 'duty' 
@@ -102,7 +102,7 @@ const MOCK_NOTIFICATIONS = [
   { 
     id: 'n5', 
     title: 'Hospital Circular', 
-    body: 'All departments are requested to submit monthly reports by 20th of each month.', 
+    body: 'All departments are requested to submit monthly reports by 20th.', 
     time: '2 days ago', 
     priority: 'Normal', 
     type: 'circular' 
@@ -117,10 +117,10 @@ const SearchModal = ({ visible, onClose, onSearch, searchQuery, results, onResul
     <TouchableWithoutFeedback onPress={onClose}>
       <View style={styles.searchOverlay}>
         <TouchableWithoutFeedback onPress={() => {}}>
-          <View style={[styles.searchModal, SHADOWS.large]}>
+          <View style={styles.searchModal}>
             <View style={styles.searchInputRow}>
               <View style={styles.searchInputWrap}>
-                <Ionicons name="search-outline" size={wp(5)} color={COLORS.textSecondary} />
+                <Ionicons name="search-outline" size={wp(4.5)} color={COLORS.primary} />
                 <TextInput
                   style={styles.searchInput}
                   placeholder="Search patients..."
@@ -132,7 +132,7 @@ const SearchModal = ({ visible, onClose, onSearch, searchQuery, results, onResul
                 />
                 {searchQuery.length > 0 && (
                   <TouchableOpacity onPress={() => onSearch('')}>
-                    <Ionicons name="close-circle" size={wp(5)} color={COLORS.textLight} />
+                    <Ionicons name="close-circle" size={wp(4.5)} color={COLORS.textLight} />
                   </TouchableOpacity>
                 )}
               </View>
@@ -146,24 +146,24 @@ const SearchModal = ({ visible, onClose, onSearch, searchQuery, results, onResul
                 {results.map((item) => (
                   <TouchableOpacity key={item.id} style={styles.searchResultItem} onPress={() => onResultPress(item)}>
                     <View style={[styles.searchResultIcon, { backgroundColor: COLORS.primary + '15' }]}>
-                      <Ionicons name={item.icon} size={wp(5)} color={COLORS.primary} />
+                      <Ionicons name={item.icon} size={wp(4.5)} color={COLORS.primary} />
                     </View>
                     <View style={styles.searchResultContent}>
                       <Text style={styles.searchResultName}>{item.name}</Text>
                       <Text style={styles.searchResultSub}>{item.sub || 'Patient'}</Text>
                     </View>
-                    <Ionicons name="chevron-forward" size={wp(4)} color={COLORS.textLight} />
+                    <Ionicons name="chevron-forward" size={wp(3.5)} color={COLORS.textLight} />
                   </TouchableOpacity>
                 ))}
               </ScrollView>
             ) : searchQuery.length > 0 ? (
               <View style={styles.searchEmpty}>
-                <Ionicons name="search-outline" size={wp(12)} color={COLORS.textLight} />
+                <Ionicons name="search-outline" size={wp(10)} color={COLORS.textLight} />
                 <Text style={styles.searchEmptyText}>No patients found</Text>
               </View>
             ) : (
               <View style={styles.searchEmpty}>
-                <Ionicons name="people-outline" size={wp(12)} color={COLORS.textLight} />
+                <Ionicons name="people-outline" size={wp(10)} color={COLORS.textLight} />
                 <Text style={styles.searchEmptyText}>Search for patients</Text>
               </View>
             )}
@@ -313,7 +313,6 @@ const DoctorPortalScreen = ({ navigation }) => {
     }
   };
 
-  // ─── LOAD ADMIN NOTIFICATIONS ────────────────────────────────────────
   const loadNotifications = async () => {
     try {
       const raw = await AsyncStorage.getItem(ADMIN_UPDATES_KEY);
@@ -337,23 +336,15 @@ const DoctorPortalScreen = ({ navigation }) => {
 
   // ─── NAVIGATION HELPERS ──────────────────────────────────────────────
   const navigateToScreen = (screenName, params = {}) => {
-    const parent = navigation.getParent();
-    
-    if (parent) {
-      parent.navigate(screenName, params);
-    } else {
-      try {
-        navigation.navigate(screenName, params);
-      } catch (error) {
-        const root = navigation.getRootState();
-        if (root && root.routes.length > 0) {
-          const drawerRoute = root.routes.find(r => r.name === 'DoctorDrawerNavigator' || r.name === 'DoctorHome');
-          if (drawerRoute) {
-            navigation.navigate(drawerRoute.name, {
-              screen: screenName,
-              params: params,
-            });
-          }
+    try {
+      navigation.navigate(screenName, params);
+    } catch (error) {
+      const parent = navigation.getParent();
+      if (parent) {
+        try {
+          parent.navigate(screenName, params);
+        } catch (e) {
+          console.warn('Navigation failed:', e);
         }
       }
     }
@@ -426,6 +417,26 @@ const DoctorPortalScreen = ({ navigation }) => {
     }, 1200);
   }, []);
 
+  // ─── NOTIFICATION HELPERS ─────────────────────────────────────────────
+  const getNotificationIcon = (type) => {
+    switch (type) {
+      case 'meeting': return 'people-outline';
+      case 'schedule': return 'calendar-outline';
+      case 'system': return 'construct-outline';
+      case 'duty': return 'briefcase-outline';
+      case 'circular': return 'document-text-outline';
+      default: return 'notifications-outline';
+    }
+  };
+
+  const getNotificationColor = (priority) => {
+    switch (priority) {
+      case 'High': return COLORS.danger;
+      case 'Medium': return COLORS.warning;
+      default: return COLORS.primary;
+    }
+  };
+
   if (!doctor) {
     return (
       <View style={styles.loadingContainer}>
@@ -437,350 +448,334 @@ const DoctorPortalScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
 
-      <SafeAreaView style={styles.safeArea}>
-        {/* ═══ HEADER ═══════════════════════════════════════════════════ */}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scroll}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} tintColor={COLORS.primary} />}
+      >
+        {/* ═══ HEADER: Profile | Logo + Screen Name | Actions ═══════════ */}
         <View style={styles.header}>
-          <TouchableOpacity style={styles.menuBtn} onPress={() => navigation.openDrawer()}>
-            <Ionicons name="menu-outline" size={wp(5.5)} color={COLORS.text} />
+          <TouchableOpacity 
+            style={styles.iconBtnLeft} 
+            onPress={() => navigateToScreen('DoctorProfile')} 
+            activeOpacity={0.6}
+          >
+            <LinearGradient 
+              colors={[doctor.color || COLORS.primary, doctor.color2 || COLORS.secondary]} 
+              style={styles.headerAvatar}
+            >
+              <Text style={styles.headerAvatarText}>{doctor.avatar || 'DR'}</Text>
+            </LinearGradient>
           </TouchableOpacity>
 
-          <View style={styles.headerCenter}>
-            <Image source={require('../../../assets/logo.png')} style={styles.headerLogo} resizeMode="contain" />
-            <Text style={styles.headerTitle}>Doctor Portal</Text>
+          <View style={styles.brandWrap}>
+            <View style={styles.logoCircle}>
+              <Image source={require('../../../assets/logo.png')} style={styles.logoImage} resizeMode="contain" />
+            </View>
+            <Text style={styles.screenTitle}>Doctor Portal</Text>
           </View>
 
-          <TouchableOpacity style={styles.searchBtn} onPress={() => setShowSearchModal(true)}>
-            <Ionicons name="search-outline" size={wp(5)} color={COLORS.text} />
-          </TouchableOpacity>
+          <View style={styles.headerRight}>
+            <TouchableOpacity style={styles.iconBtnRight} onPress={() => setShowSearchModal(true)} activeOpacity={0.6}>
+              <Ionicons name="search-outline" size={wp(5)} color={COLORS.primary} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.iconBtnRight} onPress={() => navigateToScreen('DoctorSettings')} activeOpacity={0.6}>
+              <Ionicons name="settings-outline" size={wp(5)} color={COLORS.primary} />
+            </TouchableOpacity>
+          </View>
         </View>
 
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-          showsVerticalScrollIndicator={false}
-        >
-          <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
-
-            {/* ═══ SECTION 1: DOCTOR PROFILE CARD ═══════════════════════ */}
-            <TouchableOpacity style={[styles.profileCard, SHADOWS.medium]} onPress={() => navigateToScreen('DoctorProfile')} activeOpacity={0.85}>
-              <LinearGradient colors={[doctor.color || COLORS.primary, doctor.color2 || COLORS.secondary]} style={styles.profileAvatar}>
-                {doctor.profileImage ? (
-                  <Image source={{ uri: doctor.profileImage }} style={styles.profileAvatarImage} />
-                ) : (
-                  <Text style={styles.profileAvatarText}>{doctor.avatar || 'DR'}</Text>
-                )}
-              </LinearGradient>
-
-              <View style={styles.profileInfo}>
-                <Text style={styles.profileName}>{doctor.name}</Text>
-                <Text style={styles.profileSpecialty}>{doctor.specialty}</Text>
-                <View style={styles.profileMeta}>
-                  <Ionicons name="business-outline" size={wp(2.6)} color={COLORS.textLight} />
-                  <Text style={styles.profileMetaText}>{doctor.hospital}</Text>
-                </View>
-                <View style={styles.profileMeta}>
-                  <Ionicons name="location-outline" size={wp(2.6)} color={COLORS.textLight} />
-                  <Text style={styles.profileMetaText}>{doctor.room}</Text>
-                </View>
-              </View>
-
-              <View style={styles.profileRight}>
-                <TouchableOpacity style={[styles.profileStatus, doctor.isOnline && styles.profileStatusOnline]} onPress={handleToggleStatus}>
-                  <View style={[styles.profileStatusDot, doctor.isOnline && styles.profileStatusDotOnline]} />
-                  <Text style={[styles.profileStatusText, doctor.isOnline && styles.profileStatusTextOnline]}>
-                    {doctor.isOnline ? 'Available' : 'Offline'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
+        {/* ═══ DOCTOR QUICK STATS CARD (Portal Specific) ════════════════ */}
+        <View style={[styles.quickStatsCard, styles.shadow]}>
+          <View style={styles.quickStatsHeader}>
+            <View>
+              <Text style={styles.quickStatsName}>{doctor.name}</Text>
+              <Text style={styles.quickStatsSpecialty}>{doctor.specialty}</Text>
+            </View>
+            <TouchableOpacity 
+              style={[
+                styles.quickStatsStatus, 
+                doctor.isOnline && styles.quickStatsStatusOnline
+              ]} 
+              onPress={handleToggleStatus}
+            >
+              <View style={[styles.quickStatsStatusDot, doctor.isOnline && styles.quickStatsStatusDotOnline]} />
+              <Text style={[styles.quickStatsStatusText, doctor.isOnline && styles.quickStatsStatusTextOnline]}>
+                {doctor.isOnline ? 'Available' : 'Offline'}
+              </Text>
             </TouchableOpacity>
+          </View>
 
-            {/* ═══ SECTION 2: STATISTICS CARDS ══════════════════════════ */}
-            <View style={styles.statsSection}>
-              <View style={styles.statsGrid}>
-                <TouchableOpacity style={[styles.statCard, SHADOWS.small]} onPress={() => navigateToScreen('DoctorSchedule')}>
-                  <View style={[styles.statIcon, { backgroundColor: COLORS.primary + '15' }]}>
-                    <Ionicons name="calendar-outline" size={wp(4.5)} color={COLORS.primary} />
-                  </View>
-                  <Text style={styles.statValue}>{totalAppointments}</Text>
-                  <Text style={styles.statLabel}>Appointments</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={[styles.statCard, SHADOWS.small]} onPress={() => navigateToScreen('PatientHistory', { filter: 'today' })}>
-                  <View style={[styles.statIcon, { backgroundColor: COLORS.success + '15' }]}>
-                    <Ionicons name="checkmark-done-outline" size={wp(4.5)} color={COLORS.success} />
-                  </View>
-                  <Text style={[styles.statValue, { color: COLORS.success }]}>{completedCount}</Text>
-                  <Text style={styles.statLabel}>Completed</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={[styles.statCard, SHADOWS.small]} onPress={() => navigateToScreen('TodayQueue')}>
-                  <View style={[styles.statIcon, { backgroundColor: COLORS.warning + '15' }]}>
-                    <Ionicons name="hourglass-outline" size={wp(4.5)} color={COLORS.warning} />
-                  </View>
-                  <Text style={[styles.statValue, { color: COLORS.warning }]}>{queuePatients.length}</Text>
-                  <Text style={styles.statLabel}>Waiting</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={[styles.statCard, SHADOWS.small]} onPress={() => {
-                  if (queuePatients.length > 0) navigateToScreen('PatientHistory', { patient: queuePatients[0] });
-                }}>
-                  <View style={[styles.statIcon, { backgroundColor: COLORS.primary + '15' }]}>
-                    <Ionicons name="pricetag-outline" size={wp(4.5)} color={COLORS.primary} />
-                  </View>
-                  <Text style={[styles.statValue, { color: COLORS.primary }]}>{queuePatients.length > 0 ? queuePatients[0].token : '—'}</Text>
-                  <Text style={styles.statLabel}>Current Token</Text>
-                </TouchableOpacity>
+          <View style={styles.quickStatsGrid}>
+            <View style={styles.quickStatsItem}>
+              <View style={[styles.quickStatsIcon, { backgroundColor: COLORS.primary + '10' }]}>
+                <Ionicons name="people-outline" size={wp(4)} color={COLORS.primary} />
+              </View>
+              <View>
+                <Text style={styles.quickStatsValue}>{queuePatients.length}</Text>
+                <Text style={styles.quickStatsLabel}>Waiting</Text>
               </View>
             </View>
+            <View style={styles.quickStatsItem}>
+              <View style={[styles.quickStatsIcon, { backgroundColor: COLORS.success + '10' }]}>
+                <Ionicons name="checkmark-done-outline" size={wp(4)} color={COLORS.success} />
+              </View>
+              <View>
+                <Text style={[styles.quickStatsValue, { color: COLORS.success }]}>{completedCount}</Text>
+                <Text style={styles.quickStatsLabel}>Completed</Text>
+              </View>
+            </View>
+            <View style={styles.quickStatsItem}>
+              <View style={[styles.quickStatsIcon, { backgroundColor: COLORS.warning + '10' }]}>
+                <Ionicons name="time-outline" size={wp(4)} color={COLORS.warning} />
+              </View>
+              <View>
+                <Text style={[styles.quickStatsValue, { color: COLORS.warning }]}>{totalAppointments}</Text>
+                <Text style={styles.quickStatsLabel}>Appointments</Text>
+              </View>
+            </View>
+            <View style={styles.quickStatsItem}>
+              <View style={[styles.quickStatsIcon, { backgroundColor: COLORS.primary + '10' }]}>
+                <Ionicons name="hourglass-outline" size={wp(4)} color={COLORS.primary} />
+              </View>
+              <View>
+                <Text style={[styles.quickStatsValue, { color: COLORS.primary }]}>
+                  {queuePatients.length > 0 ? queuePatients[0].token : '—'}
+                </Text>
+                <Text style={styles.quickStatsLabel}>Current Token</Text>
+              </View>
+            </View>
+          </View>
 
-            {/* ═══ SECTION 3: NOW SERVING + CALL BUTTON ════════════════ */}
-            <View style={styles.workingSection}>
-              <View style={[styles.nowServingCard, SHADOWS.medium]}>
-                <View style={styles.nowServingHeader}>
-                  <Text style={styles.nowServingLabel}>NOW SERVING</Text>
+          <View style={styles.quickStatsFooter}>
+            <View style={styles.quickStatsBadge}>
+              <Ionicons name="calendar-outline" size={wp(2.8)} color={COLORS.primary} />
+              <Text style={styles.quickStatsBadgeText}>{doctor.shift}</Text>
+            </View>
+            <View style={styles.quickStatsBadge}>
+              <Ionicons name="business-outline" size={wp(2.8)} color={COLORS.primary} />
+              <Text style={styles.quickStatsBadgeText}>{doctor.room}</Text>
+            </View>
+            <View style={styles.quickStatsBadge}>
+              <Ionicons name="people-outline" size={wp(2.8)} color={COLORS.primary} />
+              <Text style={styles.quickStatsBadgeText}>{doctor.patientsPerDay} / day</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* ═══ NOW SERVING + CALL BUTTON ════════════════════════════ */}
+        <View style={styles.nowServingWrap}>
+          <View style={[styles.nowServingCard, styles.shadow]}>
+            <Text style={styles.nowServingLabel}>NOW SERVING</Text>
+
+            {queuePatients.length > 0 ? (
+              <>
+                <Text style={styles.nowServingToken}>Token {queuePatients[0].token}</Text>
+                <Text style={styles.nowServingName}>{queuePatients[0].name}</Text>
+                <Text style={styles.nowServingReason}>{queuePatients[0].reason}</Text>
+                <View style={styles.nowServingMeta}>
+                  <View style={styles.nowServingMetaItem}>
+                    <Ionicons name="person-outline" size={wp(3)} color={COLORS.textLight} />
+                    <Text style={styles.nowServingMetaText}>Age {queuePatients[0].age}</Text>
+                  </View>
+                  <View style={styles.nowServingMetaDivider} />
+                  <View style={styles.nowServingMetaItem}>
+                    <Ionicons name="time-outline" size={wp(3)} color={COLORS.textLight} />
+                    <Text style={styles.nowServingMetaText}>Waiting {queuePatients[0].waitTime}</Text>
+                  </View>
                 </View>
+              </>
+            ) : (
+              <Text style={styles.nowServingEmpty}>No patients waiting</Text>
+            )}
+          </View>
 
-                {queuePatients.length > 0 ? (
-                  <>
-                    <Text style={styles.nowServingToken}>Token {queuePatients[0].token}</Text>
-                    <Text style={styles.nowServingName}>{queuePatients[0].name}</Text>
-                    <Text style={styles.nowServingReason}>{queuePatients[0].reason}</Text>
-                    <View style={styles.nowServingMeta}>
-                      <View style={styles.nowServingMetaItem}>
-                        <Ionicons name="person-outline" size={wp(3)} color={COLORS.textLight} />
-                        <Text style={styles.nowServingMetaText}>Age {queuePatients[0].age}</Text>
-                      </View>
-                      <View style={styles.nowServingMetaDivider} />
-                      <View style={styles.nowServingMetaItem}>
-                        <Ionicons name="time-outline" size={wp(3)} color={COLORS.textLight} />
-                        <Text style={styles.nowServingMetaText}>Waiting {queuePatients[0].waitTime}</Text>
-                      </View>
-                    </View>
-                  </>
-                ) : (
-                  <Text style={styles.nowServingEmpty}>No patients waiting</Text>
+          <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+            <TouchableOpacity
+              style={[styles.callButton, queuePatients.length === 0 && styles.callButtonDisabled, styles.shadow]}
+              onPress={handleCallNextPatient}
+              disabled={queuePatients.length === 0}
+              activeOpacity={0.9}
+            >
+              <LinearGradient
+                colors={queuePatients.length === 0 ? ['#E8ECF0', '#E8ECF0'] : [COLORS.primary, COLORS.secondary]}
+                style={styles.callButtonGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+              >
+                {queuePatients.length > 0 && (
+                  <View style={styles.callPulseContainer}>
+                    <View style={styles.callPulse} />
+                  </View>
                 )}
-              </View>
+                <Ionicons name="call-outline" size={wp(5.5)} color={COLORS.white} />
+                <Text style={styles.callButtonText}>
+                  {queuePatients.length > 0 ? 'CALL NEXT PATIENT' : 'QUEUE EMPTY'}
+                </Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </Animated.View>
+        </View>
 
-              {/* ─── CALL BUTTON WITH ZOOM ANIMATION ───────────────────── */}
-              <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-                <TouchableOpacity
-                  style={[styles.callButton, queuePatients.length === 0 && styles.callButtonDisabled]}
-                  onPress={handleCallNextPatient}
-                  disabled={queuePatients.length === 0}
-                  activeOpacity={0.9}
-                >
-                  <LinearGradient
-                    colors={queuePatients.length === 0 ? [COLORS.border, COLORS.border] : [COLORS.primary, COLORS.secondary]}
-                    style={styles.callButtonGradient}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                  >
-                    {queuePatients.length > 0 && (
-                      <View style={styles.callPulseContainer}>
-                        <View style={styles.callPulse} />
-                      </View>
-                    )}
-                    <Ionicons name="call-outline" size={wp(5.5)} color={COLORS.white} />
-                    <Text style={styles.callButtonText}>
-                      {queuePatients.length > 0 ? 'CALL NEXT PATIENT' : 'QUEUE EMPTY'}
-                    </Text>
-                  </LinearGradient>
-                </TouchableOpacity>
-              </Animated.View>
+        {/* ═══ UPCOMING QUEUE ════════════════════════════════════════ */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Upcoming Queue</Text>
+            <TouchableOpacity onPress={() => navigateToScreen('TodayQueue')}>
+              <Text style={styles.sectionLink}>View All →</Text>
+            </TouchableOpacity>
+          </View>
+
+          {queuePatients.slice(1, 5).map((patient) => (
+            <TouchableOpacity
+              key={patient.id}
+              style={[styles.queueItem, styles.shadowSmall]}
+              onPress={() => navigateToScreen('PatientHistory', { patient })}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.queueTokenBadge]}>
+                <Text style={styles.queueToken}>#{patient.token}</Text>
+              </View>
+              <View style={styles.queueInfo}>
+                <Text style={styles.queueName}>{patient.name}</Text>
+                <Text style={styles.queueReason}>{patient.reason}</Text>
+              </View>
+              <Text style={styles.queueWait}>{patient.waitTime}</Text>
+            </TouchableOpacity>
+          ))}
+          {queuePatients.length <= 1 && (
+            <View style={[styles.emptyQueue, styles.shadowSmall]}>
+              <Ionicons name="people-outline" size={wp(7)} color={COLORS.textLight} />
+              <Text style={styles.emptyQueueText}>No upcoming patients</Text>
             </View>
+          )}
+        </View>
 
-            {/* ═══ SECTION 4: UPCOMING QUEUE ════════════════════════════ */}
-            <View style={styles.queueSection}>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Upcoming Queue</Text>
-                <TouchableOpacity onPress={() => navigateToScreen('TodayQueue')}>
-                  <Text style={styles.sectionLink}>View All →</Text>
-                </TouchableOpacity>
+        {/* ═══ TODAY'S SCHEDULE ══════════════════════════════════════ */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Today's Schedule</Text>
+            <TouchableOpacity onPress={() => navigateToScreen('DoctorSchedule')}>
+              <Text style={styles.sectionLink}>Manage →</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={[styles.scheduleCard, styles.shadow]}>
+            <View style={styles.scheduleRow}>
+              <View style={[styles.scheduleIconWrap]}>
+                <Ionicons name="time-outline" size={wp(4.5)} color={COLORS.primary} />
               </View>
-
-              {queuePatients.slice(1, 5).map((patient) => (
-                <TouchableOpacity
-                  key={patient.id}
-                  style={[styles.queueItem, SHADOWS.tiny]}
-                  onPress={() => navigateToScreen('PatientHistory', { patient })}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.queueTokenBadge}>
-                    <Text style={styles.queueToken}>#{patient.token}</Text>
-                  </View>
-                  <View style={styles.queueInfo}>
-                    <Text style={styles.queueName}>{patient.name}</Text>
-                    <Text style={styles.queueReason}>{patient.reason}</Text>
-                  </View>
-                  <View style={styles.queueRight}>
-                    <Text style={styles.queueWait}>{patient.waitTime}</Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
-              {queuePatients.length <= 1 && (
-                <View style={styles.emptyQueue}>
-                  <Ionicons name="people-outline" size={wp(8)} color={COLORS.textLight} />
-                  <Text style={styles.emptyQueueText}>No upcoming patients</Text>
-                </View>
-              )}
-            </View>
-
-            {/* ═══ SECTION 5: TODAY'S SCHEDULE (Doctor Duty Info) ══════ */}
-            <View style={styles.scheduleSection}>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Today's Schedule</Text>
-                <TouchableOpacity onPress={() => navigateToScreen('DoctorSchedule')}>
-                  <Text style={styles.sectionLink}>Manage →</Text>
-                </TouchableOpacity>
-              </View>
-
-              <View style={[styles.scheduleCard, SHADOWS.small]}>
-                <View style={styles.scheduleRow}>
-                  <View style={styles.scheduleIconWrap}>
-                    <Ionicons name="time-outline" size={wp(4.5)} color={COLORS.primary} />
-                  </View>
-                  <View style={styles.scheduleInfo}>
-                    <Text style={styles.scheduleLabel}>OPD Timing</Text>
-                    <Text style={styles.scheduleValue}>{doctor.shift}</Text>
-                  </View>
-                </View>
-
-                <View style={styles.scheduleDivider} />
-
-                <View style={styles.scheduleRow}>
-                  <View style={[styles.scheduleIconWrap, { backgroundColor: COLORS.warning + '15' }]}>
-                    <Ionicons name="cafe-outline" size={wp(4.5)} color={COLORS.warning} />
-                  </View>
-                  <View style={styles.scheduleInfo}>
-                    <Text style={styles.scheduleLabel}>Break</Text>
-                    <Text style={styles.scheduleValue}>{doctor.break || '12:30 PM – 1:00 PM'}</Text>
-                  </View>
-                </View>
-
-                <View style={styles.scheduleDivider} />
-
-                <View style={styles.scheduleRow}>
-                  <View style={[styles.scheduleIconWrap, { backgroundColor: COLORS.success + '15' }]}>
-                    <Ionicons name="business-outline" size={wp(4.5)} color={COLORS.success} />
-                  </View>
-                  <View style={styles.scheduleInfo}>
-                    <Text style={styles.scheduleLabel}>Location</Text>
-                    <Text style={styles.scheduleValue}>{doctor.room}</Text>
-                  </View>
-                </View>
-
-                <View style={styles.scheduleDivider} />
-
-                <View style={styles.scheduleRow}>
-                  <View style={[styles.scheduleIconWrap, { backgroundColor: COLORS.info + '15' }]}>
-                    <Ionicons name="people-outline" size={wp(4.5)} color={COLORS.info} />
-                  </View>
-                  <View style={styles.scheduleInfo}>
-                    <Text style={styles.scheduleLabel}>Daily Patients</Text>
-                    <Text style={styles.scheduleValue}>{doctor.patientsPerDay || '45-50'}</Text>
-                  </View>
-                </View>
-
-                <View style={styles.scheduleStatusRow}>
-                  <View style={[styles.scheduleStatusBadge, { backgroundColor: doctor.isOnline ? COLORS.success + '15' : COLORS.textLight + '15' }]}>
-                    <View style={[styles.scheduleStatusDot, { backgroundColor: doctor.isOnline ? COLORS.success : COLORS.textLight }]} />
-                    <Text style={[styles.scheduleStatusText, { color: doctor.isOnline ? COLORS.success : COLORS.textLight }]}>
-                      {doctor.isOnline ? 'Active Duty' : 'Off Duty'}
-                    </Text>
-                  </View>
-                </View>
+              <View style={styles.scheduleInfo}>
+                <Text style={styles.scheduleLabel}>OPD Timing</Text>
+                <Text style={styles.scheduleValue}>{doctor.shift}</Text>
               </View>
             </View>
 
-            {/* ═══ SECTION 6: ADMIN NOTIFICATIONS ═══════════════════════ */}
-            <View style={styles.notificationSection}>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Admin Notifications</Text>
-                <TouchableOpacity onPress={() => navigateToScreen('AdminNotifications')}>
-                  <Text style={styles.sectionLink}>View All →</Text>
-                </TouchableOpacity>
-              </View>
+            <View style={styles.scheduleDivider} />
 
-              {notifications.slice(0, 2).map((notification) => {
-                const notifIcon = notification.type === 'meeting' ? 'people-outline' :
-                                  notification.type === 'schedule' ? 'calendar-outline' :
-                                  notification.type === 'system' ? 'construct-outline' :
-                                  notification.type === 'duty' ? 'briefcase-outline' :
-                                  'document-text-outline';
-                
-                const notifColor = notification.priority === 'High' ? COLORS.danger :
-                                  notification.priority === 'Medium' ? COLORS.warning :
-                                  COLORS.primary;
-                
-                return (
-                  <TouchableOpacity
-                    key={notification.id}
-                    style={[
-                      styles.notificationCard, 
-                      SHADOWS.small, 
-                      notification.priority === 'High' && styles.notificationCardHigh
-                    ]}
-                    onPress={() => navigateToScreen('AdminNotifications')}
-                    activeOpacity={0.7}
-                  >
-                    <View style={styles.notificationLeft}>
-                      <View style={[styles.notificationIcon, { backgroundColor: notifColor + '15' }]}>
-                        <Ionicons name={notifIcon} size={wp(4)} color={notifColor} />
-                      </View>
-                      <View style={styles.notificationInfo}>
-                        <Text style={styles.notificationTitle}>{notification.title}</Text>
-                        <Text style={styles.notificationBody} numberOfLines={1}>{notification.body}</Text>
-                      </View>
-                    </View>
-                    <View style={styles.notificationRight}>
-                      <Text style={styles.notificationTime}>{notification.time}</Text>
-                      {notification.priority === 'High' && (
-                        <View style={[styles.notificationBadge, { backgroundColor: COLORS.danger }]}>
-                          <Text style={styles.notificationBadgeText}>Urgent</Text>
-                        </View>
-                      )}
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
-              {notifications.length === 0 && (
-                <View style={styles.emptyNotifications}>
-                  <Ionicons name="notifications-outline" size={wp(8)} color={COLORS.textLight} />
-                  <Text style={styles.emptyNotificationsText}>No admin notifications</Text>
-                </View>
-              )}
+            <View style={styles.scheduleRow}>
+              <View style={[styles.scheduleIconWrap, { backgroundColor: COLORS.warning + '10' }]}>
+                <Ionicons name="cafe-outline" size={wp(4.5)} color={COLORS.warning} />
+              </View>
+              <View style={styles.scheduleInfo}>
+                <Text style={styles.scheduleLabel}>Break</Text>
+                <Text style={styles.scheduleValue}>{doctor.break || '12:30 PM – 1:00 PM'}</Text>
+              </View>
             </View>
 
-            {/* ═══ FOOTER ════════════════════════════════════════════════ */}
-            <View style={styles.footer}>
-              <View style={styles.footerRow}>
-                <Ionicons name="time-outline" size={wp(2.5)} color={COLORS.textLight} />
-                <Text style={styles.footerText}>Last Sync: 10:42 AM</Text>
-                <View style={styles.footerDot} />
-                <View style={[styles.footerStatusDot, { backgroundColor: doctor.isOnline ? COLORS.success : COLORS.textLight }]} />
-                <Text style={[styles.footerText, { color: doctor.isOnline ? COLORS.success : COLORS.textLight }]}>
-                  {doctor.isOnline ? 'Online' : 'Offline'}
+            <View style={styles.scheduleDivider} />
+
+            <View style={styles.scheduleRow}>
+              <View style={[styles.scheduleIconWrap, { backgroundColor: COLORS.success + '10' }]}>
+                <Ionicons name="business-outline" size={wp(4.5)} color={COLORS.success} />
+              </View>
+              <View style={styles.scheduleInfo}>
+                <Text style={styles.scheduleLabel}>Location</Text>
+                <Text style={styles.scheduleValue}>{doctor.room}</Text>
+              </View>
+            </View>
+
+            <View style={styles.scheduleStatusRow}>
+              <View style={[styles.scheduleStatusBadge, { backgroundColor: doctor.isOnline ? COLORS.success + '10' : COLORS.textLight + '10' }]}>
+                <View style={[styles.scheduleStatusDot, { backgroundColor: doctor.isOnline ? COLORS.success : COLORS.textLight }]} />
+                <Text style={[styles.scheduleStatusText, { color: doctor.isOnline ? COLORS.success : COLORS.textLight }]}>
+                  {doctor.isOnline ? 'Active Duty' : 'Off Duty'}
                 </Text>
               </View>
-              <Text style={styles.footerVersion}>SehatLine v2.0.1</Text>
             </View>
+          </View>
+        </View>
 
-          </Animated.View>
-        </ScrollView>
+        {/* ═══ ADMIN NOTIFICATIONS ════════════════════════════════════ */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Admin Notifications</Text>
+            <TouchableOpacity onPress={() => navigateToScreen('AdminNotifications')}>
+              <Text style={styles.sectionLink}>View All →</Text>
+            </TouchableOpacity>
+          </View>
 
-        <SearchModal
-          visible={showSearchModal}
-          onClose={() => { setShowSearchModal(false); setSearchQuery(''); setSearchResults([]); }}
-          onSearch={handleSearch}
-          searchQuery={searchQuery}
-          results={searchResults}
-          onResultPress={handleSearchResultPress}
-        />
-      </SafeAreaView>
+          {notifications.slice(0, 2).map((notification) => {
+            const notifColor = getNotificationColor(notification.priority);
+            const notifIcon = getNotificationIcon(notification.type);
+            
+            return (
+              <TouchableOpacity
+                key={notification.id}
+                style={[
+                  styles.notificationCard, 
+                  notification.priority === 'High' && styles.notificationCardHigh,
+                  styles.shadowSmall
+                ]}
+                onPress={() => navigateToScreen('AdminNotifications')}
+                activeOpacity={0.7}
+              >
+                <View style={styles.notificationLeft}>
+                  <View style={[styles.notificationIcon, { backgroundColor: notifColor + '10' }]}>
+                    <Ionicons name={notifIcon} size={wp(4.5)} color={notifColor} />
+                  </View>
+                  <View style={styles.notificationInfo}>
+                    <Text style={styles.notificationTitle}>{notification.title}</Text>
+                    <Text style={styles.notificationBody} numberOfLines={1}>{notification.body}</Text>
+                  </View>
+                </View>
+                <View style={styles.notificationRight}>
+                  <Text style={styles.notificationTime}>{notification.time}</Text>
+                  {notification.priority === 'High' && (
+                    <View style={[styles.notificationBadge, { backgroundColor: COLORS.danger }]}>
+                      <Text style={styles.notificationBadgeText}>Urgent</Text>
+                    </View>
+                  )}
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+          {notifications.length === 0 && (
+            <View style={[styles.emptyNotifications, styles.shadowSmall]}>
+              <Ionicons name="notifications-outline" size={wp(7)} color={COLORS.textLight} />
+              <Text style={styles.emptyNotificationsText}>No admin notifications</Text>
+            </View>
+          )}
+        </View>
+
+        {/* ═══ FOOTER ════════════════════════════════════════════════ */}
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>SehatLine v2.0.1</Text>
+          <Text style={styles.footerSub}>Doctor Portal • CDA Hospital</Text>
+        </View>
+
+      </ScrollView>
+
+      <SearchModal
+        visible={showSearchModal}
+        onClose={() => { setShowSearchModal(false); setSearchQuery(''); setSearchResults([]); }}
+        onSearch={handleSearch}
+        searchQuery={searchQuery}
+        results={searchResults}
+        onResultPress={handleSearchResultPress}
+      />
     </View>
   );
 };
@@ -789,110 +784,317 @@ const DoctorPortalScreen = ({ navigation }) => {
 // STYLES
 // ═══════════════════════════════════════════════════════════════════════════
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
-  safeArea: { flex: 1 },
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background },
-  loadingText: { marginTop: hp(1), fontSize: wp(3.5), color: COLORS.textSecondary },
+  container: { flex: 1, backgroundColor: '#F8FAFC' },
+  scroll: { paddingBottom: 20 },
 
-  // ── Header ────────────────────────────────────────────────────────
+  // ── Shadows ──────────────────────────────────────────────────────
+  shadow: {
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.08,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
+  },
+  shadowSmall: {
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.06,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
+  },
+
+  // ── Header ──────────────────────────────────────────────────────
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: wp(4),
-    paddingVertical: hp(1.5),
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === 'ios' ? 50 : (StatusBar.currentHeight || 28) + 10,
+    paddingBottom: 12,
     backgroundColor: COLORS.white,
-    borderBottomWidth: 2,
-    borderBottomColor: COLORS.primary + '20',
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
   },
-  menuBtn: { width: wp(9), height: wp(9), justifyContent: 'center', alignItems: 'center' },
-  searchBtn: { width: wp(9), height: wp(9), justifyContent: 'center', alignItems: 'center' },
-  headerCenter: { flexDirection: 'row', alignItems: 'center', gap: wp(2) },
-  headerLogo: { width: wp(10), height: wp(10), resizeMode: 'contain' },
-  headerTitle: { fontSize: wp(4.8), fontWeight: '700', color: COLORS.text },
-
-  // ── Scroll ────────────────────────────────────────────────────────
-  scrollView: { flex: 1 },
-  scrollContent: { paddingBottom: hp(10) },
-
-  // ── SECTION 1: Profile Card ──────────────────────────────────────
-  profileCard: {
+  iconBtnLeft: {
+    width: 42,
+    height: 42,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  iconBtnRight: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 8,
+  },
+  headerAvatar: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerAvatarText: {
+    color: COLORS.white,
+    fontSize: wp(3.5),
+    fontWeight: '700',
+  },
+  headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.white,
-    marginHorizontal: wp(4),
-    marginTop: hp(1.5),
-    padding: wp(3.5),
-    borderRadius: wp(3.5),
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    gap: 4,
   },
-  profileAvatar: { width: wp(15), height: wp(15), borderRadius: wp(7.5), justifyContent: 'center', alignItems: 'center' },
-  profileAvatarImage: { width: '100%', height: '100%', borderRadius: wp(7.5) },
-  profileAvatarText: { color: COLORS.white, fontSize: wp(5), fontWeight: '700' },
-  profileInfo: { flex: 1, marginLeft: wp(3) },
-  profileName: { fontSize: wp(4.2), fontWeight: '700', color: COLORS.text },
-  profileSpecialty: { fontSize: wp(3), color: COLORS.textSecondary, marginTop: hp(0.1) },
-  profileMeta: { flexDirection: 'row', alignItems: 'center', gap: wp(1), marginTop: hp(0.2) },
-  profileMetaText: { fontSize: wp(2.6), color: COLORS.textLight },
-  profileRight: { alignItems: 'flex-end', gap: hp(0.5) },
-  profileStatus: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: wp(2.5), paddingVertical: hp(0.3), borderRadius: wp(3), backgroundColor: COLORS.backgroundSecondary, gap: wp(1.2) },
-  profileStatusOnline: { backgroundColor: COLORS.success + '15' },
-  profileStatusDot: { width: wp(1.8), height: wp(1.8), borderRadius: wp(0.9), backgroundColor: COLORS.textLight },
-  profileStatusDotOnline: { backgroundColor: COLORS.success },
-  profileStatusText: { fontSize: wp(2.4), color: COLORS.textSecondary, fontWeight: '500' },
-  profileStatusTextOnline: { color: COLORS.success },
 
-  // ── SECTION 2: Statistics ───────────────────────────────────────
-  statsSection: { paddingHorizontal: wp(4), marginTop: hp(1.5) },
-  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: wp(2) },
-  statCard: {
-    width: (width - wp(8) - wp(6)) / 4,
-    backgroundColor: COLORS.white,
-    borderRadius: wp(3),
-    padding: wp(2.5),
+  brandWrap: {
+    flex: 1,
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    minHeight: hp(9.5),
     justifyContent: 'center',
   },
-  statIcon: { width: wp(7), height: wp(7), borderRadius: wp(2.5), justifyContent: 'center', alignItems: 'center', marginBottom: hp(0.3) },
-  statValue: { fontSize: wp(4), fontWeight: '700', color: COLORS.text },
-  statLabel: { fontSize: wp(2.2), color: COLORS.textSecondary, marginTop: hp(0.1), textAlign: 'center' },
-
-  // ── SECTION 3: Now Serving ──────────────────────────────────────
-  workingSection: { paddingHorizontal: wp(4), marginTop: hp(1.5) },
-  nowServingCard: {
+  logoCircle: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    borderWidth: 1.6,
+    borderColor: COLORS.primary,
     backgroundColor: COLORS.white,
-    borderRadius: wp(3.5),
-    padding: wp(4),
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 2,
+  },
+  logoImage: {
+    width: 24,
+    height: 24,
+    resizeMode: 'contain',
+  },
+  screenTitle: {
+    fontSize: wp(3.8),
+    fontWeight: '700',
+    color: COLORS.text,
+    letterSpacing: 0.3,
+  },
+
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.white },
+  loadingText: { marginTop: hp(1), fontSize: wp(3.5), color: COLORS.textSecondary },
+
+  // ── Quick Stats Card (Portal Specific) ──────────────────────────
+  quickStatsCard: {
+    backgroundColor: COLORS.white,
+    marginHorizontal: 16,
+    marginTop: 12,
+    padding: 16,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
-  nowServingHeader: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: hp(0.5) },
-  nowServingLabel: { fontSize: wp(2.8), color: COLORS.textSecondary, fontWeight: '600', letterSpacing: 1.5 },
-  nowServingToken: { fontSize: wp(6), fontWeight: '800', color: COLORS.primary, textAlign: 'center' },
-  nowServingName: { fontSize: wp(4.5), fontWeight: '600', color: COLORS.text, textAlign: 'center', marginTop: hp(0.2) },
-  nowServingReason: { fontSize: wp(3.2), color: COLORS.textSecondary, textAlign: 'center', marginTop: hp(0.1) },
-  nowServingMeta: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: wp(2), marginTop: hp(0.5) },
-  nowServingMetaItem: { flexDirection: 'row', alignItems: 'center', gap: wp(0.8) },
-  nowServingMetaDivider: { width: 1, height: hp(2), backgroundColor: COLORS.border },
-  nowServingMetaText: { fontSize: wp(2.8), color: COLORS.textSecondary },
-  nowServingEmpty: { fontSize: wp(3.5), color: COLORS.textLight, textAlign: 'center', marginTop: hp(0.5) },
+  quickStatsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 14,
+  },
+  quickStatsName: {
+    fontSize: wp(4.2),
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  quickStatsSpecialty: {
+    fontSize: wp(3),
+    color: COLORS.textSecondary,
+    marginTop: 2,
+    fontWeight: '500',
+  },
+  quickStatsStatus: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    backgroundColor: COLORS.background,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  quickStatsStatusOnline: {
+    backgroundColor: COLORS.success + '08',
+    borderColor: COLORS.success + '40',
+  },
+  quickStatsStatusDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+    backgroundColor: COLORS.textLight,
+  },
+  quickStatsStatusDotOnline: {
+    backgroundColor: COLORS.success,
+  },
+  quickStatsStatusText: {
+    fontSize: wp(2.2),
+    color: COLORS.textSecondary,
+    fontWeight: '500',
+  },
+  quickStatsStatusTextOnline: {
+    color: COLORS.success,
+  },
+  quickStatsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 14,
+  },
+  quickStatsItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    width: '48%',
+    backgroundColor: '#F8FAFC',
+    padding: 10,
+    borderRadius: 10,
+  },
+  quickStatsIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  quickStatsValue: {
+    fontSize: wp(3.8),
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  quickStatsLabel: {
+    fontSize: wp(2.2),
+    color: COLORS.textLight,
+    fontWeight: '500',
+  },
+  quickStatsFooter: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  quickStatsBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.primary + '06',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 16,
+    gap: 4,
+    borderWidth: 1,
+    borderColor: COLORS.primary + '15',
+  },
+  quickStatsBadgeText: {
+    fontSize: wp(2.4),
+    color: COLORS.primary,
+    fontWeight: '500',
+  },
 
-  // ── CALL BUTTON ──────────────────────────────────────────────────
-  callButton: { marginTop: hp(1.5), borderRadius: wp(3), overflow: 'hidden' },
-  callButtonDisabled: { opacity: 0.6 },
-  callButtonGradient: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    justifyContent: 'center', 
-    paddingVertical: hp(1.8), 
-    gap: wp(2),
+  // ── Now Serving ──────────────────────────────────────────────
+  nowServingWrap: {
+    paddingHorizontal: 16,
+    marginTop: 12,
+  },
+  nowServingCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  nowServingLabel: {
+    fontSize: wp(2.8),
+    color: COLORS.textSecondary,
+    fontWeight: '600',
+    letterSpacing: 1.5,
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  nowServingToken: {
+    fontSize: wp(5.5),
+    fontWeight: '800',
+    color: COLORS.primary,
+    textAlign: 'center',
+  },
+  nowServingName: {
+    fontSize: wp(4.2),
+    fontWeight: '600',
+    color: COLORS.text,
+    textAlign: 'center',
+    marginTop: 2,
+  },
+  nowServingReason: {
+    fontSize: wp(3),
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    marginTop: 2,
+  },
+  nowServingMeta: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 6,
+  },
+  nowServingMetaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  nowServingMetaDivider: {
+    width: 1,
+    height: 18,
+    backgroundColor: COLORS.border,
+  },
+  nowServingMetaText: {
+    fontSize: wp(2.6),
+    color: COLORS.textSecondary,
+  },
+  nowServingEmpty: {
+    fontSize: wp(3.2),
+    color: COLORS.textLight,
+    textAlign: 'center',
+    paddingVertical: 6,
+  },
+
+  // ── Call Button ──────────────────────────────────────────────
+  callButton: {
+    marginTop: 14,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  callButtonDisabled: {
+    opacity: 0.5,
+  },
+  callButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    gap: 10,
     position: 'relative',
   },
-  callButtonText: { color: COLORS.white, fontSize: wp(4.2), fontWeight: '700', letterSpacing: 0.5 },
+  callButtonText: {
+    color: COLORS.white,
+    fontSize: wp(3.8),
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
   callPulseContainer: {
     position: 'absolute',
     left: 0,
@@ -905,147 +1107,330 @@ const styles = StyleSheet.create({
   callPulse: {
     width: '100%',
     height: '100%',
-    borderRadius: wp(3),
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.06)',
   },
 
-  // ── SECTION 4: Upcoming Queue ──────────────────────────────────
-  queueSection: { paddingHorizontal: wp(4), marginTop: hp(2) },
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: hp(0.8) },
-  sectionTitle: { fontSize: wp(4), fontWeight: '700', color: COLORS.text },
-  sectionLink: { fontSize: wp(2.8), fontWeight: '600', color: COLORS.primary },
+  // ── Section ──────────────────────────────────────────────────
+  section: {
+    paddingHorizontal: 16,
+    marginTop: 18,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  sectionTitle: {
+    fontSize: wp(4),
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  sectionLink: {
+    fontSize: wp(2.8),
+    fontWeight: '600',
+    color: COLORS.primary,
+  },
+
+  // ── Queue Item ──────────────────────────────────────────────
   queueItem: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.white,
-    padding: wp(2.5),
-    borderRadius: wp(2.5),
-    marginBottom: hp(0.6),
+    padding: 10,
+    borderRadius: 12,
+    marginBottom: 6,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
-  queueTokenBadge: { width: wp(9), height: wp(9), borderRadius: wp(2.5), backgroundColor: COLORS.backgroundSecondary, justifyContent: 'center', alignItems: 'center' },
-  queueToken: { fontSize: wp(3), fontWeight: '700', color: COLORS.text },
-  queueInfo: { flex: 1, marginLeft: wp(2.5) },
-  queueName: { fontSize: wp(3.2), fontWeight: '600', color: COLORS.text },
-  queueReason: { fontSize: wp(2.6), color: COLORS.textSecondary, marginTop: hp(0.1) },
-  queueRight: { flexDirection: 'row', alignItems: 'center', gap: wp(2) },
-  queueWait: { fontSize: wp(2.8), color: COLORS.textSecondary },
-  emptyQueue: { backgroundColor: COLORS.white, padding: wp(3), borderRadius: wp(2.5), borderWidth: 1, borderColor: COLORS.border, alignItems: 'center', gap: hp(0.5) },
-  emptyQueueText: { fontSize: wp(3), color: COLORS.textLight },
+  queueTokenBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: COLORS.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  queueToken: {
+    fontSize: wp(2.8),
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  queueInfo: {
+    flex: 1,
+    marginLeft: 10,
+  },
+  queueName: {
+    fontSize: wp(3),
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  queueReason: {
+    fontSize: wp(2.4),
+    color: COLORS.textSecondary,
+    marginTop: 1,
+  },
+  queueWait: {
+    fontSize: wp(2.6),
+    color: COLORS.textSecondary,
+  },
+  emptyQueue: {
+    backgroundColor: COLORS.white,
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    alignItems: 'center',
+    gap: 4,
+  },
+  emptyQueueText: {
+    fontSize: wp(2.8),
+    color: COLORS.textLight,
+  },
 
-  // ── SECTION 5: Schedule (Duty Info) ─────────────────────────────
-  scheduleSection: { paddingHorizontal: wp(4), marginTop: hp(2) },
-  scheduleCard: { backgroundColor: COLORS.white, borderRadius: wp(3), padding: wp(3.5), borderWidth: 1, borderColor: COLORS.border },
-  scheduleRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: hp(0.5) },
-  scheduleIconWrap: { width: wp(9), height: wp(9), borderRadius: wp(2.5), backgroundColor: COLORS.primary + '15', justifyContent: 'center', alignItems: 'center' },
-  scheduleInfo: { marginLeft: wp(2.5) },
-  scheduleLabel: { fontSize: wp(2.4), color: COLORS.textLight, fontWeight: '500' },
-  scheduleValue: { fontSize: wp(3.2), color: COLORS.text, fontWeight: '600' },
-  scheduleDivider: { height: 1, backgroundColor: COLORS.border, marginVertical: hp(0.5) },
-  scheduleStatusRow: { marginTop: hp(0.5), alignItems: 'center' },
-  scheduleStatusBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: wp(3), paddingVertical: hp(0.5), borderRadius: wp(3), gap: wp(1.5) },
-  scheduleStatusDot: { width: wp(2), height: wp(2), borderRadius: wp(1) },
-  scheduleStatusText: { fontSize: wp(2.8), fontWeight: '600' },
+  // ── Schedule ─────────────────────────────────────────────────
+  scheduleCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  scheduleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
+  scheduleIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: COLORS.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  scheduleInfo: {
+    marginLeft: 10,
+  },
+  scheduleLabel: {
+    fontSize: wp(2.2),
+    color: COLORS.textLight,
+    fontWeight: '500',
+  },
+  scheduleValue: {
+    fontSize: wp(3),
+    color: COLORS.text,
+    fontWeight: '600',
+  },
+  scheduleDivider: {
+    height: 1,
+    backgroundColor: COLORS.border,
+    marginVertical: 4,
+  },
+  scheduleStatusRow: {
+    marginTop: 6,
+    alignItems: 'center',
+  },
+  scheduleStatusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 6,
+  },
+  scheduleStatusDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+  },
+  scheduleStatusText: {
+    fontSize: wp(2.6),
+    fontWeight: '600',
+  },
 
-  // ── SECTION 6: Admin Notifications ──────────────────────────────
-  notificationSection: { paddingHorizontal: wp(4), marginTop: hp(2) },
+  // ── Notifications ────────────────────────────────────────────
   notificationCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: COLORS.white,
-    padding: wp(2.5),
-    borderRadius: wp(2.5),
-    marginBottom: hp(0.6),
+    padding: 10,
+    borderRadius: 12,
+    marginBottom: 6,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
-  notificationCardHigh: { 
-    borderLeftWidth: 4, 
+  notificationCardHigh: {
+    borderLeftWidth: 3,
     borderLeftColor: COLORS.danger,
   },
-  notificationLeft: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    flex: 1, 
-    gap: wp(2) 
+  notificationLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 8,
   },
-  notificationIcon: { 
-    width: wp(8), 
-    height: wp(8), 
-    borderRadius: wp(2.5), 
-    justifyContent: 'center', 
-    alignItems: 'center' 
+  notificationIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  notificationInfo: { 
-    flex: 1 
+  notificationInfo: {
+    flex: 1,
   },
-  notificationTitle: { 
-    fontSize: wp(3), 
-    fontWeight: '600', 
-    color: COLORS.text 
+  notificationTitle: {
+    fontSize: wp(2.8),
+    fontWeight: '600',
+    color: COLORS.text,
   },
-  notificationBody: { 
-    fontSize: wp(2.6), 
-    color: COLORS.textSecondary, 
-    marginTop: hp(0.1) 
+  notificationBody: {
+    fontSize: wp(2.2),
+    color: COLORS.textSecondary,
+    marginTop: 1,
   },
-  notificationRight: { 
-    alignItems: 'flex-end', 
-    gap: hp(0.2) 
+  notificationRight: {
+    alignItems: 'flex-end',
+    gap: 2,
   },
-  notificationTime: { 
-    fontSize: wp(2.2), 
-    color: COLORS.textLight 
+  notificationTime: {
+    fontSize: wp(2),
+    color: COLORS.textLight,
   },
-  notificationBadge: { 
-    paddingHorizontal: wp(1.5), 
-    paddingVertical: hp(0.1), 
-    borderRadius: wp(1.5) 
+  notificationBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
   },
-  notificationBadgeText: { 
-    fontSize: wp(1.8), 
-    color: COLORS.white, 
-    fontWeight: '600' 
+  notificationBadgeText: {
+    fontSize: wp(1.6),
+    color: COLORS.white,
+    fontWeight: '600',
   },
-  emptyNotifications: { 
-    backgroundColor: COLORS.white, 
-    padding: wp(3), 
-    borderRadius: wp(2.5), 
-    borderWidth: 1, 
-    borderColor: COLORS.border, 
-    alignItems: 'center', 
-    gap: hp(0.5) 
+  emptyNotifications: {
+    backgroundColor: COLORS.white,
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    alignItems: 'center',
+    gap: 4,
   },
-  emptyNotificationsText: { 
-    fontSize: wp(3), 
-    color: COLORS.textLight 
+  emptyNotificationsText: {
+    fontSize: wp(2.8),
+    color: COLORS.textLight,
   },
 
-  // ── Footer ────────────────────────────────────────────────────────
-  footer: { alignItems: 'center', marginTop: hp(3), paddingTop: hp(1.5), paddingBottom: hp(1), borderTopWidth: 1, borderTopColor: COLORS.border, marginHorizontal: wp(4) },
-  footerRow: { flexDirection: 'row', alignItems: 'center', gap: wp(2) },
-  footerText: { fontSize: wp(2.6), color: COLORS.textSecondary },
-  footerDot: { width: wp(1), height: wp(1), borderRadius: wp(0.5), backgroundColor: COLORS.border },
-  footerStatusDot: { width: wp(1.8), height: wp(1.8), borderRadius: wp(0.9) },
-  footerVersion: { fontSize: wp(2.2), color: COLORS.textLight, marginTop: hp(0.2) },
+  // ── Footer ────────────────────────────────────────────────────
+  footer: {
+    alignItems: 'center',
+    paddingVertical: 16,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+    marginHorizontal: 16,
+    marginTop: 18,
+  },
+  footerText: {
+    fontSize: wp(2.8),
+    fontWeight: '600',
+    color: COLORS.primary,
+  },
+  footerSub: {
+    fontSize: wp(2.2),
+    color: COLORS.textLight,
+    marginTop: 2,
+  },
 
-  // ── Search Modal ──────────────────────────────────────────────────
-  searchOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'flex-start' },
-  searchModal: { backgroundColor: COLORS.white, borderBottomLeftRadius: wp(5), borderBottomRightRadius: wp(5), paddingHorizontal: wp(4), paddingTop: Platform.OS === 'ios' ? hp(5) : hp(2.5), paddingBottom: hp(2), maxHeight: height * 0.82 },
-  searchInputRow: { flexDirection: 'row', alignItems: 'center', gap: wp(2.5), marginBottom: hp(1) },
-  searchInputWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#F5F6FA', borderRadius: wp(2.5), paddingHorizontal: wp(2.5), gap: wp(1.5), borderWidth: 1, borderColor: '#EEF2F7' },
-  searchInput: { flex: 1, color: COLORS.text, fontSize: wp(3.2), paddingVertical: Platform.OS === 'ios' ? hp(0.7) : hp(0.4) },
-  searchCancel: { color: COLORS.primary, fontSize: wp(3.2), fontWeight: '600' },
-  searchResultsList: { maxHeight: height * 0.58 },
-  searchResultItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: hp(0.8), borderBottomWidth: 0.5, borderBottomColor: '#EEF2F7', gap: wp(3) },
-  searchResultIcon: { width: wp(9), height: wp(9), borderRadius: wp(2.25), justifyContent: 'center', alignItems: 'center' },
-  searchResultContent: { flex: 1 },
-  searchResultName: { color: COLORS.text, fontSize: wp(3.2), fontWeight: '600' },
-  searchResultSub: { color: COLORS.textSecondary, fontSize: wp(2.4) },
-  searchEmpty: { alignItems: 'center', paddingVertical: hp(4), gap: hp(0.5) },
-  searchEmptyText: { color: COLORS.textSecondary, fontSize: wp(3.5), fontWeight: '600' },
+  // ── Search Modal ──────────────────────────────────────────────
+  searchOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.50)',
+    justifyContent: 'flex-start',
+  },
+  searchModal: {
+    backgroundColor: COLORS.white,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === 'ios' ? 50 : 30,
+    paddingBottom: 14,
+    maxHeight: height * 0.82,
+  },
+  searchInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 8,
+  },
+  searchInputWrap: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.background,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  searchInput: {
+    flex: 1,
+    color: COLORS.text,
+    fontSize: wp(3),
+    paddingVertical: Platform.OS === 'ios' ? 8 : 5,
+  },
+  searchCancel: {
+    color: COLORS.primary,
+    fontSize: wp(3),
+    fontWeight: '600',
+  },
+  searchResultsList: {
+    maxHeight: height * 0.58,
+  },
+  searchResultItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 0.5,
+    borderBottomColor: COLORS.border,
+    gap: 10,
+  },
+  searchResultIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  searchResultContent: {
+    flex: 1,
+  },
+  searchResultName: {
+    color: COLORS.text,
+    fontSize: wp(3),
+    fontWeight: '600',
+  },
+  searchResultSub: {
+    color: COLORS.textSecondary,
+    fontSize: wp(2.2),
+  },
+  searchEmpty: {
+    alignItems: 'center',
+    paddingVertical: 30,
+    gap: 4,
+  },
+  searchEmptyText: {
+    color: COLORS.textSecondary,
+    fontSize: wp(3.2),
+    fontWeight: '500',
+  },
 });
 
 export default DoctorPortalScreen;

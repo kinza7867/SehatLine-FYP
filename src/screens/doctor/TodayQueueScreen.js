@@ -17,7 +17,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { COLORS, SHADOWS } from '../../theme';
+import { COLORS } from '../../theme';
 
 const { width, height } = Dimensions.get('window');
 const wp = (p) => (width * p) / 100;
@@ -54,27 +54,22 @@ const TodayQueueScreen = ({ navigation }) => {
 
   const loadData = async () => {
     try {
-      // ── Load Appointments ──────────────────────────────────────────
       const appointmentsData = await AsyncStorage.getItem(APPOINTMENTS_KEY);
       let allAppointments = [];
       if (appointmentsData) {
         allAppointments = JSON.parse(appointmentsData);
       }
 
-      // ── Get Today's Date (Tuesday) ─────────────────────────────────
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      
       const todayStr = today.toDateString();
 
-      // ── Filter Today's Appointments ──────────────────────────────
       const todayApps = allAppointments.filter(app => {
         const appDate = new Date(app.date || app.createdAt || app.appointmentDate);
         appDate.setHours(0, 0, 0, 0);
         return appDate.toDateString() === todayStr;
       });
 
-      // ── Sort by time (morning to evening) ─────────────────────────
       const sortedTodayApps = todayApps.sort((a, b) => {
         const timeA = a.time || a.slot || '09:00';
         const timeB = b.time || b.slot || '09:00';
@@ -83,7 +78,6 @@ const TodayQueueScreen = ({ navigation }) => {
 
       setTodayAppointments(sortedTodayApps);
 
-      // ── Load Queue ─────────────────────────────────────────────────
       const queueData = await AsyncStorage.getItem(QUEUE_KEY);
       let queueList = [];
       
@@ -91,183 +85,42 @@ const TodayQueueScreen = ({ navigation }) => {
         queueList = JSON.parse(queueData);
       }
 
-      // ── Filter Queue for Today ─────────────────────────────────────
       const todayQueue = queueList.filter(item => {
         const itemDate = new Date(item.date || item.createdAt || Date.now());
         itemDate.setHours(0, 0, 0, 0);
         return itemDate.toDateString() === todayStr;
       });
 
-      // ── Add mock patients if queue is empty ──────────────────────
       if (todayQueue.length === 0 && todayApps.length === 0) {
-        // Tuesday mock data (2 PM slot)
         const mockTuesdayQueue = [
-          { 
-            id: '1', 
-            name: 'Muhammad Usman', 
-            age: 45, 
-            token: 3, 
-            priority: 'Normal', 
-            status: 'Waiting', 
-            reason: 'Chest Pain', 
-            time: '09:30 AM',
-            date: today.toISOString(),
-            phone: '0333-1234567'
-          },
-          { 
-            id: '2', 
-            name: 'Saima Ahmed', 
-            age: 32, 
-            token: 2, 
-            priority: 'Urgent', 
-            status: 'Waiting', 
-            reason: 'Palpitations', 
-            time: '09:15 AM',
-            date: today.toISOString(),
-            phone: '0333-7654321'
-          },
-          { 
-            id: '3', 
-            name: 'Ali Raza', 
-            age: 28, 
-            token: 1, 
-            priority: 'Emergency', 
-            status: 'In Consultation', 
-            reason: 'Breathing Issue', 
-            time: '09:00 AM',
-            date: today.toISOString(),
-            phone: '0333-9876543'
-          },
-          { 
-            id: '4', 
-            name: 'Fatima Noor', 
-            age: 55, 
-            token: 4, 
-            priority: 'Normal', 
-            status: 'Waiting', 
-            reason: 'Follow Up', 
-            time: '09:45 AM',
-            date: today.toISOString(),
-            phone: '0333-4567890'
-          },
-          { 
-            id: '5', 
-            name: 'Usman Chaudhry', 
-            age: 38, 
-            token: 5, 
-            priority: 'Urgent', 
-            status: 'Waiting', 
-            reason: 'Diabetes Checkup', 
-            time: '10:00 AM',
-            date: today.toISOString(),
-            phone: '0333-7890123'
-          },
-          { 
-            id: '6', 
-            name: 'Ayesha Khan', 
-            age: 29, 
-            token: 6, 
-            priority: 'Normal', 
-            status: 'Waiting', 
-            reason: 'Palpitations', 
-            time: '10:30 AM',
-            date: today.toISOString(),
-            phone: '0333-2345678'
-          },
-          { 
-            id: '7', 
-            name: 'Muhammad Bilal', 
-            age: 52, 
-            token: 7, 
-            priority: 'Normal', 
-            status: 'Waiting', 
-            reason: 'Hypertension', 
-            time: '11:00 AM',
-            date: today.toISOString(),
-            phone: '0333-3456789'
-          },
-          { 
-            id: '8', 
-            name: 'Zainab Ali', 
-            age: 41, 
-            token: 8, 
-            priority: 'Urgent', 
-            status: 'Waiting', 
-            reason: 'Chest Discomfort', 
-            time: '11:30 AM',
-            date: today.toISOString(),
-            phone: '0333-4567890'
-          },
-          { 
-            id: '9', 
-            name: 'Hamza Ahmed', 
-            age: 35, 
-            token: 9, 
-            priority: 'Normal', 
-            status: 'Waiting', 
-            reason: 'Routine Checkup', 
-            time: '12:00 PM',
-            date: today.toISOString(),
-            phone: '0333-5678901'
-          },
-          { 
-            id: '10', 
-            name: 'Sadia Malik', 
-            age: 48, 
-            token: 10, 
-            priority: 'Normal', 
-            status: 'Waiting', 
-            reason: 'High Cholesterol', 
-            time: '12:30 PM',
-            date: today.toISOString(),
-            phone: '0333-6789012'
-          },
-          { 
-            id: '11', 
-            name: 'Rana Shahid', 
-            age: 62, 
-            token: 11, 
-            priority: 'Urgent', 
-            status: 'Waiting', 
-            reason: 'Heart Failure Follow-up', 
-            time: '01:00 PM',
-            date: today.toISOString(),
-            phone: '0333-7890123'
-          },
-          { 
-            id: '12', 
-            name: 'Nadia Tariq', 
-            age: 39, 
-            token: 12, 
-            priority: 'Normal', 
-            status: 'Waiting', 
-            reason: 'Palpitations', 
-            time: '01:30 PM',
-            date: today.toISOString(),
-            phone: '0333-8901234'
-          },
+          { id: '1', name: 'Muhammad Usman', age: 45, token: 3, status: 'Waiting', reason: 'Chest Pain', time: '09:30 AM', date: today.toISOString(), phone: '0333-1234567' },
+          { id: '2', name: 'Saima Ahmed', age: 32, token: 2, status: 'Waiting', reason: 'Palpitations', time: '09:15 AM', date: today.toISOString(), phone: '0333-7654321' },
+          { id: '3', name: 'Ali Raza', age: 28, token: 1, status: 'In Consultation', reason: 'Breathing Issue', time: '09:00 AM', date: today.toISOString(), phone: '0333-9876543' },
+          { id: '4', name: 'Fatima Noor', age: 55, token: 4, status: 'Waiting', reason: 'Follow Up', time: '09:45 AM', date: today.toISOString(), phone: '0333-4567890' },
+          { id: '5', name: 'Usman Chaudhry', age: 38, token: 5, status: 'Waiting', reason: 'Diabetes Checkup', time: '10:00 AM', date: today.toISOString(), phone: '0333-7890123' },
+          { id: '6', name: 'Ayesha Khan', age: 29, token: 6, status: 'Waiting', reason: 'Palpitations', time: '10:30 AM', date: today.toISOString(), phone: '0333-2345678' },
+          { id: '7', name: 'Muhammad Bilal', age: 52, token: 7, status: 'Waiting', reason: 'Hypertension', time: '11:00 AM', date: today.toISOString(), phone: '0333-3456789' },
+          { id: '8', name: 'Zainab Ali', age: 41, token: 8, status: 'Waiting', reason: 'Chest Discomfort', time: '11:30 AM', date: today.toISOString(), phone: '0333-4567890' },
+          { id: '9', name: 'Hamza Ahmed', age: 35, token: 9, status: 'Waiting', reason: 'Routine Checkup', time: '12:00 PM', date: today.toISOString(), phone: '0333-5678901' },
+          { id: '10', name: 'Sadia Malik', age: 48, token: 10, status: 'Waiting', reason: 'High Cholesterol', time: '12:30 PM', date: today.toISOString(), phone: '0333-6789012' },
+          { id: '11', name: 'Rana Shahid', age: 62, token: 11, status: 'Waiting', reason: 'Heart Failure Follow-up', time: '01:00 PM', date: today.toISOString(), phone: '0333-7890123' },
+          { id: '12', name: 'Nadia Tariq', age: 39, token: 12, status: 'Waiting', reason: 'Palpitations', time: '01:30 PM', date: today.toISOString(), phone: '0333-8901234' },
         ];
         
-        // Filter to keep only patients up to 2 PM
         const filteredMockQueue = mockTuesdayQueue.filter(item => {
           const timeStr = item.time;
           const hour = parseInt(timeStr.split(':')[0]);
           const minute = parseInt(timeStr.split(':')[1].split(' ')[0]);
           const isPM = timeStr.includes('PM');
-          
-          // Convert to 24-hour format
           let hour24 = hour;
           if (isPM && hour !== 12) hour24 = hour + 12;
           if (!isPM && hour === 12) hour24 = 0;
-          
-          // Keep only appointments up to 2 PM (14:00)
           return hour24 < 14 || (hour24 === 14 && minute === 0);
         });
 
         setQueue(filteredMockQueue);
         await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(filteredMockQueue));
         
-        // Update stats
         const waiting = filteredMockQueue.filter(q => q.status === 'Waiting' || q.status === 'In Consultation').length;
         const completed = filteredMockQueue.filter(q => q.status === 'Completed').length;
         setStats({
@@ -279,10 +132,8 @@ const TodayQueueScreen = ({ navigation }) => {
         return;
       }
 
-      // ── Use actual queue data ──────────────────────────────────────
       setQueue(todayQueue);
 
-      // ── Load completed patients ────────────────────────────────────
       const completedData = await AsyncStorage.getItem(COMPLETED_PATIENTS_KEY);
       const completedList = completedData ? JSON.parse(completedData) : [];
       
@@ -309,19 +160,11 @@ const TodayQueueScreen = ({ navigation }) => {
     setRefreshing(false);
   };
 
-  const getPriorityColor = (priority) => {
-    switch(priority) {
-      case 'Emergency': return COLORS.danger || '#F44336';
-      case 'Urgent': return COLORS.warning || '#FF9800';
-      default: return COLORS.success || '#4CAF50';
-    }
-  };
-
   const getStatusColor = (status) => {
     switch(status) {
-      case 'In Consultation': return '#2196F3';
-      case 'Completed': return COLORS.success || '#4CAF50';
-      default: return COLORS.warning || '#FF9800';
+      case 'In Consultation': return COLORS.primary;
+      case 'Completed': return COLORS.success;
+      default: return COLORS.warning;
     }
   };
 
@@ -330,6 +173,14 @@ const TodayQueueScreen = ({ navigation }) => {
       case 'In Consultation': return 'time-outline';
       case 'Completed': return 'checkmark-circle-outline';
       default: return 'hourglass-outline';
+    }
+  };
+
+  const getStatusLabel = (status) => {
+    switch(status) {
+      case 'In Consultation': return 'In Consult';
+      case 'Completed': return 'Done';
+      default: return 'Waiting';
     }
   };
 
@@ -361,55 +212,60 @@ const TodayQueueScreen = ({ navigation }) => {
       ? queue.filter(q => q.status === 'Completed')
       : queue.filter(q => q.status === filter || (filter === 'Waiting' && q.status === 'In Consultation'));
 
-  const QueueItem = ({ item }) => (
-    <TouchableOpacity
-      style={[
-        styles.queueItem, 
-        SHADOWS.small,
-        item.priority === 'Emergency' && styles.emergencyItem,
-        item.status === 'Completed' && styles.completedItem
-      ]}
-      onPress={() => handlePatientPress(item)}
-      activeOpacity={0.7}
-    >
-      <View style={styles.queueItemLeft}>
-        <View style={[styles.tokenBadge, { backgroundColor: getPriorityColor(item.priority) }]}>
-          <Text style={styles.tokenText}>{item.token}</Text>
-        </View>
-        <View style={styles.queueItemInfo}>
-          <Text style={[styles.queueItemName, item.status === 'Completed' && styles.completedText]}>
-            {item.name}
-          </Text>
-          <Text style={styles.queueItemDetail}>
-            {item.age || 'N/A'} yrs • {item.priority}
-          </Text>
-          {item.reason && (
-            <Text style={styles.queueItemReason}>
-              <Ionicons name="medical-outline" size={wp(2.5)} color={COLORS.textLight} /> {item.reason}
+  const QueueItem = ({ item }) => {
+    const statusColor = getStatusColor(item.status);
+    const isCompleted = item.status === 'Completed';
+    const isInConsult = item.status === 'In Consultation';
+
+    return (
+      <TouchableOpacity
+        style={[
+          styles.queueItem,
+          isCompleted && styles.completedItem,
+          isInConsult && styles.inConsultItem,
+        ]}
+        onPress={() => handlePatientPress(item)}
+        activeOpacity={0.7}
+      >
+        <View style={styles.queueItemLeft}>
+          <View style={styles.tokenBadge}>
+            <Text style={styles.tokenText}>{item.token}</Text>
+          </View>
+          <View style={styles.queueItemInfo}>
+            <Text style={[styles.queueItemName, isCompleted && styles.completedText]}>
+              {item.name}
             </Text>
-          )}
-          {item.phone && (
-            <Text style={styles.queueItemPhone}>
-              <Ionicons name="call-outline" size={wp(2)} color={COLORS.textLight} /> {item.phone}
+            <Text style={styles.queueItemDetail}>
+              {item.age || 'N/A'} yrs • Token #{item.token}
             </Text>
-          )}
+            {item.reason && (
+              <Text style={styles.queueItemReason}>
+                <Ionicons name="medical-outline" size={wp(2.8)} color={COLORS.textLight} /> {item.reason}
+              </Text>
+            )}
+            {item.phone && (
+              <Text style={styles.queueItemPhone}>
+                <Ionicons name="call-outline" size={wp(2.4)} color={COLORS.textLight} /> {item.phone}
+              </Text>
+            )}
+          </View>
         </View>
-      </View>
-      <View style={styles.queueItemRight}>
-        <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) + '20' }]}>
-          <Ionicons name={getStatusIcon(item.status)} size={wp(2.5)} color={getStatusColor(item.status)} />
-          <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>
-            {item.status === 'In Consultation' ? 'In Consult' : item.status}
-          </Text>
+        <View style={styles.queueItemRight}>
+          <View style={[styles.statusBadge, { backgroundColor: statusColor + '15' }]}>
+            <Ionicons name={getStatusIcon(item.status)} size={wp(2.8)} color={statusColor} />
+            <Text style={[styles.statusText, { color: statusColor }]}>
+              {getStatusLabel(item.status)}
+            </Text>
+          </View>
+          <Text style={styles.queueItemTime}>{item.time || '--:--'}</Text>
         </View>
-        <Text style={styles.queueItemTime}>{item.time || '--:--'}</Text>
-      </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
 
       <SafeAreaView style={styles.safeArea}>
         {/* ─── HEADER ───────────────────────────────────────────────────── */}
@@ -419,11 +275,13 @@ const TodayQueueScreen = ({ navigation }) => {
           </TouchableOpacity>
 
           <View style={styles.headerCenter}>
-            <Image 
-              source={require('../../../assets/logo.png')} 
-              style={styles.headerLogo} 
-              resizeMode="contain" 
-            />
+            <View style={styles.logoCircle}>
+              <Image 
+                source={require('../../../assets/logo.png')} 
+                style={styles.headerLogo} 
+                resizeMode="contain" 
+              />
+            </View>
             <View>
               <Text style={styles.headerTitle}>Today's Queue</Text>
               <Text style={styles.headerDate}>{currentDate}</Text>
@@ -435,16 +293,8 @@ const TodayQueueScreen = ({ navigation }) => {
           </TouchableOpacity>
         </View>
 
-        {/* ─── INFO BANNER ────────────────────────────────────────────── */}
-        <View style={styles.infoBanner}>
-          <Ionicons name="time-outline" size={wp(4)} color={COLORS.primary} />
-          <Text style={styles.infoText}>
-            Tuesday Clinic • Patients up to 2:00 PM
-          </Text>
-        </View>
-
         {/* ─── STATS ───────────────────────────────────────────────────── */}
-        <View style={[styles.statsContainer, SHADOWS.small]}>
+        <View style={styles.statsContainer}>
           <View style={styles.statItem}>
             <Text style={styles.statNumber}>{stats.total}</Text>
             <Text style={styles.statLabel}>Total</Text>
@@ -464,17 +314,24 @@ const TodayQueueScreen = ({ navigation }) => {
         {/* ─── FILTERS ─────────────────────────────────────────────────── */}
         <View style={styles.filterContainer}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
-            {['All', 'Waiting', 'In Consultation', 'Completed'].map((status) => (
-              <TouchableOpacity
-                key={status}
-                style={[styles.filterChip, filter === status && styles.filterChipActive]}
-                onPress={() => setFilter(status)}
-              >
-                <Text style={[styles.filterText, filter === status && styles.filterTextActive]}>
-                  {status === 'In Consultation' ? 'In Consult' : status}
-                </Text>
-              </TouchableOpacity>
-            ))}
+            {['All', 'Waiting', 'In Consultation', 'Completed'].map((status) => {
+              const isActive = filter === status;
+              const label = status === 'In Consultation' ? 'In Consult' : status;
+              return (
+                <TouchableOpacity
+                  key={status}
+                  style={[styles.filterChip, isActive && styles.filterChipActive]}
+                  onPress={() => setFilter(status)}
+                >
+                  <Text style={[styles.filterText, isActive && styles.filterTextActive]}>
+                    {label}
+                  </Text>
+                  {isActive && (
+                    <View style={styles.filterActiveDot} />
+                  )}
+                </TouchableOpacity>
+              );
+            })}
           </ScrollView>
         </View>
 
@@ -483,7 +340,7 @@ const TodayQueueScreen = ({ navigation }) => {
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} tintColor={COLORS.primary} />
           }
           showsVerticalScrollIndicator={false}
         >
@@ -491,17 +348,19 @@ const TodayQueueScreen = ({ navigation }) => {
             filteredQueue.map((item) => <QueueItem key={item.id} item={item} />)
           ) : (
             <View style={styles.emptyContainer}>
-              <Ionicons name="people-outline" size={wp(15)} color={COLORS.textLight} />
+              <View style={styles.emptyIconWrap}>
+                <Ionicons name="people-outline" size={wp(15)} color={COLORS.textLight} />
+              </View>
               <Text style={styles.emptyText}>No patients in queue</Text>
               <Text style={styles.emptySubText}>Queue is empty for this filter</Text>
             </View>
           )}
+          
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>SehatLine v2.0.1</Text>
+            <Text style={styles.footerSub}>Today's Queue • {currentDate}</Text>
+          </View>
         </ScrollView>
-
-        {/* ─── FOOTER ────────────────────────────────────────────────── */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>SehatLine v2.0.1 • Tuesday Clinic</Text>
-        </View>
       </SafeAreaView>
     </View>
   );
@@ -510,7 +369,7 @@ const TodayQueueScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: '#F8FAFC',
   },
   safeArea: {
     flex: 1,
@@ -522,14 +381,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: wp(4),
-    paddingVertical: hp(1.5),
+    paddingVertical: hp(1.2),
     backgroundColor: COLORS.white,
-    borderBottomWidth: 2,
-    borderBottomColor: COLORS.primary + '20',
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
   },
   menuBtn: {
-    width: wp(9),
-    height: wp(9),
+    width: wp(8),
+    height: wp(8),
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -540,39 +399,42 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: wp(2),
   },
+  logoCircle: {
+    width: wp(9),
+    height: wp(9),
+    borderRadius: wp(4.5),
+    borderWidth: 1.6,
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.white,
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
   headerLogo: {
-    width: wp(10),
-    height: wp(10),
+    width: wp(7),
+    height: wp(7),
     resizeMode: 'contain',
   },
   headerTitle: {
-    fontSize: wp(4.5),
+    fontSize: wp(4.2),
     fontWeight: '700',
     color: COLORS.text,
   },
   headerDate: {
     fontSize: wp(2.6),
-    color: COLORS.textSecondary,
-    fontWeight: '500',
+    color: COLORS.textLight,
+    fontWeight: '400',
+    marginTop: hp(0.05),
   },
-
-  // ── Info Banner ──────────────────────────────────────────────────
-  infoBanner: {
-    flexDirection: 'row',
+  refreshBtn: {
+    width: wp(8),
+    height: wp(8),
+    justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: COLORS.primary + '10',
-    marginHorizontal: wp(4),
-    marginTop: hp(1),
-    padding: wp(2.5),
     borderRadius: wp(2),
-    gap: wp(1.5),
     borderWidth: 1,
-    borderColor: COLORS.primary + '20',
-  },
-  infoText: {
-    fontSize: wp(2.8),
-    color: COLORS.primary,
-    fontWeight: '500',
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.background,
   },
 
   // ── Stats ────────────────────────────────────────────────────────
@@ -580,30 +442,35 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: COLORS.white,
     marginHorizontal: wp(4),
-    marginTop: hp(1),
-    borderRadius: wp(3.5),
+    marginTop: hp(1.5),
+    borderRadius: wp(3),
     borderWidth: 1,
     borderColor: COLORS.border,
     overflow: 'hidden',
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8 },
+      android: { elevation: 2 },
+    }),
   },
   statItem: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: hp(1),
+    paddingVertical: hp(1.2),
   },
   statNumber: {
-    fontSize: wp(5),
-    fontWeight: '700',
+    fontSize: wp(5.5),
+    fontWeight: '800',
     color: COLORS.text,
   },
   statLabel: {
     fontSize: wp(2.4),
-    color: COLORS.textSecondary,
+    color: COLORS.textLight,
     marginTop: hp(0.1),
+    fontWeight: '500',
   },
   statDivider: {
     width: 1,
-    height: hp(4),
+    height: hp(3.5),
     backgroundColor: COLORS.border,
     alignSelf: 'center',
   },
@@ -612,21 +479,28 @@ const styles = StyleSheet.create({
   filterContainer: {
     backgroundColor: COLORS.white,
     paddingVertical: hp(0.8),
+    marginTop: hp(1.2),
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
-    ...SHADOWS.small,
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4 },
+      android: { elevation: 1 },
+    }),
   },
   filterScroll: {
     paddingHorizontal: wp(4),
     gap: wp(2),
   },
   filterChip: {
-    paddingHorizontal: wp(4),
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: wp(3.5),
     paddingVertical: hp(0.5),
-    borderRadius: wp(5),
-    backgroundColor: COLORS.backgroundSecondary,
+    borderRadius: wp(4),
+    backgroundColor: '#F1F5F9',
     borderWidth: 1,
     borderColor: COLORS.border,
+    gap: wp(1),
   },
   filterChipActive: {
     backgroundColor: COLORS.primary,
@@ -639,6 +513,12 @@ const styles = StyleSheet.create({
   },
   filterTextActive: {
     color: COLORS.white,
+  },
+  filterActiveDot: {
+    width: wp(1.2),
+    height: wp(1.2),
+    borderRadius: wp(0.6),
+    backgroundColor: COLORS.white,
   },
 
   // ── Scroll ────────────────────────────────────────────────────────
@@ -656,19 +536,23 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: COLORS.white,
-    borderRadius: wp(3.5),
+    borderRadius: wp(3),
     padding: wp(3.5),
     marginBottom: hp(1),
     borderWidth: 1,
     borderColor: COLORS.border,
-  },
-  emergencyItem: {
-    borderLeftWidth: 4,
-    borderLeftColor: COLORS.danger,
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 6 },
+      android: { elevation: 2 },
+    }),
   },
   completedItem: {
-    opacity: 0.7,
-    backgroundColor: COLORS.backgroundSecondary,
+    opacity: 0.6,
+    backgroundColor: '#F8FAFC',
+  },
+  inConsultItem: {
+    borderLeftWidth: 3,
+    borderLeftColor: COLORS.primary,
   },
   queueItemLeft: {
     flexDirection: 'row',
@@ -676,23 +560,26 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   tokenBadge: {
-    width: wp(7),
-    height: wp(7),
-    borderRadius: wp(3.5),
+    width: wp(8),
+    height: wp(8),
+    borderRadius: wp(4),
+    backgroundColor: COLORS.primary + '15',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: wp(2.5),
+    borderWidth: 1,
+    borderColor: COLORS.primary + '30',
   },
   tokenText: {
-    fontSize: wp(3),
-    fontWeight: 'bold',
-    color: '#fff',
+    fontSize: wp(3.5),
+    fontWeight: '700',
+    color: COLORS.primary,
   },
   queueItemInfo: {
     flex: 1,
   },
   queueItemName: {
-    fontSize: wp(3.8),
+    fontSize: wp(4),
     fontWeight: '600',
     color: COLORS.text,
   },
@@ -706,12 +593,12 @@ const styles = StyleSheet.create({
     marginTop: hp(0.1),
   },
   queueItemReason: {
-    fontSize: wp(2.4),
+    fontSize: wp(2.6),
     color: COLORS.textLight,
     marginTop: hp(0.1),
   },
   queueItemPhone: {
-    fontSize: wp(2.2),
+    fontSize: wp(2.4),
     color: COLORS.textLight,
     marginTop: hp(0.05),
   },
@@ -722,50 +609,66 @@ const styles = StyleSheet.create({
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: wp(2),
-    paddingVertical: hp(0.15),
-    borderRadius: wp(2),
+    paddingHorizontal: wp(2.5),
+    paddingVertical: hp(0.2),
+    borderRadius: wp(2.5),
     gap: wp(0.8),
   },
   statusText: {
-    fontSize: wp(2.2),
+    fontSize: wp(2.4),
     fontWeight: '600',
   },
   queueItemTime: {
-    fontSize: wp(2.2),
+    fontSize: wp(2.4),
     color: COLORS.textLight,
+    fontWeight: '500',
   },
 
   // ── Empty State ──────────────────────────────────────────────────
   emptyContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: hp(8),
+    paddingVertical: hp(10),
+  },
+  emptyIconWrap: {
+    width: wp(20),
+    height: wp(20),
+    borderRadius: wp(10),
+    backgroundColor: '#F1F5F9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: hp(1.5),
   },
   emptyText: {
     fontSize: wp(4.5),
     fontWeight: '600',
     color: COLORS.text,
-    marginTop: hp(1),
+    marginTop: hp(0.5),
   },
   emptySubText: {
     fontSize: wp(3.2),
     color: COLORS.textLight,
-    marginTop: hp(0.3),
+    marginTop: hp(0.2),
   },
 
   // ── Footer ──────────────────────────────────────────────────────
   footer: {
     alignItems: 'center',
-    paddingTop: hp(1.5),
+    paddingTop: hp(2),
     paddingBottom: hp(1),
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
-    marginHorizontal: wp(4),
+    marginTop: hp(1),
   },
   footerText: {
-    fontSize: wp(2.6),
+    fontSize: wp(2.8),
+    fontWeight: '600',
+    color: COLORS.primary,
+  },
+  footerSub: {
+    fontSize: wp(2.4),
     color: COLORS.textLight,
+    marginTop: hp(0.1),
   },
 });
 

@@ -14,7 +14,6 @@ import {
   Alert,
   Modal,
   TextInput,
-  ActivityIndicator,
   FlatList,
   KeyboardAvoidingView,
   TouchableWithoutFeedback,
@@ -23,7 +22,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { COLORS, SHADOWS } from '../../theme';
+import { COLORS } from '../../theme';
 
 const { width, height } = Dimensions.get('window');
 const wp = (p) => (width * p) / 100;
@@ -33,188 +32,77 @@ const COMPLETED_PATIENTS_KEY = '@sehatline_completed_patients';
 const QUEUE_KEY = '@sehatline_queue';
 const CONSULTATION_HISTORY_KEY = '@sehatline_consultation_history';
 
-// ─── CARDIOLOGY DIAGNOSIS (A-Z) ──────────────────────────────────────
+// ─── CARDIOLOGY DIAGNOSIS ────────────────────────────────────────────
 const CARDIOLOGY_DIAGNOSIS = [
-  'Acute Coronary Syndrome',
-  'Aortic Regurgitation',
-  'Aortic Stenosis',
-  'Arrhythmia',
-  'Atrial Fibrillation',
-  'Atrial Flutter',
-  'Bradycardia',
-  'Cardiac Arrest',
-  'Cardiomyopathy',
-  'Congenital Heart Disease',
-  'Congestive Heart Failure',
-  'Coronary Artery Disease',
-  'Dilated Cardiomyopathy',
-  'Endocarditis',
-  'Heart Block',
-  'Heart Failure',
-  'Hypertension',
-  'Hypertrophic Cardiomyopathy',
-  'Ischemic Heart Disease',
-  'Mitral Regurgitation',
-  'Mitral Stenosis',
-  'Mitral Valve Prolapse',
-  'Myocardial Infarction (NSTEMI)',
-  'Myocardial Infarction (STEMI)',
-  'Myocarditis',
-  'Pericarditis',
-  'Peripheral Artery Disease',
-  'Pulmonary Embolism',
-  'Pulmonary Hypertension',
-  'Rheumatic Heart Disease',
-  'Supraventricular Tachycardia',
-  'Tachycardia',
-  'Valvular Heart Disease',
-  'Ventricular Fibrillation',
-  'Ventricular Tachycardia',
+  'Acute Coronary Syndrome', 'Aortic Regurgitation', 'Aortic Stenosis',
+  'Arrhythmia', 'Atrial Fibrillation', 'Atrial Flutter', 'Bradycardia',
+  'Cardiac Arrest', 'Cardiomyopathy', 'Congenital Heart Disease',
+  'Congestive Heart Failure', 'Coronary Artery Disease', 'Dilated Cardiomyopathy',
+  'Endocarditis', 'Heart Block', 'Heart Failure', 'Hypertension',
+  'Hypertrophic Cardiomyopathy', 'Ischemic Heart Disease', 'Mitral Regurgitation',
+  'Mitral Stenosis', 'Mitral Valve Prolapse', 'Myocardial Infarction (NSTEMI)',
+  'Myocardial Infarction (STEMI)', 'Myocarditis', 'Pericarditis',
+  'Peripheral Artery Disease', 'Pulmonary Embolism', 'Pulmonary Hypertension',
+  'Rheumatic Heart Disease', 'Supraventricular Tachycardia', 'Tachycardia',
+  'Valvular Heart Disease', 'Ventricular Fibrillation', 'Ventricular Tachycardia',
 ];
 
-// ─── CARDIOLOGY MEDICINES (A-Z) ──────────────────────────────────────
+// ─── CARDIOLOGY MEDICINES ────────────────────────────────────────────
 const CARDIOLOGY_MEDICINES = [
-  'Amiodarone 100mg',
-  'Amiodarone 200mg',
-  'Amlodipine 5mg',
-  'Amlodipine 10mg',
-  'Apixaban 2.5mg',
-  'Apixaban 5mg',
-  'Aspirin 75mg',
-  'Aspirin 150mg',
-  'Atenolol 25mg',
-  'Atenolol 50mg',
-  'Atenolol 100mg',
-  'Atorvastatin 10mg',
-  'Atorvastatin 20mg',
-  'Atorvastatin 40mg',
-  'Atorvastatin 80mg',
-  'Bisoprolol 2.5mg',
-  'Bisoprolol 5mg',
-  'Captopril 25mg',
-  'Captopril 50mg',
-  'Carvedilol 3.125mg',
-  'Carvedilol 6.25mg',
-  'Carvedilol 12.5mg',
-  'Carvedilol 25mg',
-  'Clopidogrel 75mg',
-  'Digoxin 0.125mg',
-  'Digoxin 0.25mg',
-  'Diltiazem 30mg',
-  'Diltiazem 60mg',
-  'Enalapril 5mg',
-  'Enalapril 10mg',
-  'Empagliflozin 10mg',
-  'Empagliflozin 25mg',
-  'Furosemide 20mg',
-  'Furosemide 40mg',
-  'Hydrochlorothiazide 12.5mg',
-  'Hydrochlorothiazide 25mg',
-  'Isosorbide Mononitrate 10mg',
-  'Isosorbide Mononitrate 20mg',
-  'Ivabradine 5mg',
-  'Ivabradine 7.5mg',
-  'Lisinopril 5mg',
-  'Lisinopril 10mg',
-  'Losartan 25mg',
-  'Losartan 50mg',
-  'Losartan 100mg',
-  'Metoprolol 25mg',
-  'Metoprolol 50mg',
-  'Metoprolol 100mg',
-  'Nitroglycerin 0.4mg (SL)',
-  'Ramipril 2.5mg',
-  'Ramipril 5mg',
-  'Ramipril 10mg',
-  'Rivaroxaban 15mg',
-  'Rivaroxaban 20mg',
-  'Rosuvastatin 10mg',
-  'Rosuvastatin 20mg',
-  'Sacubitril/Valsartan 49/51mg',
-  'Sacubitril/Valsartan 97/103mg',
-  'Spironolactone 25mg',
-  'Spironolactone 50mg',
-  'Telmisartan 40mg',
-  'Telmisartan 80mg',
-  'Ticagrelor 90mg',
-  'Valsartan 80mg',
-  'Valsartan 160mg',
-  'Warfarin 2mg',
-  'Warfarin 5mg',
+  'Amiodarone 100mg', 'Amiodarone 200mg', 'Amlodipine 5mg', 'Amlodipine 10mg',
+  'Apixaban 2.5mg', 'Apixaban 5mg', 'Aspirin 75mg', 'Aspirin 150mg',
+  'Atenolol 25mg', 'Atenolol 50mg', 'Atenolol 100mg', 'Atorvastatin 10mg',
+  'Atorvastatin 20mg', 'Atorvastatin 40mg', 'Atorvastatin 80mg',
+  'Bisoprolol 2.5mg', 'Bisoprolol 5mg', 'Captopril 25mg', 'Captopril 50mg',
+  'Carvedilol 3.125mg', 'Carvedilol 6.25mg', 'Carvedilol 12.5mg', 'Carvedilol 25mg',
+  'Clopidogrel 75mg', 'Digoxin 0.125mg', 'Digoxin 0.25mg', 'Diltiazem 30mg',
+  'Diltiazem 60mg', 'Enalapril 5mg', 'Enalapril 10mg', 'Empagliflozin 10mg',
+  'Empagliflozin 25mg', 'Furosemide 20mg', 'Furosemide 40mg',
+  'Hydrochlorothiazide 12.5mg', 'Hydrochlorothiazide 25mg',
+  'Isosorbide Mononitrate 10mg', 'Isosorbide Mononitrate 20mg',
+  'Ivabradine 5mg', 'Ivabradine 7.5mg', 'Lisinopril 5mg', 'Lisinopril 10mg',
+  'Losartan 25mg', 'Losartan 50mg', 'Losartan 100mg', 'Metoprolol 25mg',
+  'Metoprolol 50mg', 'Metoprolol 100mg', 'Nitroglycerin 0.4mg (SL)',
+  'Ramipril 2.5mg', 'Ramipril 5mg', 'Ramipril 10mg', 'Rivaroxaban 15mg',
+  'Rivaroxaban 20mg', 'Rosuvastatin 10mg', 'Rosuvastatin 20mg',
+  'Sacubitril/Valsartan 49/51mg', 'Sacubitril/Valsartan 97/103mg',
+  'Spironolactone 25mg', 'Spironolactone 50mg', 'Telmisartan 40mg',
+  'Telmisartan 80mg', 'Ticagrelor 90mg', 'Valsartan 80mg', 'Valsartan 160mg',
+  'Warfarin 2mg', 'Warfarin 5mg',
 ];
 
-// ─── CARDIOLOGY LAB TESTS (A-Z) ──────────────────────────────────────
+// ─── CARDIOLOGY LAB TESTS ────────────────────────────────────────────
 const CARDIOLOGY_LAB_TESTS = [
-  '2D Echocardiography',
-  'ABG (Arterial Blood Gas)',
-  'BNP (Brain Natriuretic Peptide)',
-  'CBC (Complete Blood Count)',
-  'CK-MB',
-  'CRP (C-Reactive Protein)',
-  'Cardiac MRI',
-  'Chest X-Ray',
-  'Coronary Angiography',
-  'CT Coronary Angiography',
-  'D-Dimer',
-  'ECG (12-Lead)',
-  'ESR',
-  'HbA1c',
-  'Holter Monitoring',
-  'LFT (Liver Function Test)',
-  'Lipid Profile',
-  'NT-proBNP',
-  'PT/INR',
-  'RFT (Renal Function Test)',
-  'Serum Creatinine',
-  'Serum Electrolytes',
-  'Stress Test (Treadmill)',
-  'Troponin I',
-  'Troponin T',
-  'Urine Complete Examination',
+  '2D Echocardiography', 'ABG (Arterial Blood Gas)',
+  'BNP (Brain Natriuretic Peptide)', 'CBC (Complete Blood Count)',
+  'CK-MB', 'CRP (C-Reactive Protein)', 'Cardiac MRI', 'Chest X-Ray',
+  'Coronary Angiography', 'CT Coronary Angiography', 'D-Dimer',
+  'ECG (12-Lead)', 'ESR', 'HbA1c', 'Holter Monitoring',
+  'LFT (Liver Function Test)', 'Lipid Profile', 'NT-proBNP',
+  'PT/INR', 'RFT (Renal Function Test)', 'Serum Creatinine',
+  'Serum Electrolytes', 'Stress Test (Treadmill)', 'Troponin I',
+  'Troponin T', 'Urine Complete Examination',
 ];
 
 // ─── ADVICE ──────────────────────────────────────────────────────────
 const PATIENT_ADVICE = [
-  'Avoid Heavy Exercise',
-  'Avoid Smoking',
-  'Continue Current Medicines',
-  'Follow Previous Advice',
-  'Follow-up after 1 Month',
-  'Follow-up after 2 Weeks',
-  'Low Salt Diet',
-  'Monitor BP Daily',
-  'Monitor Weight Daily',
-  'Review Reports',
-  'Stop Smoking',
+  'Avoid Heavy Exercise', 'Avoid Smoking', 'Continue Current Medicines',
+  'Follow Previous Advice', 'Follow-up after 1 Month', 'Follow-up after 2 Weeks',
+  'Low Salt Diet', 'Monitor BP Daily', 'Monitor Weight Daily',
+  'Review Reports', 'Stop Smoking',
 ];
 
 // ─── MEDICINE DURATIONS ──────────────────────────────────────────────
 const MEDICINE_DURATIONS = [
-  '1 Day',
-  '3 Days',
-  '5 Days',
-  '7 Days',
-  '10 Days',
-  '14 Days',
-  '21 Days',
-  '1 Month',
-  '3 Months',
-  '6 Months',
-  '1 Year',
-  'Lifelong',
+  '1 Day', '3 Days', '5 Days', '7 Days', '10 Days', '14 Days',
+  '21 Days', '1 Month', '3 Months', '6 Months', '1 Year', 'Lifelong',
 ];
 
 // ─── MEDICINE INSTRUCTIONS ──────────────────────────────────────────
 const MEDICINE_INSTRUCTIONS = [
-  'Take with food',
-  'Take on empty stomach',
-  'Take after breakfast',
-  'Take after dinner',
-  'Before breakfast',
-  'Before bedtime',
-  'As directed by doctor',
-  'Do not crush or chew',
-  'Take with plenty of water',
+  'Take with food', 'Take on empty stomach', 'Take after breakfast',
+  'Take after dinner', 'Before breakfast', 'Before bedtime',
+  'As directed by doctor', 'Do not crush or chew', 'Take with plenty of water',
 ];
 
 const CallNextPatientScreen = ({ navigation, route }) => {
@@ -226,6 +114,8 @@ const CallNextPatientScreen = ({ navigation, route }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [queueCount, setQueueCount] = useState(0);
   const [isLastPatient, setIsLastPatient] = useState(false);
+  const [patientHistory, setPatientHistory] = useState([]);
+  const [showHistory, setShowHistory] = useState(false);
   const scrollViewRef = useRef();
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -263,8 +153,12 @@ const CallNextPatientScreen = ({ navigation, route }) => {
   // ─── NOTES ──────────────────────────────────────────────────────
   const [notes, setNotes] = useState('');
 
+  // ─── REFERRAL TYPE ─────────────────────────────────────────────
+  const [referralType, setReferralType] = useState(null); // 'pharmacy' | 'lab' | null
+
   useEffect(() => {
     loadQueueData();
+    loadPatientHistory();
   }, []);
 
   const loadQueueData = async () => {
@@ -285,6 +179,24 @@ const CallNextPatientScreen = ({ navigation, route }) => {
       }
     } catch (error) {
       console.error('Error loading queue data:', error);
+    }
+  };
+
+  // ─── LOAD PATIENT HISTORY ──────────────────────────────────────────
+  const loadPatientHistory = async () => {
+    try {
+      if (!patient) return;
+      
+      const historyData = await AsyncStorage.getItem(CONSULTATION_HISTORY_KEY);
+      if (historyData) {
+        const allHistory = JSON.parse(historyData);
+        const patientHistoryData = allHistory
+          .filter(item => item.patientId === patient.id || item.patientName === patient.name)
+          .slice(0, 5);
+        setPatientHistory(patientHistoryData);
+      }
+    } catch (error) {
+      console.error('Error loading patient history:', error);
     }
   };
 
@@ -388,6 +300,45 @@ const CallNextPatientScreen = ({ navigation, route }) => {
     }
   };
 
+  // ─── QUICK ADD FROM HISTORY ────────────────────────────────────────
+  const quickAddFromHistory = (item) => {
+    if (item.diagnoses) {
+      const diagList = item.diagnoses.split(', ').filter(d => d && d !== 'None' && d !== 'N/A');
+      if (diagList.length > 0) {
+        setSelectedDiagnoses(prev => [...new Set([...prev, ...diagList])]);
+      }
+    }
+    
+    if (item.medicines && item.medicines !== 'None') {
+      const medLines = item.medicines.split('\n');
+      medLines.forEach(line => {
+        if (line.trim()) {
+          const medName = line.split(' x ')[0]?.trim();
+          if (medName && !selectedMedicines.find(m => m.name === medName)) {
+            setSelectedMedicines(prev => [...prev, {
+              id: Date.now().toString() + Math.random(),
+              name: medName,
+              duration: '7 Days',
+              instruction: 'As prescribed',
+            }]);
+          }
+        }
+      });
+    }
+    
+    if (item.labTests && item.labTests !== 'None') {
+      const testList = item.labTests.split(', ').filter(t => t && t !== 'None' && t !== 'N/A');
+      setSelectedLabTests(prev => [...new Set([...prev, ...testList])]);
+    }
+    
+    if (item.advice && item.advice !== 'None') {
+      const adviceList = item.advice.split(', ').filter(a => a && a !== 'None' && a !== 'N/A');
+      setSelectedAdvice(prev => [...new Set([...prev, ...adviceList])]);
+    }
+    
+    setShowHistory(false);
+  };
+
   // ─── COMPLETE CONSULTATION ──────────────────────────────────────────
   const completeConsultation = async (type) => {
     if (!patient) {
@@ -400,7 +351,6 @@ const CallNextPatientScreen = ({ navigation, route }) => {
       return;
     }
 
-    // Either medicines OR lab tests must be present
     if (selectedMedicines.length === 0 && selectedLabTests.length === 0) {
       Alert.alert('Required', 'Please prescribe at least one medicine or select a lab test.');
       return;
@@ -464,13 +414,30 @@ const CallNextPatientScreen = ({ navigation, route }) => {
 
       resetForm();
 
-      // Show beautiful notification
-      const isPharmacy = type === 'pharmacy';
-      const iconName = isPharmacy ? 'medkit' : 'flask';
-      const title = isPharmacy ? 'Sent to Pharmacy' : 'Referred to Lab';
-      const message = isPharmacy 
-        ? `${patient.name} sent to Pharmacy with ${selectedMedicines.length} medicines`
-        : `${patient.name} referred to Lab with ${selectedLabTests.length} tests`;
+      // Determine which referral to show
+      let isPharmacy = false;
+      let isLab = false;
+      let iconName = 'checkmark-circle';
+      let title = 'Consultation Completed';
+      let message = `${patient.name} has been successfully consulted.`;
+
+      if (type === 'pharmacy' || (type === 'complete' && selectedMedicines.length > 0)) {
+        isPharmacy = true;
+        iconName = 'medkit';
+        title = 'Sent to Pharmacy';
+        message = `${patient.name} sent to Pharmacy with ${selectedMedicines.length} medicine${selectedMedicines.length > 1 ? 's' : ''}`;
+      } else if (type === 'lab' || (type === 'complete' && selectedLabTests.length > 0 && selectedMedicines.length === 0)) {
+        isLab = true;
+        iconName = 'flask';
+        title = 'Referred to Lab';
+        message = `${patient.name} referred to Lab with ${selectedLabTests.length} test${selectedLabTests.length > 1 ? 's' : ''}`;
+      } else if (type === 'complete' && selectedMedicines.length > 0 && selectedLabTests.length > 0) {
+        // Both selected -> prefer Pharmacy (as requested)
+        isPharmacy = true;
+        iconName = 'medkit';
+        title = 'Sent to Pharmacy';
+        message = `${patient.name} sent to Pharmacy with ${selectedMedicines.length} medicine${selectedMedicines.length > 1 ? 's' : ''} and ${selectedLabTests.length} lab test${selectedLabTests.length > 1 ? 's' : ''} referred`;
+      }
 
       showNotificationModal({
         title,
@@ -479,6 +446,8 @@ const CallNextPatientScreen = ({ navigation, route }) => {
         patientName: patient.name,
         nextPatient: nextPatientData,
         isPharmacy,
+        isLab,
+        type: type,
       });
 
     } catch (error) {
@@ -524,6 +493,7 @@ const CallNextPatientScreen = ({ navigation, route }) => {
       duration: '7 Days',
       instruction: '',
     });
+    setReferralType(null);
   };
 
   // ─── OPEN SELECTOR ────────────────────────────────────────────────
@@ -572,7 +542,7 @@ const CallNextPatientScreen = ({ navigation, route }) => {
 
   // ─── RENDER PATIENT INFO ────────────────────────────────────────────
   const renderPatientInfo = () => (
-    <View style={[styles.patientCard, SHADOWS.medium]}>
+    <View style={styles.patientCard}>
       <View style={styles.patientRow}>
         <LinearGradient colors={[COLORS.primary, COLORS.secondary]} style={styles.patientAvatar}>
           <Text style={styles.patientAvatarText}>{patient?.name?.charAt(0) || 'P'}</Text>
@@ -580,18 +550,13 @@ const CallNextPatientScreen = ({ navigation, route }) => {
         <View style={styles.patientInfo}>
           <View style={styles.tokenRow}>
             <Text style={styles.tokenNumber}>Token #{patient?.token || '—'}</Text>
-            {patient?.priority && patient.priority !== 'Normal' && (
-              <View style={[styles.priorityBadge, { backgroundColor: patient.priority === 'Emergency' ? COLORS.danger : COLORS.warning }]}>
-                <Text style={styles.priorityText}>{patient.priority}</Text>
-              </View>
-            )}
           </View>
           <Text style={styles.patientName}>{patient?.name}</Text>
           <Text style={styles.patientMeta}>
             {patient?.age || 'N/A'} yrs • {patient?.gender || 'N/A'} • {patient?.type || 'General'}
           </Text>
           <Text style={styles.patientReason}>
-            <Ionicons name="time-outline" size={wp(2.5)} color={COLORS.textLight} /> 
+            <Ionicons name="time-outline" size={wp(2.8)} color={COLORS.textLight} /> 
             {patient?.time || 'Appointment at 10:00 AM'}
           </Text>
         </View>
@@ -622,12 +587,71 @@ const CallNextPatientScreen = ({ navigation, route }) => {
           )}
         </View>
       </View>
+
+      {/* Patient History Toggle */}
+      <TouchableOpacity 
+        style={styles.historyToggle}
+        onPress={() => setShowHistory(!showHistory)}
+      >
+        <Ionicons name="time-outline" size={wp(3.5)} color={COLORS.primary} />
+        <Text style={styles.historyToggleText}>
+          {showHistory ? 'Hide' : 'View'} Previous Visits {patientHistory.length > 0 ? `(${patientHistory.length})` : ''}
+        </Text>
+        <Ionicons 
+          name={showHistory ? 'chevron-up' : 'chevron-down'} 
+          size={wp(3.5)} 
+          color={COLORS.primary} 
+        />
+      </TouchableOpacity>
+
+      {/* Patient History List */}
+      {showHistory && (
+        <View style={styles.historyContainer}>
+          {patientHistory.length > 0 ? (
+            patientHistory.map((item, index) => (
+              <View key={index} style={styles.historyItem}>
+                <View style={styles.historyHeader}>
+                  <Text style={styles.historyDate}>
+                    {item.completedAt ? new Date(item.completedAt).toLocaleDateString() : 'N/A'}
+                  </Text>
+                  <Text style={styles.historyDoctor}>Dr. {item.doctorName || 'Unknown'}</Text>
+                </View>
+                {item.diagnoses && item.diagnoses !== 'None' && (
+                  <View style={styles.historyDiagnoses}>
+                    <Ionicons name="medical-outline" size={wp(2.8)} color={COLORS.primary} />
+                    <Text style={styles.historyDiagnosesText}>{item.diagnoses}</Text>
+                  </View>
+                )}
+                {item.medicines && item.medicines !== 'None' && (
+                  <View style={styles.historyMedicines}>
+                    <Ionicons name="medkit-outline" size={wp(2.8)} color={COLORS.success} />
+                    <Text style={styles.historyMedicinesText} numberOfLines={2}>{item.medicines}</Text>
+                  </View>
+                )}
+                <TouchableOpacity 
+                  style={styles.historyUseBtn}
+                  onPress={() => quickAddFromHistory(item)}
+                >
+                  <Text style={styles.historyUseBtnText}>Use This</Text>
+                  <Ionicons name="arrow-forward" size={wp(2.8)} color={COLORS.white} />
+                </TouchableOpacity>
+              </View>
+            ))
+          ) : (
+            <View style={styles.noHistoryContainer}>
+              <Ionicons name="document-text-outline" size={wp(8)} color={COLORS.textLight} />
+              <Text style={styles.noHistoryText}>No previous visits found</Text>
+              <Text style={styles.noHistorySub}>This appears to be a new patient</Text>
+            </View>
+          )}
+        </View>
+      )}
     </View>
   );
 
   // ─── RENDER FORM ────────────────────────────────────────────────────
   const renderForm = () => (
-    <View style={[styles.formCard, SHADOWS.small]}>
+    <View style={styles.formCard}>
       <Text style={styles.formTitle}>Consultation</Text>
 
       {/* Diagnosis - Required */}
@@ -729,7 +753,6 @@ const CallNextPatientScreen = ({ navigation, route }) => {
           </View>
         )}
         
-        {/* Custom Advice Input */}
         <View style={styles.customAdviceContainer}>
           <TextInput
             style={styles.customAdviceInput}
@@ -768,12 +791,14 @@ const CallNextPatientScreen = ({ navigation, route }) => {
         />
       </View>
 
-      {/* Action Buttons */}
-      <View style={styles.actionContainer}>
-        {/* Pharmacy Button - Active only when medicines selected */}
+      {/* Action Buttons - 2 in one row */}
+      <View style={styles.actionRow}>
         <TouchableOpacity
           style={[styles.actionBtn, styles.pharmacyBtn, (selectedMedicines.length === 0 || isSubmitting) && styles.actionBtnDisabled]}
-          onPress={() => completeConsultation('pharmacy')}
+          onPress={() => {
+            setReferralType('pharmacy');
+            completeConsultation('pharmacy');
+          }}
           disabled={selectedMedicines.length === 0 || isSubmitting}
         >
           <LinearGradient
@@ -781,7 +806,7 @@ const CallNextPatientScreen = ({ navigation, route }) => {
             style={styles.actionGradient}
           >
             <Ionicons name="medkit" size={wp(4.5)} color={COLORS.white} />
-            <Text style={styles.actionBtnText}>Refer to Pharmacy</Text>
+            <Text style={styles.actionBtnText}>Pharmacy</Text>
             {selectedMedicines.length > 0 && (
               <View style={styles.actionBadge}>
                 <Text style={styles.actionBadgeText}>{selectedMedicines.length}</Text>
@@ -790,10 +815,12 @@ const CallNextPatientScreen = ({ navigation, route }) => {
           </LinearGradient>
         </TouchableOpacity>
 
-        {/* Lab Button - Active only when lab tests selected */}
         <TouchableOpacity
           style={[styles.actionBtn, styles.labBtn, (selectedLabTests.length === 0 || isSubmitting) && styles.actionBtnDisabled]}
-          onPress={() => completeConsultation('lab')}
+          onPress={() => {
+            setReferralType('lab');
+            completeConsultation('lab');
+          }}
           disabled={selectedLabTests.length === 0 || isSubmitting}
         >
           <LinearGradient
@@ -801,7 +828,7 @@ const CallNextPatientScreen = ({ navigation, route }) => {
             style={styles.actionGradient}
           >
             <Ionicons name="flask" size={wp(4.5)} color={COLORS.white} />
-            <Text style={styles.actionBtnText}>Refer to Laboratory</Text>
+            <Text style={styles.actionBtnText}>Laboratory</Text>
             {selectedLabTests.length > 0 && (
               <View style={styles.actionBadge}>
                 <Text style={styles.actionBadgeText}>{selectedLabTests.length}</Text>
@@ -809,34 +836,37 @@ const CallNextPatientScreen = ({ navigation, route }) => {
             )}
           </LinearGradient>
         </TouchableOpacity>
-
-        {/* Complete Consultation Button - Active when diagnosis + (medicines OR lab tests) */}
-        <TouchableOpacity
-          style={[styles.actionBtn, styles.completeBtn, ((selectedDiagnoses.length === 0 || (selectedMedicines.length === 0 && selectedLabTests.length === 0)) || isSubmitting) && styles.actionBtnDisabled]}
-          onPress={() => {
-            Alert.alert(
-              'Complete Consultation',
-              `Finish consultation for ${patient?.name}?`,
-              [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                  text: 'Complete',
-                  onPress: () => completeConsultation('complete')
-                }
-              ]
-            );
-          }}
-          disabled={selectedDiagnoses.length === 0 || (selectedMedicines.length === 0 && selectedLabTests.length === 0) || isSubmitting}
-        >
-          <LinearGradient
-            colors={[COLORS.primary, COLORS.secondary]}
-            style={styles.actionGradient}
-          >
-            <Ionicons name="checkmark-done" size={wp(4.5)} color={COLORS.white} />
-            <Text style={styles.actionBtnText}>Complete Consultation</Text>
-          </LinearGradient>
-        </TouchableOpacity>
       </View>
+
+      {/* Complete Consultation Button */}
+      <TouchableOpacity
+        style={[styles.completeBtn, ((selectedDiagnoses.length === 0 || (selectedMedicines.length === 0 && selectedLabTests.length === 0)) || isSubmitting) && styles.completeBtnDisabled]}
+        onPress={() => {
+          Alert.alert(
+            'Complete Consultation',
+            `Finish consultation for ${patient?.name}?`,
+            [
+              { text: 'Cancel', style: 'cancel' },
+              {
+                text: 'Complete',
+                onPress: () => {
+                  setReferralType('complete');
+                  completeConsultation('complete');
+                }
+              }
+            ]
+          );
+        }}
+        disabled={selectedDiagnoses.length === 0 || (selectedMedicines.length === 0 && selectedLabTests.length === 0) || isSubmitting}
+      >
+        <LinearGradient
+          colors={[COLORS.primary, COLORS.secondary]}
+          style={styles.completeGradient}
+        >
+          <Ionicons name="checkmark-done" size={wp(4.5)} color={COLORS.white} />
+          <Text style={styles.completeBtnText}>Complete Consultation</Text>
+        </LinearGradient>
+      </TouchableOpacity>
     </View>
   );
 
@@ -916,8 +946,7 @@ const CallNextPatientScreen = ({ navigation, route }) => {
               setShowSearch(false);
             }}
           />
-          <View style={[styles.selectorContainer, SHADOWS.large]}>
-            {/* Header */}
+          <View style={styles.selectorContainer}>
             <LinearGradient colors={[COLORS.primary, COLORS.secondary]} style={styles.selectorHeader}>
               <Text style={styles.selectorTitle}>{content.title}</Text>
               <TouchableOpacity onPress={() => {
@@ -928,7 +957,6 @@ const CallNextPatientScreen = ({ navigation, route }) => {
               </TouchableOpacity>
             </LinearGradient>
 
-            {/* Search Toggle & Bar */}
             <View style={styles.selectorSearchRow}>
               {showSearch ? (
                 <View style={styles.selectorSearchContainer}>
@@ -956,7 +984,6 @@ const CallNextPatientScreen = ({ navigation, route }) => {
               )}
             </View>
 
-            {/* Medicine Extra Fields */}
             {isMedicine && (
               <View style={styles.medicineExtraFields}>
                 <View style={styles.medicineExtraRow}>
@@ -1004,7 +1031,6 @@ const CallNextPatientScreen = ({ navigation, route }) => {
               </View>
             )}
 
-            {/* List */}
             <FlatList
               data={content.data}
               keyExtractor={(item) => item}
@@ -1045,7 +1071,6 @@ const CallNextPatientScreen = ({ navigation, route }) => {
               )}
             />
 
-            {/* Action Buttons */}
             <View style={styles.selectorActions}>
               {isMedicine ? (
                 <TouchableOpacity
@@ -1090,10 +1115,32 @@ const CallNextPatientScreen = ({ navigation, route }) => {
   const renderNotification = () => {
     if (!showNotification || !notificationData) return null;
 
-    const { title, message, iconName, patientName, nextPatient, isPharmacy } = notificationData;
-    const colors = isPharmacy 
-      ? [COLORS.success, '#059669'] 
-      : [COLORS.info, '#ebde25'];
+    const { title, message, iconName, patientName, nextPatient, isPharmacy, isLab, type } = notificationData;
+    
+    let colors = [COLORS.primary, COLORS.secondary];
+    if (isPharmacy) {
+      colors = [COLORS.success, '#059669'];
+    } else if (isLab) {
+      colors = [COLORS.info, '#2563EB'];
+    }
+
+    // Determine button text
+    let buttonText = 'Complete Consultation';
+    if (type === 'pharmacy') {
+      buttonText = 'Complete Consultation & Refer to Pharmacy';
+    } else if (type === 'lab') {
+      buttonText = 'Complete Consultation & Refer to Lab';
+    } else if (type === 'complete') {
+      if (selectedMedicines.length > 0 && selectedLabTests.length > 0) {
+        buttonText = 'Complete Consultation & Refer to Both';
+      } else if (selectedMedicines.length > 0) {
+        buttonText = 'Complete Consultation & Refer to Pharmacy';
+      } else if (selectedLabTests.length > 0) {
+        buttonText = 'Complete Consultation & Refer to Lab';
+      } else {
+        buttonText = 'Complete Consultation';
+      }
+    }
 
     return (
       <View style={styles.notificationOverlay}>
@@ -1149,9 +1196,7 @@ const CallNextPatientScreen = ({ navigation, route }) => {
                 colors={[COLORS.primary, COLORS.secondary]}
                 style={styles.notificationBtnGradient}
               >
-                <Text style={styles.notificationBtnText}>
-                  {nextPatient ? 'Call Next Patient' : 'Go to Portal'}
-                </Text>
+                <Text style={styles.notificationBtnText}>{buttonText}</Text>
               </LinearGradient>
             </TouchableOpacity>
           </View>
@@ -1220,19 +1265,18 @@ const CallNextPatientScreen = ({ navigation, route }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+  container: { flex: 1, backgroundColor: '#F8FAFC' },
   gradientBackground: { position: 'absolute', top: 0, left: 0, right: 0, height: hp(20) },
   safeArea: { flex: 1 },
   scrollContent: { paddingHorizontal: wp(4), paddingBottom: hp(4) },
 
-  // Header
+  // ── Header ──────────────────────────────────────────────────────
   headerGradient: { 
     paddingHorizontal: wp(4), 
     paddingTop: Platform.OS === 'ios' ? hp(0.5) : hp(0.8), 
     paddingBottom: hp(1.2), 
     borderBottomLeftRadius: 30, 
-    borderBottomRightRadius: 30, 
-    ...SHADOWS.medium 
+    borderBottomRightRadius: 30,
   },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   backBtn: { 
@@ -1243,7 +1287,7 @@ const styles = StyleSheet.create({
   },
   headerCenter: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   headerLogo: { width: 36, height: 36, borderRadius: 18, backgroundColor: COLORS.white },
-  headerTitle: { color: COLORS.white, fontSize: wp(4.5), fontWeight: 'bold' },
+  headerTitle: { color: COLORS.white, fontSize: wp(4.5), fontWeight: '700' },
   queueBadge: { 
     flexDirection: 'row', alignItems: 'center', 
     backgroundColor: 'rgba(255,255,255,0.2)', 
@@ -1252,29 +1296,30 @@ const styles = StyleSheet.create({
   },
   queueBadgeText: { color: COLORS.white, fontSize: wp(3), fontWeight: '700' },
 
-  // Patient Card
+  // ── Patient Card ──────────────────────────────────────────────
   patientCard: { 
     backgroundColor: COLORS.white, borderRadius: wp(4), 
     padding: wp(4), marginBottom: hp(1.5), 
     borderWidth: 1, borderColor: COLORS.border,
-    ...SHADOWS.medium,
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 12 },
+      android: { elevation: 4 },
+    }),
   },
   patientRow: { flexDirection: 'row', alignItems: 'center' },
   patientAvatar: { 
     width: wp(14), height: wp(14), borderRadius: wp(7), 
     alignItems: 'center', justifyContent: 'center', marginRight: wp(3) 
   },
-  patientAvatarText: { color: COLORS.white, fontSize: wp(5), fontWeight: 'bold' },
+  patientAvatarText: { color: COLORS.white, fontSize: wp(5), fontWeight: '700' },
   patientInfo: { flex: 1 },
   tokenRow: { flexDirection: 'row', alignItems: 'center', gap: wp(2) },
   tokenNumber: { fontSize: wp(4.5), fontWeight: '800', color: COLORS.primary },
-  priorityBadge: { paddingHorizontal: wp(2), paddingVertical: hp(0.15), borderRadius: wp(1.5) },
-  priorityText: { color: COLORS.white, fontSize: wp(2.2), fontWeight: '700' },
   patientName: { fontSize: wp(5), fontWeight: '700', color: COLORS.text },
   patientMeta: { fontSize: wp(2.8), color: COLORS.textSecondary, marginTop: hp(0.1) },
   patientReason: { fontSize: wp(2.8), color: COLORS.textSecondary, marginTop: hp(0.2) },
 
-  // Queue Status
+  // ── Queue Status ──────────────────────────────────────────────
   queueStatus: { 
     flexDirection: 'row', 
     alignItems: 'center', 
@@ -1288,18 +1333,115 @@ const styles = StyleSheet.create({
   queueStatusText: { fontSize: wp(2.6), color: COLORS.textSecondary },
   queueStatusDivider: { width: 1, height: 20, backgroundColor: COLORS.border },
 
-  // Form
+  // ── History ──────────────────────────────────────────────────
+  historyToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: hp(1.2),
+    paddingTop: hp(1),
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+    gap: wp(1.5),
+  },
+  historyToggleText: {
+    fontSize: wp(3),
+    color: COLORS.primary,
+    fontWeight: '600',
+  },
+  historyContainer: {
+    marginTop: hp(1),
+    gap: hp(0.8),
+  },
+  historyItem: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: wp(2.5),
+    padding: wp(3),
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  historyHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: hp(0.5),
+  },
+  historyDate: {
+    fontSize: wp(2.6),
+    fontWeight: '600',
+    color: COLORS.primary,
+  },
+  historyDoctor: {
+    fontSize: wp(2.4),
+    color: COLORS.textLight,
+  },
+  historyDiagnoses: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: wp(1.5),
+    marginTop: hp(0.2),
+  },
+  historyDiagnosesText: {
+    flex: 1,
+    fontSize: wp(2.8),
+    color: COLORS.text,
+  },
+  historyMedicines: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: wp(1.5),
+    marginTop: hp(0.2),
+  },
+  historyMedicinesText: {
+    flex: 1,
+    fontSize: wp(2.6),
+    color: COLORS.textSecondary,
+  },
+  historyUseBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: hp(0.5),
+    paddingVertical: hp(0.4),
+    backgroundColor: COLORS.primary,
+    borderRadius: wp(2),
+    gap: wp(1.5),
+  },
+  historyUseBtnText: {
+    fontSize: wp(2.6),
+    color: COLORS.white,
+    fontWeight: '600',
+  },
+  noHistoryContainer: {
+    alignItems: 'center',
+    paddingVertical: hp(1.5),
+    gap: hp(0.3),
+  },
+  noHistoryText: {
+    fontSize: wp(3.2),
+    color: COLORS.text,
+    fontWeight: '600',
+  },
+  noHistorySub: {
+    fontSize: wp(2.6),
+    color: COLORS.textLight,
+  },
+
+  // ── Form ──────────────────────────────────────────────────────
   formCard: { 
     backgroundColor: COLORS.white, borderRadius: wp(4), 
     padding: wp(4), marginBottom: hp(1.5), 
     borderWidth: 1, borderColor: COLORS.border,
-    ...SHADOWS.small,
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8 },
+      android: { elevation: 2 },
+    }),
   },
-  formTitle: { fontSize: wp(4), fontWeight: '700', color: COLORS.text, marginBottom: hp(1.5) },
+  formTitle: { fontSize: wp(4.5), fontWeight: '700', color: COLORS.text, marginBottom: hp(1.5) },
   fieldGroup: { marginBottom: hp(1.2) },
-  fieldLabel: { fontSize: wp(2.8), fontWeight: '600', color: COLORS.textSecondary, marginBottom: hp(0.2) },
+  fieldLabel: { fontSize: wp(3), fontWeight: '600', color: COLORS.textSecondary, marginBottom: hp(0.2) },
 
-  // Selector Trigger
+  // ── Selector Trigger ──────────────────────────────────────────
   selectorTrigger: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1308,32 +1450,32 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     borderRadius: wp(2.5),
     padding: wp(3),
-    backgroundColor: COLORS.backgroundSecondary,
+    backgroundColor: '#F8FAFC',
   },
-  selectorTriggerText: { fontSize: wp(3.2), color: COLORS.text, flex: 1 },
+  selectorTriggerText: { fontSize: wp(3.5), color: COLORS.text, flex: 1 },
   placeholderText: { color: COLORS.textLight },
 
-  // Chips
+  // ── Chips ────────────────────────────────────────────────────
   chipContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: wp(1.5), marginTop: hp(1) },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.primary + '12',
     paddingHorizontal: wp(2.5),
-    paddingVertical: hp(0.4),
+    paddingVertical: hp(0.5),
     borderRadius: wp(2),
     gap: wp(1),
   },
-  chipText: { fontSize: wp(2.8), color: COLORS.primary, maxWidth: wp(30) },
+  chipText: { fontSize: wp(2.8), color: COLORS.primary, maxWidth: wp(30), fontWeight: '500' },
   chipLab: { backgroundColor: COLORS.info + '12' },
   chipLabText: { color: COLORS.info },
   chipAdvice: { backgroundColor: COLORS.warning + '12' },
   chipAdviceText: { color: COLORS.warning },
 
-  // Medicine Cards
+  // ── Medicine Cards ───────────────────────────────────────────
   medicineList: { marginTop: hp(1), gap: hp(0.8) },
   medicineCard: {
-    backgroundColor: COLORS.backgroundSecondary,
+    backgroundColor: '#F8FAFC',
     borderRadius: wp(2.5),
     padding: wp(3),
     borderWidth: 1,
@@ -1342,10 +1484,10 @@ const styles = StyleSheet.create({
   medicineHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   medicineName: { fontSize: wp(3.5), fontWeight: '600', color: COLORS.text },
   medicineDetails: { flexDirection: 'row', flexWrap: 'wrap', gap: wp(2), marginTop: hp(0.3) },
-  medicineDetail: { fontSize: wp(2.6), color: COLORS.textSecondary },
+  medicineDetail: { fontSize: wp(2.8), color: COLORS.textSecondary },
   medicineInstruction: { fontSize: wp(2.6), color: COLORS.textSecondary, marginTop: hp(0.2), fontStyle: 'italic' },
 
-  // Custom Advice
+  // ── Custom Advice ────────────────────────────────────────────
   customAdviceContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1360,7 +1502,7 @@ const styles = StyleSheet.create({
     padding: wp(2.5),
     fontSize: wp(3),
     color: COLORS.text,
-    backgroundColor: COLORS.backgroundSecondary,
+    backgroundColor: '#F8FAFC',
   },
   customAdviceBtn: {
     borderRadius: wp(2.5),
@@ -1375,7 +1517,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  // Notes
+  // ── Notes ────────────────────────────────────────────────────
   notesInput: {
     borderWidth: 1,
     borderColor: COLORS.border,
@@ -1384,16 +1526,34 @@ const styles = StyleSheet.create({
     fontSize: wp(3.2),
     color: COLORS.text,
     minHeight: hp(6),
-    backgroundColor: COLORS.backgroundSecondary,
+    backgroundColor: '#F8FAFC',
     textAlignVertical: 'top',
   },
 
-  // Action Buttons
-  actionContainer: { gap: hp(1), marginTop: hp(0.5) },
-  actionBtn: { borderRadius: wp(3), overflow: 'hidden' },
+  // ── Action Buttons ──────────────────────────────────────────
+  actionRow: {
+    flexDirection: 'row',
+    gap: wp(2.5),
+    marginTop: hp(0.5),
+  },
+  actionBtn: {
+    flex: 1,
+    borderRadius: wp(3),
+    overflow: 'hidden',
+  },
   actionBtnDisabled: { opacity: 0.5 },
-  actionGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: hp(1.2), gap: wp(2) },
-  actionBtnText: { color: COLORS.white, fontSize: wp(3.2), fontWeight: '600' },
+  actionGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: hp(1.2),
+    gap: wp(1.5),
+  },
+  actionBtnText: {
+    color: COLORS.white,
+    fontSize: wp(3.2),
+    fontWeight: '600',
+  },
   actionBadge: {
     backgroundColor: 'rgba(255,255,255,0.3)',
     borderRadius: wp(1.5),
@@ -1401,12 +1561,37 @@ const styles = StyleSheet.create({
     paddingVertical: hp(0.1),
     marginLeft: wp(0.5),
   },
-  actionBadgeText: { color: COLORS.white, fontSize: wp(2.2), fontWeight: '700' },
+  actionBadgeText: {
+    color: COLORS.white,
+    fontSize: wp(2.2),
+    fontWeight: '700',
+  },
   pharmacyBtn: {},
   labBtn: {},
-  completeBtn: {},
 
-  // Selector Modal
+  // ── Complete Button ──────────────────────────────────────────
+  completeBtn: {
+    marginTop: hp(1),
+    borderRadius: wp(3),
+    overflow: 'hidden',
+  },
+  completeBtnDisabled: {
+    opacity: 0.5,
+  },
+  completeGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: hp(1.2),
+    gap: wp(2),
+  },
+  completeBtnText: {
+    color: COLORS.white,
+    fontSize: wp(3.5),
+    fontWeight: '600',
+  },
+
+  // ─── Selector Modal ──────────────────────────────────────────
   selectorOverlay: { 
     flex: 1, 
     justifyContent: 'flex-end',
@@ -1424,7 +1609,6 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: wp(5),
     borderTopRightRadius: wp(5),
     maxHeight: hp(80),
-    ...SHADOWS.large,
   },
   selectorHeader: {
     flexDirection: 'row',
@@ -1434,9 +1618,9 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: wp(5),
     borderTopRightRadius: wp(5),
   },
-  selectorTitle: { color: COLORS.white, fontSize: wp(4.5), fontWeight: 'bold' },
+  selectorTitle: { color: COLORS.white, fontSize: wp(4.5), fontWeight: '700' },
 
-  // Search
+  // ── Search ──────────────────────────────────────────────────
   selectorSearchRow: {
     paddingHorizontal: wp(4),
     paddingVertical: wp(2),
@@ -1461,7 +1645,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     borderRadius: wp(2.5),
     paddingHorizontal: wp(3),
-    backgroundColor: COLORS.backgroundSecondary,
+    backgroundColor: '#F8FAFC',
   },
   selectorSearchInput: { flex: 1, paddingVertical: hp(0.8), fontSize: wp(3.2), color: COLORS.text },
 
@@ -1478,7 +1662,7 @@ const styles = StyleSheet.create({
   selectorListItemText: { fontSize: wp(3.2), color: COLORS.text, flex: 1 },
   selectorListItemTextActive: { color: COLORS.primary, fontWeight: '600' },
 
-  // Medicine Extra Fields
+  // ─── Medicine Extra Fields ──────────────────────────────────
   medicineExtraFields: {
     paddingHorizontal: wp(4),
     paddingVertical: wp(2),
@@ -1506,14 +1690,14 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     borderRadius: wp(2),
     padding: wp(2),
-    backgroundColor: COLORS.backgroundSecondary,
+    backgroundColor: '#F8FAFC',
   },
   medicineExtraPickerText: {
     fontSize: wp(3),
     color: COLORS.text,
   },
 
-  // Selector Actions
+  // ─── Selector Actions ──────────────────────────────────────
   selectorActions: {
     padding: wp(4),
     paddingTop: wp(2),
@@ -1540,7 +1724,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // Notification
+  // ─── Notification ──────────────────────────────────────────
   notificationOverlay: {
     position: 'absolute',
     top: 0,
@@ -1565,7 +1749,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     borderRadius: wp(4),
     overflow: 'hidden',
-    ...SHADOWS.large,
   },
   notificationHeader: {
     padding: wp(4),
@@ -1630,7 +1813,7 @@ const styles = StyleSheet.create({
     marginBottom: hp(0.3),
   },
   notificationNextCard: {
-    backgroundColor: COLORS.backgroundSecondary,
+    backgroundColor: '#F8FAFC',
     padding: wp(3),
     borderRadius: wp(2.5),
     borderWidth: 1,
@@ -1682,12 +1865,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // Empty State
+  // ─── Empty State ────────────────────────────────────────────
   emptyCard: { 
     alignItems: 'center', padding: wp(8), 
     backgroundColor: COLORS.white, borderRadius: wp(4), 
     borderWidth: 1, borderColor: COLORS.border,
-    ...SHADOWS.medium,
   },
   emptyTitle: { fontSize: wp(5), fontWeight: '700', color: COLORS.text, marginTop: hp(1) },
   emptySub: { fontSize: wp(3.5), color: COLORS.textSecondary, marginTop: hp(0.2) },
@@ -1697,7 +1879,7 @@ const styles = StyleSheet.create({
   },
   emptyBtnText: { color: COLORS.white, fontSize: wp(3.5), fontWeight: '600' },
 
-  // Footer
+  // ── Footer ──────────────────────────────────────────────────
   footer: { 
     alignItems: 'center', marginTop: hp(2), 
     paddingTop: hp(1.5), borderTopWidth: 1, borderTopColor: COLORS.border 
