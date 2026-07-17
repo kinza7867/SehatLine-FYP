@@ -18,7 +18,9 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 
 import { COLORS } from '../../../theme';
 
-import DoctorBottomTabNavigator from './DoctorBottomTabNavigator';
+// ─── COMMENT OUT / REMOVE THIS LINE ─────────────────────────────
+// import DoctorBottomTabNavigator from './DoctorBottomTabNavigator';
+
 import TodayQueueScreen from '../TodayQueueScreen';
 import ConsultationScreen from '../ConsultationScreen';
 import PatientHistoryScreen from '../PatientHistoryScreen';
@@ -39,6 +41,9 @@ import DoctorDashboardScreen from '../DoctorDashboardScreen';
 import RealTimeQueueScreen from '../RealTimeQueueScreen';
 import DoctorDetailScreen from '../DoctorDetailScreen';
 import DoctorListScreen from '../DoctorListScreen';
+
+// ─── IMPORT DOCTOR PORTAL SCREEN ─────────────────────────────────
+import DoctorPortalScreen from '../DoctorPortalScreen';
 
 const Drawer = createDrawerNavigator();
 
@@ -130,7 +135,6 @@ const DoctorDrawerContent = ({ navigation, state }) => {
       items: [
         { label: 'Dashboard', icon: 'home-outline', route: 'DoctorHome' },
         { label: "Today's Queue", icon: 'people-outline', route: 'TodayQueue' },
-        //{ label: 'Consultation', icon: 'medkit-outline', route: 'Consultation' },
         { label: 'Call Next Patient', icon: 'call-outline', route: 'CallNextPatientScreen' },
       ]
     },
@@ -138,7 +142,6 @@ const DoctorDrawerContent = ({ navigation, state }) => {
       title: 'PATIENTS',
       items: [
         { label: 'Patient History', icon: 'document-text-outline', route: 'PatientHistory' },
-        //{ label: 'Prescription', icon: 'create-outline', route: 'Prescription' },
         { label: 'Prescription Templates', icon: 'albums-outline', route: 'PrescriptionTemplates' },
       ]
     },
@@ -280,9 +283,10 @@ export default function DoctorDrawerNavigator() {
       }}
     >
       {/* ─── MAIN SCREENS ────────────────────────────────────────────── */}
+      {/* REPLACED DoctorBottomTabNavigator WITH DoctorPortalScreen */}
       <Drawer.Screen
         name="DoctorHome"
-        component={DoctorBottomTabNavigator}
+        component={DoctorPortalScreen}
         options={{ title: 'Dashboard' }}
       />
 
@@ -303,7 +307,7 @@ export default function DoctorDrawerNavigator() {
         component={CallNextPatientScreen}
         options={{ 
           title: 'Call Next Patient',
-          drawerItemStyle: { display: 'none' } // Hidden from drawer
+          drawerItemStyle: { display: 'none' }
         }}
       />
 
@@ -363,7 +367,7 @@ export default function DoctorDrawerNavigator() {
         options={{ title: 'Help & Support' }}
       />
 
-      {/* ─── ACCOUNT SCREENS (Hidden from drawer - in bottom tabs) ─── */}
+      {/* ─── ACCOUNT SCREENS ─────────────────────────────────────────── */}
       <Drawer.Screen
         name="DoctorProfile"
         component={DoctorProfileScreen}
@@ -372,13 +376,14 @@ export default function DoctorDrawerNavigator() {
         }}
       />
         
-        <Drawer.Screen
-            name="DoctorEditProfileScreen"
-            component={DoctorEditProfileScreen}
-            options={{
-                drawerItemStyle: { display: 'none' }, // Hidden from drawer
-            }}
-/>
+      <Drawer.Screen
+        name="DoctorEditProfileScreen"
+        component={DoctorEditProfileScreen}
+        options={{
+          drawerItemStyle: { display: 'none' },
+        }}
+      />
+
       <Drawer.Screen
         name="DoctorSettings"
         component={DoctorSettingsScreen}
@@ -395,16 +400,16 @@ export default function DoctorDrawerNavigator() {
         }}
       />
 
-        <Drawer.Screen
-          name="AdminNotifications"
-          component={AdminNotificationsScreen}
-          options={{ 
-            title: 'Admin Notifications',
-            drawerItemStyle: { display: 'none' } // Hidden from drawer
-          }}
-        />
+      <Drawer.Screen
+        name="AdminNotifications"
+        component={AdminNotificationsScreen}
+        options={{ 
+          title: 'Admin Notifications',
+          drawerItemStyle: { display: 'none' }
+        }}
+      />
+
       {/* ─── HIDDEN / EXTRA SCREENS ──────────────────────────────────── */}
-      {/* These screens exist for navigation but are not shown in drawer */}
       <Drawer.Screen
         name="DoctorDashboard"
         component={DoctorDashboardScreen}
@@ -441,7 +446,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
   },
 
-  // ── Header ────────────────────────────────────────────────────────
   header: {
     paddingVertical: 30,
     paddingHorizontal: 20,
@@ -519,7 +523,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // ── Drawer Items ──────────────────────────────────────────────────
   scrollContent: {
     paddingTop: 8,
     paddingBottom: 8,
@@ -572,7 +575,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary + '12',
   },
 
-  // ── Logout ────────────────────────────────────────────────────────
   logoutSection: {
     marginTop: 4,
   },
@@ -588,7 +590,6 @@ const styles = StyleSheet.create({
     marginLeft: -4,
   },
 
-  // ── Footer ────────────────────────────────────────────────────────
   footer: {
     flexDirection: 'row',
     alignItems: 'center',

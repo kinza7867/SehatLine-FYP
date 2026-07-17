@@ -37,7 +37,6 @@ const USER_DATA_KEY = '@sehatline_userData';
 const QUEUE_KEY = '@sehatline_queue';
 const COMPLETED_PATIENTS_KEY = '@sehatline_completed_patients';
 const APPOINTMENTS_KEY = '@sehatline_appointments';
-const ACTIVITIES_KEY = '@sehatline_activities';
 const ADMIN_UPDATES_KEY = '@sehatline_admin_updates';
 
 // ── Mock Data ──────────────────────────────────────────────────────────
@@ -59,19 +58,11 @@ const MOCK_DOCTOR = {
 };
 
 const MOCK_QUEUE = [
-  { id: 'p_001', name: 'Muhammad Ali', token: 17, age: 58, priority: 'Normal', waitTime: '12 min', reason: 'Follow Up - Chest Pain', department: 'Cardiology' },
-  { id: 'p_002', name: 'Ahmed Khan', token: 18, age: 45, priority: 'Normal', waitTime: '5 min', reason: 'New Patient - Hypertension', department: 'Cardiology' },
-  { id: 'p_003', name: 'Aslam Malik', token: 19, age: 52, priority: 'Urgent', waitTime: '8 min', reason: 'Follow Up - Post Surgery', department: 'Cardiology' },
-  { id: 'p_004', name: 'Bilal Hussain', token: 20, age: 38, priority: 'Normal', waitTime: '12 min', reason: 'New Patient - Palpitations', department: 'Cardiology' },
-  { id: 'p_005', name: 'Zainab Bibi', token: 21, age: 60, priority: 'Normal', waitTime: '15 min', reason: 'Follow Up - Diabetes', department: 'Cardiology' },
-];
-
-// ── Fixed Work Log Data ──────────────────────────────────────────────
-const MOCK_WORK_LOG = [
-  { id: '1', type: 'consultation', patient: 'Muhammad Ali', time: '09:15 AM', details: 'Completed - Prescribed' },
-  { id: '2', type: 'prescription', patient: 'Saima Ahmed', time: '09:35 AM', details: 'Generated - 3 medicines' },
-  { id: '3', type: 'consultation', patient: 'Aslam Malik', time: '10:00 AM', details: 'Completed - Lab ordered' },
-  { id: '4', type: 'followup', patient: 'Fatima Noor', time: '10:20 AM', details: 'Scheduled for next week' },
+  { id: 'p_001', name: 'Muhammad Ali', token: 17, age: 58, waitTime: '12 min', reason: 'Follow Up - Chest Pain' },
+  { id: 'p_002', name: 'Ahmed Khan', token: 18, age: 45, waitTime: '5 min', reason: 'New Patient - Hypertension' },
+  { id: 'p_003', name: 'Aslam Malik', token: 19, age: 52, waitTime: '8 min', reason: 'Follow Up - Post Surgery' },
+  { id: 'p_004', name: 'Bilal Hussain', token: 20, age: 38, waitTime: '12 min', reason: 'New Patient - Palpitations' },
+  { id: 'p_005', name: 'Zainab Bibi', token: 21, age: 60, waitTime: '15 min', reason: 'Follow Up - Diabetes' },
 ];
 
 // ─── Admin Notifications Mock Data ────────────────────────────────────
@@ -194,7 +185,6 @@ const DoctorPortalScreen = ({ navigation }) => {
   const [showSearchModal, setShowSearchModal] = useState(false);
 
   const [queuePatients, setQueuePatients] = useState([]);
-  const [workLog, setWorkLog] = useState([]);
   const [completedCount, setCompletedCount] = useState(0);
   const [totalAppointments, setTotalAppointments] = useState(0);
   const [notifications, setNotifications] = useState([]);
@@ -261,7 +251,6 @@ const DoctorPortalScreen = ({ navigation }) => {
         loadQueue(),
         loadCompletedPatients(),
         loadAppointments(),
-        loadWorkLog(),
         loadNotifications(),
       ]);
     } catch (error) {
@@ -321,28 +310,6 @@ const DoctorPortalScreen = ({ navigation }) => {
       }
     } catch (e) {
       setTotalAppointments(38);
-    }
-  };
-
-  const loadWorkLog = async () => {
-    try {
-      const raw = await AsyncStorage.getItem(ACTIVITIES_KEY);
-      if (raw) {
-        const data = JSON.parse(raw);
-        const sanitizedData = data.map(item => ({
-          ...item,
-          type: item.type || 'consultation',
-          patient: item.patient || 'Unknown',
-          time: item.time || 'Just now',
-          details: item.details || 'Completed'
-        }));
-        setWorkLog(sanitizedData);
-      } else {
-        setWorkLog(MOCK_WORK_LOG);
-        await AsyncStorage.setItem(ACTIVITIES_KEY, JSON.stringify(MOCK_WORK_LOG));
-      }
-    } catch (e) {
-      setWorkLog(MOCK_WORK_LOG);
     }
   };
 
@@ -459,63 +426,6 @@ const DoctorPortalScreen = ({ navigation }) => {
     }, 1200);
   }, []);
 
-  // ── HELPERS ────────────────────────────────────────────────────────────
-  const getPriorityColor = (priority) => {
-    switch (priority?.toLowerCase()) {
-      case 'emergency': return COLORS.danger;
-      case 'urgent': return COLORS.warning;
-      default: return COLORS.success;
-    }
-  };
-
-  const getWorkLogIcon = (type) => {
-    switch (type) {
-      case 'consultation': return 'checkmark-circle';
-      case 'prescription': return 'medkit';
-      case 'followup': return 'calendar';
-      default: return 'time';
-    }
-  };
-
-  const getWorkLogColor = (type) => {
-    switch (type) {
-      case 'consultation': return COLORS.success;
-      case 'prescription': return COLORS.primary;
-      case 'followup': return COLORS.warning;
-      default: return COLORS.textLight;
-    }
-  };
-
-  const getWorkLogLabel = (type) => {
-    if (!type) return 'Activity';
-    switch (type) {
-      case 'consultation': return 'Consultation';
-      case 'prescription': return 'Prescription';
-      case 'followup': return 'Follow-up';
-      default: return type.charAt(0).toUpperCase() + type.slice(1);
-    }
-  };
-
-  // ─── NOTIFICATION HELPERS ─────────────────────────────────────────────
-  const getNotificationIcon = (type) => {
-    switch (type) {
-      case 'meeting': return 'people-outline';
-      case 'schedule': return 'calendar-outline';
-      case 'system': return 'construct-outline';
-      case 'duty': return 'briefcase-outline';
-      case 'circular': return 'document-text-outline';
-      default: return 'notifications-outline';
-    }
-  };
-
-  const getNotificationColor = (priority) => {
-    switch (priority) {
-      case 'High': return COLORS.danger;
-      case 'Medium': return COLORS.warning;
-      default: return COLORS.primary;
-    }
-  };
-
   if (!doctor) {
     return (
       <View style={styles.loadingContainer}>
@@ -631,13 +541,6 @@ const DoctorPortalScreen = ({ navigation }) => {
               <View style={[styles.nowServingCard, SHADOWS.medium]}>
                 <View style={styles.nowServingHeader}>
                   <Text style={styles.nowServingLabel}>NOW SERVING</Text>
-                  {queuePatients.length > 0 && (
-                    <View style={[styles.nowServingPriority, { backgroundColor: getPriorityColor(queuePatients[0].priority) + '20' }]}>
-                      <Text style={[styles.nowServingPriorityText, { color: getPriorityColor(queuePatients[0].priority) }]}>
-                        {queuePatients[0].priority}
-                      </Text>
-                    </View>
-                  )}
                 </View>
 
                 {queuePatients.length > 0 ? (
@@ -715,7 +618,6 @@ const DoctorPortalScreen = ({ navigation }) => {
                   </View>
                   <View style={styles.queueRight}>
                     <Text style={styles.queueWait}>{patient.waitTime}</Text>
-                    <View style={[styles.queuePriorityDot, { backgroundColor: getPriorityColor(patient.priority) }]} />
                   </View>
                 </TouchableOpacity>
               ))}
@@ -794,52 +696,7 @@ const DoctorPortalScreen = ({ navigation }) => {
               </View>
             </View>
 
-            {/* ═══ SECTION 6: WORK LOG (Timeline) ═══════════════════════ */}
-            <View style={styles.workLogSection}>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Work Log</Text>
-                <TouchableOpacity onPress={() => navigateToScreen('TodayHistory', { filter: 'today' })}>
-                  <Text style={styles.sectionLink}>View All →</Text>
-                </TouchableOpacity>
-              </View>
-
-              {workLog.slice(0, 4).map((log, index) => {
-                const logType = log.type || 'consultation';
-                const logColor = getWorkLogColor(logType);
-                const logIcon = getWorkLogIcon(logType);
-                const logLabel = getWorkLogLabel(logType);
-                
-                return (
-                  <View key={log.id} style={styles.workLogItem}>
-                    <View style={styles.workLogLeft}>
-                      <View style={[styles.workLogDot, { backgroundColor: logColor }]} />
-                      {index < workLog.slice(0, 4).length - 1 && <View style={styles.workLogLine} />}
-                    </View>
-                    <View style={[styles.workLogCard, SHADOWS.tiny]}>
-                      <View style={styles.workLogHeader}>
-                        <View style={[styles.workLogType, { backgroundColor: logColor + '15' }]}>
-                          <Ionicons name={logIcon} size={wp(3.5)} color={logColor} />
-                          <Text style={[styles.workLogTypeText, { color: logColor }]}>
-                            {logLabel}
-                          </Text>
-                        </View>
-                        <Text style={styles.workLogTime}>{log.time || 'Just now'}</Text>
-                      </View>
-                      <Text style={styles.workLogPatient}>{log.patient || 'Unknown'}</Text>
-                      <Text style={styles.workLogDetails}>{log.details || 'Completed'}</Text>
-                    </View>
-                  </View>
-                );
-              })}
-              {workLog.length === 0 && (
-                <View style={styles.emptyWorkLog}>
-                  <Ionicons name="time-outline" size={wp(8)} color={COLORS.textLight} />
-                  <Text style={styles.emptyWorkLogText}>No work log for today</Text>
-                </View>
-              )}
-            </View>
-
-            {/* ═══ SECTION 7: ADMIN NOTIFICATIONS ═══════════════════════ */}
+            {/* ═══ SECTION 6: ADMIN NOTIFICATIONS ═══════════════════════ */}
             <View style={styles.notificationSection}>
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>Admin Notifications</Text>
@@ -849,8 +706,15 @@ const DoctorPortalScreen = ({ navigation }) => {
               </View>
 
               {notifications.slice(0, 2).map((notification) => {
-                const notifColor = getNotificationColor(notification.priority);
-                const notifIcon = getNotificationIcon(notification.type);
+                const notifIcon = notification.type === 'meeting' ? 'people-outline' :
+                                  notification.type === 'schedule' ? 'calendar-outline' :
+                                  notification.type === 'system' ? 'construct-outline' :
+                                  notification.type === 'duty' ? 'briefcase-outline' :
+                                  'document-text-outline';
+                
+                const notifColor = notification.priority === 'High' ? COLORS.danger :
+                                  notification.priority === 'Medium' ? COLORS.warning :
+                                  COLORS.primary;
                 
                 return (
                   <TouchableOpacity
@@ -1006,10 +870,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
   },
-  nowServingHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: hp(0.5) },
+  nowServingHeader: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: hp(0.5) },
   nowServingLabel: { fontSize: wp(2.8), color: COLORS.textSecondary, fontWeight: '600', letterSpacing: 1.5 },
-  nowServingPriority: { paddingHorizontal: wp(2.5), paddingVertical: hp(0.2), borderRadius: wp(2.5) },
-  nowServingPriorityText: { fontSize: wp(2.4), fontWeight: '600' },
   nowServingToken: { fontSize: wp(6), fontWeight: '800', color: COLORS.primary, textAlign: 'center' },
   nowServingName: { fontSize: wp(4.5), fontWeight: '600', color: COLORS.text, textAlign: 'center', marginTop: hp(0.2) },
   nowServingReason: { fontSize: wp(3.2), color: COLORS.textSecondary, textAlign: 'center', marginTop: hp(0.1) },
@@ -1069,7 +931,6 @@ const styles = StyleSheet.create({
   queueReason: { fontSize: wp(2.6), color: COLORS.textSecondary, marginTop: hp(0.1) },
   queueRight: { flexDirection: 'row', alignItems: 'center', gap: wp(2) },
   queueWait: { fontSize: wp(2.8), color: COLORS.textSecondary },
-  queuePriorityDot: { width: wp(2.5), height: wp(2.5), borderRadius: wp(1.25) },
   emptyQueue: { backgroundColor: COLORS.white, padding: wp(3), borderRadius: wp(2.5), borderWidth: 1, borderColor: COLORS.border, alignItems: 'center', gap: hp(0.5) },
   emptyQueueText: { fontSize: wp(3), color: COLORS.textLight },
 
@@ -1087,23 +948,7 @@ const styles = StyleSheet.create({
   scheduleStatusDot: { width: wp(2), height: wp(2), borderRadius: wp(1) },
   scheduleStatusText: { fontSize: wp(2.8), fontWeight: '600' },
 
-  // ── SECTION 6: Work Log ──────────────────────────────────────────
-  workLogSection: { paddingHorizontal: wp(4), marginTop: hp(2) },
-  workLogItem: { flexDirection: 'row', marginBottom: hp(0.5) },
-  workLogLeft: { width: wp(5), alignItems: 'center', marginRight: wp(2) },
-  workLogDot: { width: wp(3), height: wp(3), borderRadius: wp(1.5), marginTop: hp(0.5) },
-  workLogLine: { width: 2, flex: 1, backgroundColor: COLORS.border, marginTop: hp(0.3) },
-  workLogCard: { flex: 1, backgroundColor: COLORS.white, padding: wp(2.5), borderRadius: wp(2.5), borderWidth: 1, borderColor: COLORS.border },
-  workLogHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  workLogType: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: wp(2), paddingVertical: hp(0.2), borderRadius: wp(2), gap: wp(0.8) },
-  workLogTypeText: { fontSize: wp(2.4), fontWeight: '600' },
-  workLogTime: { fontSize: wp(2.4), color: COLORS.textLight },
-  workLogPatient: { fontSize: wp(3.2), fontWeight: '600', color: COLORS.text, marginTop: hp(0.2) },
-  workLogDetails: { fontSize: wp(2.6), color: COLORS.textSecondary, marginTop: hp(0.1) },
-  emptyWorkLog: { backgroundColor: COLORS.white, padding: wp(3), borderRadius: wp(2.5), borderWidth: 1, borderColor: COLORS.border, alignItems: 'center', gap: hp(0.5) },
-  emptyWorkLogText: { fontSize: wp(3), color: COLORS.textLight },
-
-  // ── SECTION 7: Admin Notifications ──────────────────────────────
+  // ── SECTION 6: Admin Notifications ──────────────────────────────
   notificationSection: { paddingHorizontal: wp(4), marginTop: hp(2) },
   notificationCard: {
     flexDirection: 'row',
