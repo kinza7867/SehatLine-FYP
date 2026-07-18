@@ -12,10 +12,12 @@ import {
   ScrollView,
   Image,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as ImagePicker from 'expo-image-picker';
 import { COLORS, SHADOWS } from '../../theme';
 
 const { width, height } = Dimensions.get('window');
@@ -23,10 +25,12 @@ const wp = (p) => (width * p) / 100;
 const hp = (p) => (height * p) / 100;
 
 const USER_DATA_KEY = '@sehatline_userData';
+const PROFILE_IMAGE_KEY = '@sehatline_profile_image';
 
 const DoctorProfileScreen = ({ navigation }) => {
   const [doctor, setDoctor] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     loadDoctorData();
@@ -42,6 +46,9 @@ const DoctorProfileScreen = ({ navigation }) => {
 
   const loadDoctorData = async () => {
     try {
+      // Load profile image separately from persistent storage
+      const profileImage = await AsyncStorage.getItem(PROFILE_IMAGE_KEY);
+      
       const userData = await AsyncStorage.getItem(USER_DATA_KEY);
       if (userData) {
         const parsed = JSON.parse(userData);
@@ -60,11 +67,7 @@ const DoctorProfileScreen = ({ navigation }) => {
           avatar: parsed.avatar || 'AH',
           color: parsed.color || COLORS.primary,
           color2: parsed.color2 || COLORS.secondary,
-          profileImage: parsed.profileImage || null,
-          patientsAssigned: parsed.patientsAssigned || 40,
-          patientsCompleted: parsed.patientsCompleted || 18,
-          patientsRemaining: parsed.patientsRemaining || 22,
-          avgConsultation: parsed.avgConsultation || '12 min',
+          profileImage: profileImage || parsed.profileImage || null,
         });
       } else {
         setDoctor({
@@ -82,11 +85,7 @@ const DoctorProfileScreen = ({ navigation }) => {
           avatar: 'AH',
           color: COLORS.primary,
           color2: COLORS.secondary,
-          profileImage: null,
-          patientsAssigned: 40,
-          patientsCompleted: 18,
-          patientsRemaining: 22,
-          avgConsultation: '12 min',
+          profileImage: profileImage || null,
         });
       }
     } catch (error) {
@@ -94,6 +93,154 @@ const DoctorProfileScreen = ({ navigation }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // ─── Profile Picture Update ──────────────────────────────────────
+  const requestPermissions = async () => {
+    if (Platform.OS !== 'web') {
+      const { status: cameraStatus } = await ImagePicker.requestCameraPermissionsAsync();
+      const { status: galleryStatus } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      
+      if (cameraStatus !== 'granted' && galleryStatus !== 'granted') {
+        Alert.alert(
+          'Permissions Required',
+          'Please allow camera and gallery access to update your profile picture.',
+          [{ text: 'OK' }]
+        );
+        return false;
+      }
+      return true;
+    }
+    return true;
+  };
+
+  const handleUpdatePhoto = () => {
+    Alert.alert(
+      'Update Profile Photo',
+      'Choose an option to update your profile picture',
+      [
+        {
+          text: 'Take Photo',
+          onPress: () => openCamera(),
+        },
+        {
+          text: 'Choose from Gallery',
+          onPress: () => openGallery(),
+        },
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+      ]
+    );
+  };
+
+  const openCamera = async () => {
+    const hasPermission = await requestPermissions();
+    if (!hasPermission) return;
+
+    try {
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+        base64: true,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const imageUri = result.assets[0].uri;
+        await saveProfileImage(imageUri);
+      }
+    } catch (error) {
+      console.error('Camera error:', error);
+      Alert.alert('Error', 'Failed to open camera. Please try again.');
+    }
+  };
+
+  const openGallery = async () => {
+    const hasPermission = await requestPermissions();
+    if (!hasPermission) return;
+
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+        base64: true,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const imageUri = result.assets[0].uri;
+        await saveProfileImage(imageUri);
+      }
+    } catch (error) {
+      console.error('Gallery error:', error);
+      Alert.alert('Error', 'Failed to open gallery. Please try again.');
+    }
+  };
+
+  const saveProfileImage = async (imageUri) => {
+    setUploading(true);
+    try {
+      // Save image persistently - this will survive logout
+      await AsyncStorage.setItem(PROFILE_IMAGE_KEY, imageUri);
+      
+      // Update local state
+      setDoctor((prev) => ({ ...prev, profileImage: imageUri }));
+      
+      // Also update user data for consistency
+      const userData = await AsyncStorage.getItem(USER_DATA_KEY);
+      if (userData) {
+        const parsed = JSON.parse(userData);
+        parsed.profileImage = imageUri;
+        await AsyncStorage.setItem(USER_DATA_KEY, JSON.stringify(parsed));
+      }
+      
+      Alert.alert('Success', 'Profile photo updated successfully!');
+    } catch (error) {
+      console.error('Error saving profile image:', error);
+      Alert.alert('Error', 'Failed to save profile photo. Please try again.');
+      // Revert state
+      loadDoctorData();
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleRemovePhoto = () => {
+    Alert.alert(
+      'Remove Photo',
+      'Are you sure you want to remove your profile photo?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              // Remove from persistent storage
+              await AsyncStorage.removeItem(PROFILE_IMAGE_KEY);
+              
+              setDoctor((prev) => ({ ...prev, profileImage: null }));
+              
+              const userData = await AsyncStorage.getItem(USER_DATA_KEY);
+              if (userData) {
+                const parsed = JSON.parse(userData);
+                parsed.profileImage = null;
+                await AsyncStorage.setItem(USER_DATA_KEY, JSON.stringify(parsed));
+              }
+              
+              Alert.alert('Success', 'Profile photo removed successfully!');
+            } catch (error) {
+              console.error('Error removing profile image:', error);
+              Alert.alert('Error', 'Failed to remove profile photo.');
+            }
+          },
+        },
+      ]
+    );
   };
 
   if (loading) {
@@ -117,6 +264,10 @@ const DoctorProfileScreen = ({ navigation }) => {
     navigation.navigate('DoctorEditProfileScreen', { doctor });
   };
 
+  const handleSettingsPress = () => {
+    navigation.navigate('DoctorSettings');
+  };
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
@@ -137,19 +288,29 @@ const DoctorProfileScreen = ({ navigation }) => {
             <Text style={styles.headerTitle}>Doctor Profile</Text>
           </View>
 
-          <TouchableOpacity 
-            style={styles.editBtn}
-            onPress={handleEditPress}
-            activeOpacity={0.7}
-          >
-            <LinearGradient
-              colors={[COLORS.primary, COLORS.secondary]}
-              style={styles.editBtnGradient}
+          <View style={styles.headerRight}>
+            <TouchableOpacity 
+              style={styles.settingsBtn}
+              onPress={handleSettingsPress}
+              activeOpacity={0.7}
             >
-              <Ionicons name="create-outline" size={wp(4.5)} color={COLORS.white} />
-              <Text style={styles.editBtnText}>Edit</Text>
-            </LinearGradient>
-          </TouchableOpacity>
+              <Ionicons name="settings-outline" size={wp(5.5)} color={COLORS.primary} />
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.editBtn}
+              onPress={handleEditPress}
+              activeOpacity={0.7}
+            >
+              <LinearGradient
+                colors={[COLORS.primary, COLORS.secondary]}
+                style={styles.editBtnGradient}
+              >
+                <Ionicons name="create-outline" size={wp(4)} color={COLORS.white} />
+                <Text style={styles.editBtnText}>Edit</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
         </View>
 
         <ScrollView 
@@ -159,16 +320,35 @@ const DoctorProfileScreen = ({ navigation }) => {
         >
           {/* ─── 1. DOCTOR IDENTITY CARD ───────────────────────────────── */}
           <View style={[styles.identityCard, SHADOWS.medium]}>
-            <LinearGradient
-              colors={[doctor.color || COLORS.primary, doctor.color2 || COLORS.secondary]}
-              style={styles.avatar}
+            {/* ─── Avatar with Update Button ──────────────────────────── */}
+            <TouchableOpacity 
+              style={styles.avatarContainer}
+              onPress={handleUpdatePhoto}
+              activeOpacity={0.8}
+              disabled={uploading}
             >
-              {doctor.profileImage ? (
-                <Image source={{ uri: doctor.profileImage }} style={styles.avatarImage} />
-              ) : (
-                <Text style={styles.avatarText}>{doctor.avatar || 'DR'}</Text>
-              )}
-            </LinearGradient>
+              <LinearGradient
+                colors={[doctor.color || COLORS.primary, doctor.color2 || COLORS.secondary]}
+                style={styles.avatar}
+              >
+                {doctor.profileImage ? (
+                  <Image source={{ uri: doctor.profileImage }} style={styles.avatarImage} />
+                ) : (
+                  <Text style={styles.avatarText}>{doctor.avatar || 'DR'}</Text>
+                )}
+              </LinearGradient>
+              
+              {/* ─── Camera Icon Overlay (Fixed) ────────────────────────── */}
+              <View style={styles.cameraOverlay}>
+                {uploading ? (
+                  <ActivityIndicator size="small" color={COLORS.white} />
+                ) : (
+                  <View style={styles.cameraIconContainer}>
+                    <Ionicons name="camera-outline" size={wp(4)} color={COLORS.white} />
+                  </View>
+                )}
+              </View>
+            </TouchableOpacity>
 
             <Text style={styles.doctorName}>{doctor.name}</Text>
             <Text style={styles.doctorDesignation}>{doctor.designation}</Text>
@@ -181,6 +361,18 @@ const DoctorProfileScreen = ({ navigation }) => {
                 {doctor.isOnline ? 'On Duty' : 'Off Duty'}
               </Text>
             </View>
+
+            {/* ─── Photo Actions ──────────────────────────────────────── */}
+            {doctor.profileImage && (
+              <TouchableOpacity 
+                style={styles.removePhotoBtn}
+                onPress={handleRemovePhoto}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="trash-outline" size={wp(3)} color={COLORS.danger} />
+                <Text style={styles.removePhotoText}>Remove Photo</Text>
+              </TouchableOpacity>
+            )}
           </View>
 
           {/* ─── 2. PROFESSIONAL INFORMATION ──────────────────────────── */}
@@ -208,29 +400,6 @@ const DoctorProfileScreen = ({ navigation }) => {
                 value={doctor.isOnline ? 'On Duty' : 'Off Duty'}
                 valueColor={doctor.isOnline ? COLORS.success : COLORS.textLight}
               />
-            </View>
-          </View>
-
-          {/* ─── 4. TODAY'S PERFORMANCE ───────────────────────────────── */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Today's Performance</Text>
-            <View style={styles.statsContainer}>
-              <View style={[styles.statCard, SHADOWS.small]}>
-                <Text style={styles.statNumber}>{doctor.patientsAssigned}</Text>
-                <Text style={styles.statLabel}>Assigned</Text>
-              </View>
-              <View style={[styles.statCard, SHADOWS.small]}>
-                <Text style={[styles.statNumber, { color: COLORS.success }]}>{doctor.patientsCompleted}</Text>
-                <Text style={styles.statLabel}>Completed</Text>
-              </View>
-              <View style={[styles.statCard, SHADOWS.small]}>
-                <Text style={[styles.statNumber, { color: COLORS.warning }]}>{doctor.patientsRemaining}</Text>
-                <Text style={styles.statLabel}>Remaining</Text>
-              </View>
-              <View style={[styles.statCard, SHADOWS.small]}>
-                <Text style={[styles.statNumber, { color: COLORS.primary }]}>{doctor.avgConsultation}</Text>
-                <Text style={styles.statLabel}>Avg Time</Text>
-              </View>
             </View>
           </View>
 
@@ -312,6 +481,17 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: COLORS.text,
   },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: wp(2),
+  },
+  settingsBtn: {
+    width: wp(9),
+    height: wp(9),
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   editBtn: {
     borderRadius: wp(2.5),
     overflow: 'hidden',
@@ -360,13 +540,16 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     alignItems: 'center',
   },
+  avatarContainer: {
+    position: 'relative',
+    marginBottom: hp(1),
+  },
   avatar: {
     width: wp(20),
     height: wp(20),
     borderRadius: wp(10),
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: hp(1),
     ...SHADOWS.medium,
   },
   avatarImage: {
@@ -378,6 +561,41 @@ const styles = StyleSheet.create({
     fontSize: wp(7),
     fontWeight: '700',
     color: '#fff',
+  },
+  cameraOverlay: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    width: wp(7),
+    height: wp(7),
+    borderRadius: wp(3.5),
+    backgroundColor: COLORS.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2.5,
+    borderColor: COLORS.white,
+    ...SHADOWS.small,
+  },
+  cameraIconContainer: {
+    width: wp(4.5),
+    height: wp(4.5),
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  removePhotoBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: wp(1.5),
+    marginTop: hp(0.8),
+    paddingHorizontal: wp(2.5),
+    paddingVertical: hp(0.3),
+    borderRadius: wp(2),
+    backgroundColor: COLORS.danger + '10',
+  },
+  removePhotoText: {
+    fontSize: wp(2.4),
+    color: COLORS.danger,
+    fontWeight: '500',
   },
   doctorName: {
     fontSize: wp(4.5),
@@ -472,33 +690,6 @@ const styles = StyleSheet.create({
     fontSize: wp(3.2),
     fontWeight: '600',
     color: COLORS.text,
-    marginTop: hp(0.1),
-  },
-
-  // ─── STATS ─────────────────────────────────────────────────────────
-  statsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    gap: wp(2),
-  },
-  statCard: {
-    width: (width - wp(8) - wp(6)) / 4,
-    backgroundColor: COLORS.white,
-    borderRadius: wp(3),
-    padding: wp(2),
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  statNumber: {
-    fontSize: wp(3.8),
-    fontWeight: '700',
-    color: COLORS.text,
-  },
-  statLabel: {
-    fontSize: wp(2.2),
-    color: COLORS.textSecondary,
     marginTop: hp(0.1),
   },
 

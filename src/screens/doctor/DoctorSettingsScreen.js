@@ -14,7 +14,7 @@ import {
   Alert,
   Image,
   Modal,
-  TextInput,
+  FlatList,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -27,6 +27,51 @@ const hp = (p) => (height * p) / 100;
 
 const THEME_KEY = '@sehatline_theme';
 
+// ─── Mock Reviews Data (Realistic - 18 reviews) ──────────────────────
+const generateMockReviews = () => {
+  const comments = [
+    'Excellent doctor! Very professional and caring.',
+    'Great experience, explained everything clearly.',
+    'Best cardiologist in the city. Highly recommended.',
+    'Very thorough examination. Great doctor.',
+    'Professional and knowledgeable. Will visit again.',
+    'Amazing doctor! Treated my father with great care.',
+    'Very satisfied with the consultation.',
+    'Good doctor but waiting time was long.',
+    'Excellent service and diagnosis.',
+    'Very polite and understanding doctor.',
+    'Highly skilled professional. Trustworthy.',
+    'Great doctor! My health improved significantly.',
+    'Professional approach. Clear communication.',
+    'Very experienced doctor. Highly recommended.',
+    'Good consultation. Satisfied with treatment.',
+    'Excellent doctor! Saved my life.',
+    'Very caring and compassionate.',
+    'Best doctor ever! Truly professional.',
+    'Great experience. Will recommend to family.',
+    'Very knowledgeable and helpful.',
+    'Excellent care and treatment.',
+    'Professional and friendly doctor.',
+  ];
+
+  const ratings = [5, 5, 5, 4, 5, 5, 4, 3, 5, 5, 4, 5, 4, 5, 4, 5, 5, 5];
+  const dates = [
+    'Today', 'Yesterday', '2 days ago', '3 days ago', '4 days ago',
+    '5 days ago', '1 week ago', '2 weeks ago', '3 weeks ago', '1 month ago',
+    '2 months ago', '3 months ago', '4 months ago', '5 months ago', '6 months ago',
+    '7 months ago', '8 months ago', '9 months ago'
+  ];
+
+  return comments.slice(0, 18).map((comment, index) => ({
+    id: (index + 1).toString(),
+    rating: ratings[index % ratings.length],
+    comment: comment,
+    date: dates[index % dates.length],
+  }));
+};
+
+const MOCK_REVIEWS = generateMockReviews();
+
 const DoctorSettingsScreen = ({ navigation }) => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
@@ -35,31 +80,37 @@ const DoctorSettingsScreen = ({ navigation }) => {
   const [adminMessages, setAdminMessages] = useState(true);
   const [vibrationEnabled, setVibrationEnabled] = useState(true);
 
-  // ─── PIN Lock State ─────────────────────────────────────────────
-  const [showPinModal, setShowPinModal] = useState(false);
-  const [pinCode, setPinCode] = useState('');
-  const [confirmPin, setConfirmPin] = useState('');
-  const [isPinLoading, setIsPinLoading] = useState(false);
-  const [hasPin, setHasPin] = useState(false);
+  // ─── Biometric State ─────────────────────────────────────────────
+  const [biometricEnabled, setBiometricEnabled] = useState(false);
+  const [showBiometricModal, setShowBiometricModal] = useState(false);
+  const [isBiometricLoading, setIsBiometricLoading] = useState(false);
 
-  // ─── Clinical Preferences (On-Screen) ──────────────────────────
+  // ─── Reviews State ───────────────────────────────────────────────
+  const [showReviewsModal, setShowReviewsModal] = useState(false);
+  const [reviews, setReviews] = useState(MOCK_REVIEWS);
+  const [averageRating, setAverageRating] = useState(0);
+  const [ratingDistribution, setRatingDistribution] = useState({
+    5: 0, 4: 0, 3: 0, 2: 0, 1: 0
+  });
+  const [totalReviews, setTotalReviews] = useState(0);
+
+  // ─── Clinical Preferences ──────────────────────────────────────────
   const [consultationDuration, setConsultationDuration] = useState('15');
-  const [prescriptionLanguage, setPrescriptionLanguage] = useState('English');
   const [notesTemplate, setNotesTemplate] = useState('General Checkup');
   const [autoSaveNotes, setAutoSaveNotes] = useState(true);
   const [showDurationPicker, setShowDurationPicker] = useState(false);
-  const [showLanguagePicker, setShowLanguagePicker] = useState(false);
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
 
-  // ─── Doctor Availability (On-Screen) ────────────────────────────
+  // ─── Doctor Availability ────────────────────────────────────────────
   const [isAvailable, setIsAvailable] = useState(true);
   const [acceptEmergency, setAcceptEmergency] = useState(true);
 
   useEffect(() => {
     loadSettings();
-    checkPinStatus();
+    loadBiometricStatus();
     loadClinicalPreferences();
     loadAvailability();
+    calculateReviewStats();
   }, []);
 
   const loadSettings = async () => {
@@ -103,9 +154,6 @@ const DoctorSettingsScreen = ({ navigation }) => {
       const duration = await AsyncStorage.getItem('@sehatline_consultation_duration');
       if (duration) setConsultationDuration(duration);
       
-      const lang = await AsyncStorage.getItem('@sehatline_prescription_language');
-      if (lang) setPrescriptionLanguage(lang);
-      
       const template = await AsyncStorage.getItem('@sehatline_notes_template');
       if (template) setNotesTemplate(template);
       
@@ -128,13 +176,35 @@ const DoctorSettingsScreen = ({ navigation }) => {
     }
   };
 
-  const checkPinStatus = async () => {
+  const loadBiometricStatus = async () => {
     try {
-      const savedPin = await AsyncStorage.getItem('@sehatline_pin');
-      setHasPin(savedPin !== null);
+      const bio = await AsyncStorage.getItem('@sehatline_biometric');
+      setBiometricEnabled(bio === 'true');
     } catch (error) {
-      console.error('Error checking PIN:', error);
+      console.error('Error loading biometric status:', error);
     }
+  };
+
+  const calculateReviewStats = () => {
+    if (reviews.length === 0) {
+      setAverageRating(0);
+      setTotalReviews(0);
+      return;
+    }
+
+    // Calculate average
+    const total = reviews.reduce((sum, review) => sum + review.rating, 0);
+    setAverageRating(parseFloat((total / reviews.length).toFixed(1)));
+    setTotalReviews(reviews.length);
+
+    // Calculate distribution
+    const distribution = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+    reviews.forEach(review => {
+      if (distribution[review.rating] !== undefined) {
+        distribution[review.rating]++;
+      }
+    });
+    setRatingDistribution(distribution);
   };
 
   // ─── DARK MODE ────────────────────────────────────────────────────
@@ -193,11 +263,54 @@ const DoctorSettingsScreen = ({ navigation }) => {
     }
   };
 
-  // ─── CLINICAL PREFERENCES (On-Screen) ────────────────────────────
+  // ─── BIOMETRIC ─────────────────────────────────────────────────────
+  const handleBiometric = () => {
+    if (biometricEnabled) {
+      Alert.alert(
+        'Disable Biometric',
+        'Are you sure you want to disable biometric login?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Disable',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                await AsyncStorage.setItem('@sehatline_biometric', 'false');
+                setBiometricEnabled(false);
+                Alert.alert('Success', 'Biometric login disabled.');
+              } catch (error) {
+                console.error('Error disabling biometric:', error);
+              }
+            },
+          },
+        ]
+      );
+    } else {
+      setShowBiometricModal(true);
+    }
+  };
+
+  const handleBiometricSetup = async () => {
+    setIsBiometricLoading(true);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      await AsyncStorage.setItem('@sehatline_biometric', 'true');
+      setBiometricEnabled(true);
+      Alert.alert('Success', 'Biometric login enabled successfully!');
+      setShowBiometricModal(false);
+    } catch (error) {
+      console.error('Error setting up biometric:', error);
+      Alert.alert('Error', 'Failed to enable biometric login.');
+    } finally {
+      setIsBiometricLoading(false);
+    }
+  };
+
+  // ─── CLINICAL PREFERENCES ──────────────────────────────────────────
   const saveClinicalPreferences = async () => {
     try {
       await AsyncStorage.setItem('@sehatline_consultation_duration', consultationDuration);
-      await AsyncStorage.setItem('@sehatline_prescription_language', prescriptionLanguage);
       await AsyncStorage.setItem('@sehatline_notes_template', notesTemplate);
       await AsyncStorage.setItem('@sehatline_auto_save_notes', JSON.stringify(autoSaveNotes));
       Alert.alert('Success', 'Clinical preferences saved!');
@@ -207,7 +320,7 @@ const DoctorSettingsScreen = ({ navigation }) => {
     }
   };
 
-  // ─── AVAILABILITY (On-Screen) ─────────────────────────────────────
+  // ─── AVAILABILITY ──────────────────────────────────────────────────
   const saveAvailability = async () => {
     try {
       await AsyncStorage.setItem('@sehatline_doctor_available', JSON.stringify(isAvailable));
@@ -217,69 +330,6 @@ const DoctorSettingsScreen = ({ navigation }) => {
       console.error('Error saving availability:', error);
       Alert.alert('Error', 'Failed to update availability.');
     }
-  };
-
-  // ─── PIN LOCK ─────────────────────────────────────────────────────
-  const handlePinLock = () => {
-    setPinCode('');
-    setConfirmPin('');
-    setShowPinModal(true);
-  };
-
-  const handlePinSubmit = async () => {
-    if (!pinCode || !confirmPin) {
-      Alert.alert('Error', 'Please fill all fields.');
-      return;
-    }
-
-    if (pinCode.length !== 4) {
-      Alert.alert('Error', 'PIN must be exactly 4 digits.');
-      return;
-    }
-
-    if (pinCode !== confirmPin) {
-      Alert.alert('Error', 'PINs do not match.');
-      return;
-    }
-
-    setIsPinLoading(true);
-    try {
-      await AsyncStorage.setItem('@sehatline_pin', pinCode);
-      setHasPin(true);
-      Alert.alert('Success', 'PIN set successfully!');
-      setShowPinModal(false);
-      setPinCode('');
-      setConfirmPin('');
-    } catch (error) {
-      console.error('Error saving PIN:', error);
-      Alert.alert('Error', 'Failed to set PIN.');
-    } finally {
-      setIsPinLoading(false);
-    }
-  };
-
-  const handleRemovePin = () => {
-    Alert.alert(
-      'Remove PIN',
-      'Are you sure you want to remove PIN lock?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await AsyncStorage.removeItem('@sehatline_pin');
-              setHasPin(false);
-              Alert.alert('Success', 'PIN removed successfully!');
-            } catch (error) {
-              console.error('Error removing PIN:', error);
-              Alert.alert('Error', 'Failed to remove PIN.');
-            }
-          },
-        },
-      ]
-    );
   };
 
   // ─── PRIVACY POLICY ──────────────────────────────────────────────
@@ -326,6 +376,36 @@ const DoctorSettingsScreen = ({ navigation }) => {
           },
         },
       ]
+    );
+  };
+
+  // ─── Render Stars ──────────────────────────────────────────────────
+  const renderStars = (rating, size = 3.5) => {
+    return (
+      <View style={styles.starsRow}>
+        {[1, 2, 3, 4, 5].map((star) => (
+          <Ionicons
+            key={star}
+            name={star <= rating ? 'star' : 'star-outline'}
+            size={wp(size)}
+            color={star <= rating ? '#FFB800' : '#D1D5DB'}
+          />
+        ))}
+      </View>
+    );
+  };
+
+  // ─── Render Rating Bar ─────────────────────────────────────────────
+  const renderRatingBar = (rating, count, total) => {
+    const percentage = total > 0 ? (count / total) * 100 : 0;
+    return (
+      <View style={styles.ratingBarRow}>
+        <Text style={styles.ratingBarLabel}>{rating} ★</Text>
+        <View style={styles.ratingBarTrack}>
+          <View style={[styles.ratingBarFill, { width: `${percentage}%` }]} />
+        </View>
+        <Text style={styles.ratingBarCount}>{count}</Text>
+      </View>
     );
   };
 
@@ -382,83 +462,128 @@ const DoctorSettingsScreen = ({ navigation }) => {
     </Modal>
   );
 
-  // ─── PIN Modal ──────────────────────────────────────────────────
-  const renderPinModal = () => (
-    <Modal visible={showPinModal} transparent animationType="slide">
+  // ─── Biometric Modal ──────────────────────────────────────────────
+  const renderBiometricModal = () => (
+    <Modal visible={showBiometricModal} transparent animationType="slide">
       <View style={styles.modalOverlay}>
         <View style={[styles.modalContainer, { backgroundColor: colors.card }]}>
           <View style={styles.modalHeader}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>
-              {hasPin ? 'Update PIN' : 'Set PIN Lock'}
-            </Text>
-            <TouchableOpacity onPress={() => setShowPinModal(false)}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Enable Biometric Login</Text>
+            <TouchableOpacity onPress={() => setShowBiometricModal(false)}>
               <Ionicons name="close" size={wp(5)} color={colors.text} />
             </TouchableOpacity>
           </View>
 
           <View style={styles.modalBody}>
-            <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Enter 4-Digit PIN</Text>
-              <TextInput
-                style={[styles.input, { 
-                  backgroundColor: colors.background,
-                  color: colors.text,
-                  borderColor: colors.border,
-                }]}
-                placeholder="Enter 4-digit PIN"
-                placeholderTextColor={colors.textLight}
-                keyboardType="numeric"
-                maxLength={4}
-                secureTextEntry
-                value={pinCode}
-                onChangeText={setPinCode}
-              />
+            <View style={styles.biometricIconContainer}>
+              <View style={styles.biometricIconCircle}>
+                <Ionicons name="finger-print" size={wp(15)} color={COLORS.primary} />
+              </View>
             </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Confirm PIN</Text>
-              <TextInput
-                style={[styles.input, { 
-                  backgroundColor: colors.background,
-                  color: colors.text,
-                  borderColor: colors.border,
-                }]}
-                placeholder="Confirm 4-digit PIN"
-                placeholderTextColor={colors.textLight}
-                keyboardType="numeric"
-                maxLength={4}
-                secureTextEntry
-                value={confirmPin}
-                onChangeText={setConfirmPin}
-              />
-            </View>
+            <Text style={[styles.biometricTitle, { color: colors.text }]}>
+              Use Fingerprint to Login
+            </Text>
+            <Text style={[styles.biometricDesc, { color: colors.textSecondary }]}>
+              Secure your account with biometric authentication. 
+              You will be able to login using your fingerprint.
+            </Text>
 
-            {hasPin && (
-              <TouchableOpacity
-                style={styles.removePinBtn}
-                onPress={handleRemovePin}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.removePinText}>Remove PIN</Text>
-              </TouchableOpacity>
-            )}
+            <View style={styles.biometricFeatures}>
+              <View style={styles.biometricFeatureItem}>
+                <Ionicons name="checkmark-circle" size={wp(4)} color={COLORS.success} />
+                <Text style={[styles.biometricFeatureText, { color: colors.textSecondary }]}>
+                  Quick and secure login
+                </Text>
+              </View>
+              <View style={styles.biometricFeatureItem}>
+                <Ionicons name="checkmark-circle" size={wp(4)} color={COLORS.success} />
+                <Text style={[styles.biometricFeatureText, { color: colors.textSecondary }]}>
+                  No need to remember passwords
+                </Text>
+              </View>
+              <View style={styles.biometricFeatureItem}>
+                <Ionicons name="checkmark-circle" size={wp(4)} color={COLORS.success} />
+                <Text style={[styles.biometricFeatureText, { color: colors.textSecondary }]}>
+                  Device-level security
+                </Text>
+              </View>
+            </View>
 
             <TouchableOpacity
-              style={[styles.modalSubmitBtn, isPinLoading && styles.modalSubmitDisabled]}
-              onPress={handlePinSubmit}
-              disabled={isPinLoading}
+              style={[styles.modalSubmitBtn, isBiometricLoading && styles.modalSubmitDisabled]}
+              onPress={handleBiometricSetup}
+              disabled={isBiometricLoading}
               activeOpacity={0.7}
             >
               <LinearGradient
                 colors={[COLORS.primary, COLORS.secondary]}
                 style={styles.modalSubmitGradient}
               >
+                <Ionicons name="finger-print" size={wp(4)} color={COLORS.white} />
                 <Text style={styles.modalSubmitText}>
-                  {isPinLoading ? 'Setting...' : hasPin ? 'Update PIN' : 'Set PIN'}
+                  {isBiometricLoading ? 'Setting up...' : 'Enable Fingerprint Login'}
                 </Text>
               </LinearGradient>
             </TouchableOpacity>
           </View>
+        </View>
+      </View>
+    </Modal>
+  );
+
+  // ─── Reviews Modal ──────────────────────────────────────────────────
+  const renderReviewsModal = () => (
+    <Modal visible={showReviewsModal} transparent animationType="slide">
+      <View style={styles.modalOverlay}>
+        <View style={[styles.reviewsModal, { backgroundColor: colors.card }]}>
+          <View style={styles.pickerHeader}>
+            <Text style={[styles.pickerTitle, { color: colors.text }]}>Patient Reviews</Text>
+            <TouchableOpacity onPress={() => setShowReviewsModal(false)}>
+              <Ionicons name="close" size={wp(5)} color={colors.text} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Rating Summary */}
+          <View style={styles.reviewsSummary}>
+            <View style={styles.averageRatingContainer}>
+              <Text style={[styles.averageRatingNumber, { color: colors.text }]}>{averageRating}</Text>
+              <View style={styles.averageStars}>
+                {renderStars(Math.round(averageRating), 3.5)}
+              </View>
+              <Text style={[styles.totalReviews, { color: colors.textLight }]}>
+                Based on {totalReviews} reviews
+              </Text>
+            </View>
+
+            {/* Rating Distribution */}
+            <View style={styles.ratingDistribution}>
+              {[5, 4, 3, 2, 1].map((rating) => (
+                renderRatingBar(rating, ratingDistribution[rating] || 0, totalReviews)
+              ))}
+            </View>
+          </View>
+
+          <FlatList
+            data={reviews}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.reviewsList}
+            renderItem={({ item }) => (
+              <View style={[styles.reviewItem, { borderBottomColor: colors.border }]}>
+                <View style={styles.reviewHeader}>
+                  {renderStars(item.rating, 3)}
+                  <Text style={[styles.reviewDate, { color: colors.textLight }]}>{item.date}</Text>
+                </View>
+                <Text style={[styles.reviewComment, { color: colors.text }]}>{item.comment}</Text>
+              </View>
+            )}
+            ListEmptyComponent={() => (
+              <View style={styles.emptyReviews}>
+                <Ionicons name="chatbubbles-outline" size={wp(10)} color={colors.textLight} />
+                <Text style={[styles.emptyReviewsText, { color: colors.textLight }]}>No reviews yet</Text>
+              </View>
+            )}
+          />
         </View>
       </View>
     </Modal>
@@ -515,6 +640,75 @@ const DoctorSettingsScreen = ({ navigation }) => {
                 onValueChange={toggleDarkMode}
                 colors={colors}
               />
+            </View>
+          </View>
+
+          {/* ─── SECURITY ────────────────────────────────────────────── */}
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Security</Text>
+            <View style={[styles.card, { 
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+            }, SHADOWS.small]}>
+              <SettingItem
+                icon="finger-print"
+                label="Biometric Login"
+                description={biometricEnabled ? "Fingerprint login enabled" : "Enable fingerprint login"}
+                type="switch"
+                value={biometricEnabled}
+                onValueChange={handleBiometric}
+                colors={colors}
+              />
+            </View>
+          </View>
+
+          {/* ─── REVIEWS ────────────────────────────────────────────── */}
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Feedback</Text>
+            <View style={[styles.card, { 
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+            }, SHADOWS.small]}>
+              <TouchableOpacity 
+                style={styles.row}
+                onPress={() => setShowReviewsModal(true)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.rowLeft}>
+                  <View style={[styles.rowIcon, { backgroundColor: colors.iconBg }]}>
+                    <Ionicons name="star-outline" size={wp(4)} color={colors.primary} />
+                  </View>
+                  <View style={styles.rowContent}>
+                    <View style={styles.reviewRowHeader}>
+                      <Text style={[styles.rowLabel, { color: colors.text }]}>Patient Reviews</Text>
+                      <View style={styles.reviewRowStars}>
+                        {renderStars(Math.round(averageRating), 3)}
+                      </View>
+                    </View>
+                    <Text style={[styles.rowDesc, { color: colors.textLight }]}>
+                      {totalReviews} reviews • {averageRating} average rating
+                    </Text>
+                    {/* Performance Indicator */}
+                    <View style={styles.performanceIndicator}>
+                      <View style={[
+                        styles.performanceBar,
+                        { 
+                          width: `${(averageRating / 5) * 100}%`,
+                          backgroundColor: averageRating >= 4 ? COLORS.success : 
+                                         averageRating >= 3 ? COLORS.warning : COLORS.danger
+                        }
+                      ]} />
+                      <Text style={[styles.performanceText, { color: colors.textLight }]}>
+                        {averageRating >= 4.5 ? 'Excellent' :
+                         averageRating >= 4 ? 'Very Good' :
+                         averageRating >= 3.5 ? 'Good' :
+                         averageRating >= 3 ? 'Average' : 'Needs Improvement'}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+                <Ionicons name="chevron-forward" size={wp(4)} color={colors.textLight} />
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -581,35 +775,7 @@ const DoctorSettingsScreen = ({ navigation }) => {
             </View>
           </View>
 
-          {/* ─── SECURITY ────────────────────────────────────────────── */}
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Security</Text>
-            <View style={[styles.card, { 
-              backgroundColor: colors.card,
-              borderColor: colors.border,
-            }, SHADOWS.small]}>
-              <TouchableOpacity 
-                style={styles.row}
-                onPress={handlePinLock}
-                activeOpacity={0.7}
-              >
-                <View style={styles.rowLeft}>
-                  <View style={[styles.rowIcon, { backgroundColor: colors.iconBg }]}>
-                    <Ionicons name="keypad-outline" size={wp(4)} color={colors.primary} />
-                  </View>
-                  <View style={styles.rowContent}>
-                    <Text style={[styles.rowLabel, { color: colors.text }]}>PIN Lock</Text>
-                    <Text style={[styles.rowDesc, { color: colors.textLight }]}>
-                      {hasPin ? 'PIN is enabled' : 'Secure app with PIN'}
-                    </Text>
-                  </View>
-                </View>
-                <Ionicons name="chevron-forward" size={wp(4)} color={colors.textLight} />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* ─── CLINICAL PREFERENCES (On-Screen) ────────────────────── */}
+          {/* ─── CLINICAL PREFERENCES ────────────────────────────────── */}
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Clinical Preferences</Text>
             <View style={[styles.card, { 
@@ -629,25 +795,6 @@ const DoctorSettingsScreen = ({ navigation }) => {
                   <View style={styles.rowContent}>
                     <Text style={[styles.rowLabel, { color: colors.text }]}>Consultation Duration</Text>
                     <Text style={[styles.rowDesc, { color: colors.textLight }]}>{consultationDuration} minutes</Text>
-                  </View>
-                </View>
-                <Ionicons name="chevron-forward" size={wp(4)} color={colors.textLight} />
-              </TouchableOpacity>
-
-              <Divider colors={colors} />
-
-              <TouchableOpacity 
-                style={styles.row}
-                onPress={() => setShowLanguagePicker(true)}
-                activeOpacity={0.7}
-              >
-                <View style={styles.rowLeft}>
-                  <View style={[styles.rowIcon, { backgroundColor: colors.iconBg }]}>
-                    <Ionicons name="language-outline" size={wp(4)} color={colors.primary} />
-                  </View>
-                  <View style={styles.rowContent}>
-                    <Text style={[styles.rowLabel, { color: colors.text }]}>Prescription Language</Text>
-                    <Text style={[styles.rowDesc, { color: colors.textLight }]}>{prescriptionLanguage}</Text>
                   </View>
                 </View>
                 <Ionicons name="chevron-forward" size={wp(4)} color={colors.textLight} />
@@ -704,7 +851,7 @@ const DoctorSettingsScreen = ({ navigation }) => {
             </View>
           </View>
 
-          {/* ─── AVAILABILITY (On-Screen) ────────────────────────────── */}
+          {/* ─── AVAILABILITY ────────────────────────────────────────── */}
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Doctor Availability</Text>
             <View style={[styles.card, { 
@@ -794,7 +941,8 @@ const DoctorSettingsScreen = ({ navigation }) => {
       </SafeAreaView>
 
       {/* Modals */}
-      {renderPinModal()}
+      {renderBiometricModal()}
+      {renderReviewsModal()}
 
       {/* Option Pickers */}
       {renderOptionPicker(
@@ -804,15 +952,6 @@ const DoctorSettingsScreen = ({ navigation }) => {
         setConsultationDuration,
         () => setShowDurationPicker(false),
         'Consultation Duration'
-      )}
-
-      {renderOptionPicker(
-        showLanguagePicker,
-        ['English', 'Urdu', 'English/Urdu'],
-        prescriptionLanguage,
-        setPrescriptionLanguage,
-        () => setShowLanguagePicker(false),
-        'Prescription Language'
       )}
 
       {renderOptionPicker(
@@ -980,6 +1119,76 @@ const styles = StyleSheet.create({
     transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }],
   },
 
+  // ── Reviews ──────────────────────────────────────────────────────
+  reviewRowHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: wp(2),
+  },
+  reviewRowStars: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  starsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  performanceIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: wp(2),
+    marginTop: hp(0.2),
+  },
+  performanceBar: {
+    height: hp(0.4),
+    borderRadius: 2,
+    width: wp(15),
+    backgroundColor: COLORS.success,
+  },
+  performanceText: {
+    fontSize: wp(2.2),
+    color: COLORS.textLight,
+    fontWeight: '500',
+  },
+
+  // ─── Rating Distribution ──────────────────────────────────────────
+  ratingDistribution: {
+    marginTop: hp(1.5),
+    width: '100%',
+  },
+  ratingBarRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: hp(0.15),
+    gap: wp(1.5),
+  },
+  ratingBarLabel: {
+    fontSize: wp(2.4),
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+    width: wp(6),
+  },
+  ratingBarTrack: {
+    flex: 1,
+    height: hp(0.8),
+    backgroundColor: '#E5E7EB',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  ratingBarFill: {
+    height: '100%',
+    backgroundColor: '#FFB800',
+    borderRadius: 4,
+  },
+  ratingBarCount: {
+    fontSize: wp(2.2),
+    color: COLORS.textLight,
+    width: wp(4),
+    textAlign: 'right',
+  },
+
   // ── Save Button ──────────────────────────────────────────────────
   saveButton: {
     marginHorizontal: wp(3.5),
@@ -1066,25 +1275,6 @@ const styles = StyleSheet.create({
   modalBody: {
     padding: wp(4),
   },
-  inputGroup: {
-    marginBottom: hp(1.5),
-  },
-  inputLabel: {
-    fontSize: wp(3),
-    fontWeight: '500',
-    color: COLORS.textSecondary,
-    marginBottom: hp(0.3),
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: wp(2.5),
-    paddingHorizontal: wp(3),
-    paddingVertical: hp(1),
-    fontSize: wp(3.2),
-    color: COLORS.text,
-    backgroundColor: COLORS.backgroundSecondary,
-  },
   modalSubmitBtn: {
     borderRadius: wp(2.5),
     overflow: 'hidden',
@@ -1094,22 +1284,122 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   modalSubmitGradient: {
-    paddingVertical: hp(1.4),
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: hp(1.4),
+    gap: wp(2),
   },
   modalSubmitText: {
     color: COLORS.white,
     fontSize: wp(3.5),
     fontWeight: '600',
   },
-  removePinBtn: {
+
+  // ─── Biometric Modal ──────────────────────────────────────────────
+  biometricIconContainer: {
     alignItems: 'center',
-    paddingVertical: hp(0.5),
+    marginBottom: hp(2),
   },
-  removePinText: {
-    color: COLORS.danger,
+  biometricIconCircle: {
+    width: wp(20),
+    height: wp(20),
+    borderRadius: wp(10),
+    backgroundColor: COLORS.primary + '15',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  biometricTitle: {
+    fontSize: wp(4.2),
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: hp(0.5),
+  },
+  biometricDesc: {
+    fontSize: wp(3),
+    textAlign: 'center',
+    lineHeight: wp(4.5),
+    marginBottom: hp(2),
+  },
+  biometricFeatures: {
+    gap: hp(0.8),
+    marginBottom: hp(2),
+  },
+  biometricFeatureItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: wp(2),
+  },
+  biometricFeatureText: {
+    fontSize: wp(3),
+  },
+
+  // ─── Reviews Modal ────────────────────────────────────────────────
+  reviewsModal: {
+    width: width * 0.92,
+    backgroundColor: COLORS.white,
+    borderRadius: wp(4),
+    overflow: 'hidden',
+    ...SHADOWS.large,
+    maxHeight: height * 0.8,
+  },
+  reviewsSummary: {
+    padding: wp(4),
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  averageRatingContainer: {
+    alignItems: 'center',
+  },
+  averageRatingNumber: {
+    fontSize: wp(8),
+    fontWeight: '800',
+    color: COLORS.text,
+  },
+  averageStars: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    marginTop: hp(0.3),
+  },
+  totalReviews: {
+    fontSize: wp(2.8),
+    color: COLORS.textLight,
+    marginTop: hp(0.2),
+  },
+  reviewsList: {
+    padding: wp(3),
+    paddingBottom: hp(2),
+  },
+  reviewItem: {
+    paddingVertical: hp(1.2),
+    borderBottomWidth: 0.5,
+    borderBottomColor: COLORS.border,
+  },
+  reviewHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: hp(0.3),
+  },
+  reviewDate: {
+    fontSize: wp(2.4),
+    color: COLORS.textLight,
+  },
+  reviewComment: {
     fontSize: wp(3.2),
-    fontWeight: '600',
+    color: COLORS.text,
+    lineHeight: wp(4.2),
+  },
+  emptyReviews: {
+    alignItems: 'center',
+    paddingVertical: hp(4),
+    gap: hp(0.5),
+  },
+  emptyReviewsText: {
+    fontSize: wp(3.2),
+    color: COLORS.textLight,
   },
 
   // ─── Picker Modal ──────────────────────────────────────────────────

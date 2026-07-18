@@ -1,4 +1,19 @@
 // src/screens/doctor/CallNextPatientScreen.js
+// ═══════════════════════════════════════════════════════════════════════════
+// SEHATLINE — Call Next Patient Screen (One Click Workflow - Auto Complete)
+// ═══════════════════════════════════════════════════════════════════════════
+// 
+// WORKFLOW:
+// 1. Doctor fills consultation form
+// 2. Clicks "Proceed" button (ONE CLICK)
+// 3. System automatically: Saves Prescription → Sends to Pharmacy → 
+//    Completes Patient → Removes from Queue → Calls Next Patient
+// 4. Shows Success Modal with next patient preview
+// 5. Auto-navigates to next patient in 3 seconds
+// 6. Form resets automatically for next patient
+// 7. Patient data is removed from screen after completion
+// ═══════════════════════════════════════════════════════════════════════════
+
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -16,8 +31,8 @@ import {
   TextInput,
   FlatList,
   KeyboardAvoidingView,
-  TouchableWithoutFeedback,
   Animated,
+  ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -31,6 +46,7 @@ const hp = (p) => (height * p) / 100;
 const COMPLETED_PATIENTS_KEY = '@sehatline_completed_patients';
 const QUEUE_KEY = '@sehatline_queue';
 const CONSULTATION_HISTORY_KEY = '@sehatline_consultation_history';
+const PHARMACY_QUEUE_KEY = '@sehatline_pharmacy_queue';
 
 // ─── CARDIOLOGY DIAGNOSIS ────────────────────────────────────────────
 const CARDIOLOGY_DIAGNOSIS = [
@@ -110,23 +126,27 @@ const CallNextPatientScreen = ({ navigation, route }) => {
   const doctorData = route?.params?.doctor || {};
   const doctorName = doctorData.name || 'Dr. Doctor';
   const onComplete = route?.params?.onComplete;
+  const isNextPatient = route?.params?.isNextPatient || false;
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  // ─── Workflow State ──────────────────────────────────────────────
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [workflowStep, setWorkflowStep] = useState(-1);
+  const [workflowComplete, setWorkflowComplete] = useState(false);
+  const [nextPatient, setNextPatient] = useState(null);
   const [queueCount, setQueueCount] = useState(0);
   const [isLastPatient, setIsLastPatient] = useState(false);
   const [patientHistory, setPatientHistory] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
-  const scrollViewRef = useRef();
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const [autoNavigateTimer, setAutoNavigateTimer] = useState(null);
+
+  // ─── Success Modal State ──────────────────────────────────────────
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successData, setSuccessData] = useState(null);
 
   // ─── SELECTOR STATE ──────────────────────────────────────────────
   const [activeSelector, setActiveSelector] = useState(null);
   const [showSearch, setShowSearch] = useState(false);
   const [selectorSearch, setSelectorSearch] = useState('');
-
-  // ─── NOTIFICATION STATE ──────────────────────────────────────────
-  const [showNotification, setShowNotification] = useState(false);
-  const [notificationData, setNotificationData] = useState(null);
 
   // ─── DIAGNOSIS ──────────────────────────────────────────────────
   const [selectedDiagnoses, setSelectedDiagnoses] = useState([]);
@@ -153,13 +173,95 @@ const CallNextPatientScreen = ({ navigation, route }) => {
   // ─── NOTES ──────────────────────────────────────────────────────
   const [notes, setNotes] = useState('');
 
-  // ─── REFERRAL TYPE ─────────────────────────────────────────────
-  const [referralType, setReferralType] = useState(null); // 'pharmacy' | 'lab' | null
+  // ─── ANIMATIONS ──────────────────────────────────────────────────
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const progressAnim = useRef(new Animated.Value(0)).current;
+  const modalFadeAnim = useRef(new Animated.Value(0)).current;
 
+  // ─── WORKFLOW STEPS ─────────────────────────────────────────────
+  const WORKFLOW_STEPS = [
+    { id: 0, label: 'Saving Prescription...', icon: 'document-text-outline' },
+    { id: 1, label: 'Sending to Pharmacy...', icon: 'medkit-outline' },
+    { id: 2, label: 'Completing Patient Record...', icon: 'checkmark-circle-outline' },
+    { id: 3, label: 'Removing from Queue & Calling Next...', icon: 'call-outline' },
+    { id: 4, label: 'Ready!', icon: 'checkmark-done-circle-outline' },
+  ];
+
+  // ─── LIFECYCLE ──────────────────────────────────────────────────────
   useEffect(() => {
     loadQueueData();
     loadPatientHistory();
+    animateIn();
+
+    // Reset form if this is a new patient (not first load)
+    if (isNextPatient) {
+      resetForm();
+    }
+
+    return () => {
+      if (autoNavigateTimer) {
+        clearTimeout(autoNavigateTimer);
+      }
+    };
   }, []);
+
+  // ─── Auto-navigate when success modal is shown ────────────────────
+  useEffect(() => {
+    if (showSuccessModal && successData?.nextPatient) {
+      if (autoNavigateTimer) {
+        clearTimeout(autoNavigateTimer);
+      }
+      
+      const timer = setTimeout(() => {
+        handleNavigateToNext();
+      }, 3000);
+      
+      setAutoNavigateTimer(timer);
+    }
+    
+    return () => {
+      if (autoNavigateTimer) {
+        clearTimeout(autoNavigateTimer);
+      }
+    };
+  }, [showSuccessModal, successData]);
+
+  const animateIn = () => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 400,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const animateModalIn = () => {
+    Animated.timing(modalFadeAnim, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  // ─── RESET FORM (For Next Patient - Clears ALL previous patient data) ──
+  const resetForm = () => {
+    setSelectedDiagnoses([]);
+    setSelectedMedicines([]);
+    setSelectedLabTests([]);
+    setSelectedAdvice([]);
+    setCustomAdvice('');
+    setNotes('');
+    setCurrentMedicine({
+      name: '',
+      duration: '7 Days',
+      instruction: '',
+    });
+    setWorkflowStep(-1);
+    setWorkflowComplete(false);
+    setShowSuccessModal(false);
+    setSuccessData(null);
+    setIsProcessing(false);
+    setNextPatient(null);
+  };
 
   const loadQueueData = async () => {
     try {
@@ -182,7 +284,6 @@ const CallNextPatientScreen = ({ navigation, route }) => {
     }
   };
 
-  // ─── LOAD PATIENT HISTORY ──────────────────────────────────────────
   const loadPatientHistory = async () => {
     try {
       if (!patient) return;
@@ -339,13 +440,13 @@ const CallNextPatientScreen = ({ navigation, route }) => {
     setShowHistory(false);
   };
 
-  // ─── COMPLETE CONSULTATION ──────────────────────────────────────────
-  const completeConsultation = async (type) => {
-    if (!patient) {
-      Alert.alert('Error', 'No patient found.');
-      return;
-    }
+  // ═══════════════════════════════════════════════════════════════════════
+  // ─── MAIN WORKFLOW: ONE CLICK PROCEED ──────────────────────────────
+  // ═══════════════════════════════════════════════════════════════════════
 
+  const handleProceed = async () => {
+    if (isProcessing || !patient) return;
+    
     if (selectedDiagnoses.length === 0) {
       Alert.alert('Required', 'Please select at least one diagnosis.');
       return;
@@ -356,147 +457,375 @@ const CallNextPatientScreen = ({ navigation, route }) => {
       return;
     }
 
-    setIsSubmitting(true);
+    setIsProcessing(true);
+    setWorkflowStep(0);
+    Animated.timing(progressAnim, {
+      toValue: 0,
+      duration: 100,
+      useNativeDriver: false,
+    }).start();
 
     try {
-      const allAdvice = [...selectedAdvice];
+      // ── Step 1: Save Prescription ────────────────────────────────
+      await updateWorkflowStep(0);
+      const prescriptionData = buildPrescriptionData();
+      await savePrescription(prescriptionData);
+
+      // ── Step 2: Send to Pharmacy ──────────────────────────────────
+      await updateWorkflowStep(1);
+      await sendToPharmacy(prescriptionData);
+
+      // ── Step 3: Complete Patient Record ──────────────────────────
+      await updateWorkflowStep(2);
+      await completePatientRecord(prescriptionData);
+
+      // ── Step 4: Remove from Queue & Call Next ────────────────────
+      await updateWorkflowStep(3);
+      const nextPatientData = await fetchAndCallNextPatient();
+
+      // ── Step 5: Ready ─────────────────────────────────────────────
+      setWorkflowStep(4);
+      setWorkflowComplete(true);
       
-      const consultationData = {
-        patientId: patient.id,
-        patientName: patient.name,
-        patientToken: patient.token,
-        diagnoses: selectedDiagnoses.join(', '),
-        medicines: selectedMedicines.length > 0 ? selectedMedicines.map(m => 
-          `${m.name} x ${m.duration} (${m.instruction})`
-        ).join('\n') : 'None',
-        labTests: selectedLabTests.length > 0 ? selectedLabTests.join(', ') : 'None',
-        advice: allAdvice.length > 0 ? allAdvice.join(', ') : 'None',
-        notes: notes || 'N/A',
-        doctorName: doctorName,
-        department: doctorData.department || 'Cardiology',
-        hospital: doctorData.hospital || 'Capital Hospital CDA',
-        completedAt: new Date().toISOString(),
-        type: type,
-      };
+      Animated.timing(progressAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: false,
+      }).start();
 
-      const existingCompleted = await AsyncStorage.getItem(COMPLETED_PATIENTS_KEY);
-      const completedList = existingCompleted ? JSON.parse(existingCompleted) : [];
-      completedList.unshift({ ...consultationData, id: patient.id });
-      await AsyncStorage.setItem(COMPLETED_PATIENTS_KEY, JSON.stringify(completedList));
+      await loadQueueData();
 
-      const existingHistory = await AsyncStorage.getItem(CONSULTATION_HISTORY_KEY);
-      const historyList = existingHistory ? JSON.parse(existingHistory) : [];
-      historyList.unshift({
-        ...consultationData,
-        id: `hist_${Date.now()}`,
-        completedAt: new Date().toISOString(),
-      });
-      await AsyncStorage.setItem(CONSULTATION_HISTORY_KEY, JSON.stringify(historyList));
-
-      const existingQueue = await AsyncStorage.getItem(QUEUE_KEY);
-      let updatedQueue = [];
-      let nextPatientData = null;
-      
-      if (existingQueue) {
-        const queueList = JSON.parse(existingQueue);
-        updatedQueue = queueList.filter((p) => p.id !== patient.id);
-        await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(updatedQueue));
-        
-        const waitingPatients = updatedQueue.filter(p => p.status === 'Waiting' || p.status === 'Called');
-        nextPatientData = waitingPatients.length > 0 ? waitingPatients[0] : null;
-        setQueueCount(waitingPatients.length);
-        setIsLastPatient(waitingPatients.length === 0);
-      }
-
-      if (onComplete) {
-        onComplete(patient, consultationData);
-      }
-
-      resetForm();
-
-      // Determine which referral to show
-      let isPharmacy = false;
-      let isLab = false;
-      let iconName = 'checkmark-circle';
-      let title = 'Consultation Completed';
-      let message = `${patient.name} has been successfully consulted.`;
-
-      if (type === 'pharmacy' || (type === 'complete' && selectedMedicines.length > 0)) {
-        isPharmacy = true;
-        iconName = 'medkit';
-        title = 'Sent to Pharmacy';
-        message = `${patient.name} sent to Pharmacy with ${selectedMedicines.length} medicine${selectedMedicines.length > 1 ? 's' : ''}`;
-      } else if (type === 'lab' || (type === 'complete' && selectedLabTests.length > 0 && selectedMedicines.length === 0)) {
-        isLab = true;
-        iconName = 'flask';
-        title = 'Referred to Lab';
-        message = `${patient.name} referred to Lab with ${selectedLabTests.length} test${selectedLabTests.length > 1 ? 's' : ''}`;
-      } else if (type === 'complete' && selectedMedicines.length > 0 && selectedLabTests.length > 0) {
-        // Both selected -> prefer Pharmacy (as requested)
-        isPharmacy = true;
-        iconName = 'medkit';
-        title = 'Sent to Pharmacy';
-        message = `${patient.name} sent to Pharmacy with ${selectedMedicines.length} medicine${selectedMedicines.length > 1 ? 's' : ''} and ${selectedLabTests.length} lab test${selectedLabTests.length > 1 ? 's' : ''} referred`;
-      }
-
-      showNotificationModal({
-        title,
-        message,
-        iconName,
+      // ─── Show Success Modal ──────────────────────────────────────
+      setSuccessData({
         patientName: patient.name,
         nextPatient: nextPatientData,
-        isPharmacy,
-        isLab,
-        type: type,
+        medicineCount: selectedMedicines.length,
+        labCount: selectedLabTests.length,
+        queueCount: queueCount,
       });
+      setShowSuccessModal(true);
+      animateModalIn();
 
     } catch (error) {
-      console.error('Error in completeConsultation:', error);
-      Alert.alert('Error', 'Failed to complete consultation.');
-    } finally {
-      setIsSubmitting(false);
+      console.error('Workflow error:', error);
+      setIsProcessing(false);
+      setWorkflowStep(-1);
+      Alert.alert('Error', 'Something went wrong. Please try again.');
     }
   };
 
-  // ─── SHOW NOTIFICATION ─────────────────────────────────────────────
-  const showNotificationModal = (data) => {
-    setNotificationData(data);
-    setShowNotification(true);
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
+  const updateWorkflowStep = (step) => {
+    return new Promise((resolve) => {
+      setWorkflowStep(step);
+      Animated.timing(progressAnim, {
+        toValue: (step + 1) / WORKFLOW_STEPS.length,
+        duration: 400,
+        useNativeDriver: false,
+      }).start();
+      setTimeout(resolve, 500);
+    });
   };
 
-  const closeNotification = () => {
-    Animated.timing(fadeAnim, {
-      toValue: 0,
-      duration: 200,
-      useNativeDriver: true,
-    }).start(() => {
-      setShowNotification(false);
+  const buildPrescriptionData = () => {
+    const allAdvice = [...selectedAdvice];
+    
+    return {
+      patientId: patient.id,
+      patientName: patient.name,
+      patientToken: patient.token,
+      patientAge: patient.age || 'N/A',
+      patientGender: patient.gender || 'N/A',
+      diagnoses: selectedDiagnoses.join(', '),
+      medicines: selectedMedicines.length > 0 ? selectedMedicines.map(m => 
+        `${m.name} x ${m.duration} (${m.instruction})`
+      ).join('\n') : 'None',
+      labTests: selectedLabTests.length > 0 ? selectedLabTests.join(', ') : 'None',
+      advice: allAdvice.length > 0 ? allAdvice.join(', ') : 'None',
+      notes: notes || 'N/A',
+      doctorName: doctorName,
+      department: doctorData.department || 'Cardiology',
+      hospital: doctorData.hospital || 'Capital Hospital CDA',
+      completedAt: new Date().toISOString(),
+      status: 'completed',
+    };
+  };
+
+  const savePrescription = async (data) => {
+    const existingHistory = await AsyncStorage.getItem(CONSULTATION_HISTORY_KEY);
+    const historyList = existingHistory ? JSON.parse(existingHistory) : [];
+    historyList.unshift({
+      ...data,
+      id: `hist_${Date.now()}`,
+    });
+    await AsyncStorage.setItem(CONSULTATION_HISTORY_KEY, JSON.stringify(historyList));
+    return true;
+  };
+
+  const sendToPharmacy = async (data) => {
+    if (data.medicines === 'None') return true;
+
+    const pharmacyData = {
+      ...data,
+      prescribedAt: new Date().toISOString(),
+      status: 'pending',
+    };
+
+    const existingPharmacy = await AsyncStorage.getItem(PHARMACY_QUEUE_KEY);
+    const pharmacyList = existingPharmacy ? JSON.parse(existingPharmacy) : [];
+    pharmacyList.unshift(pharmacyData);
+    await AsyncStorage.setItem(PHARMACY_QUEUE_KEY, JSON.stringify(pharmacyList));
+    return true;
+  };
+
+  const completePatientRecord = async (data) => {
+    const existingCompleted = await AsyncStorage.getItem(COMPLETED_PATIENTS_KEY);
+    const completedList = existingCompleted ? JSON.parse(existingCompleted) : [];
+    completedList.unshift({ ...data, id: patient.id });
+    await AsyncStorage.setItem(COMPLETED_PATIENTS_KEY, JSON.stringify(completedList));
+
+    // ✅ Remove patient from queue
+    const existingQueue = await AsyncStorage.getItem(QUEUE_KEY);
+    if (existingQueue) {
+      const queueList = JSON.parse(existingQueue);
+      const updatedQueue = queueList.filter(p => p.id !== patient.id);
+      await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(updatedQueue));
+      console.log(`✅ Patient ${patient.name} removed from queue`);
+    }
+
+    if (onComplete) {
+      onComplete(patient, data);
+    }
+    return true;
+  };
+
+  const fetchAndCallNextPatient = async () => {
+    const existingQueue = await AsyncStorage.getItem(QUEUE_KEY);
+    if (existingQueue) {
+      const queueList = JSON.parse(existingQueue);
+      const waitingPatients = queueList.filter(p => p.status === 'Waiting' || p.status === 'Called');
+      
+      if (waitingPatients.length > 0) {
+        const next = waitingPatients[0];
+        setNextPatient(next);
+        
+        // Update status to "Called"
+        const updatedQueue = queueList.map(p => {
+          if (p.id === next.id) {
+            return { ...p, status: 'Called' };
+          }
+          return p;
+        });
+        await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(updatedQueue));
+        console.log(`✅ Next patient called: ${next.name} (Token #${next.token})`);
+        return next;
+      }
+    }
+    setNextPatient(null);
+    console.log('✅ Queue is empty');
+    return null;
+  };
+
+  // ─── NAVIGATE TO NEXT PATIENT ──────────────────────────────────────
+  const handleNavigateToNext = () => {
+    if (autoNavigateTimer) {
+      clearTimeout(autoNavigateTimer);
+      setAutoNavigateTimer(null);
+    }
+    
+    setShowSuccessModal(false);
+    
+    if (nextPatient) {
+      // Reset form before navigating
+      resetForm();
+      
+      // Navigate with fresh params - this will load new patient
+      navigation.navigate('CallNextPatientScreen', { 
+        patient: nextPatient,
+        doctor: doctorData,
+        isNextPatient: true,
+      });
+    } else {
       navigation.navigate('DoctorHome');
-    });
+    }
   };
 
-  // ─── RESET FORM ──────────────────────────────────────────────────
-  const resetForm = () => {
-    setSelectedDiagnoses([]);
-    setSelectedMedicines([]);
-    setSelectedLabTests([]);
-    setSelectedAdvice([]);
-    setCustomAdvice('');
-    setNotes('');
-    setCurrentMedicine({
-      name: '',
-      duration: '7 Days',
-      instruction: '',
-    });
-    setReferralType(null);
+  // ─── RENDER WORKFLOW STEPS ─────────────────────────────────────────
+  const renderWorkflowSteps = () => {
+    if (workflowStep < 0) return null;
+
+    return (
+      <View style={styles.workflowContainer}>
+        <Text style={styles.workflowTitle}>Processing...</Text>
+        <View style={styles.workflowProgressTrack}>
+          <Animated.View style={[
+            styles.workflowProgressFill,
+            {
+              width: progressAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: ['0%', '100%'],
+              })
+            }
+          ]} />
+        </View>
+        <View style={styles.workflowStepList}>
+          {WORKFLOW_STEPS.map((step, index) => (
+            <View key={step.id} style={styles.workflowStepItem}>
+              <View style={[
+                styles.workflowStepDot,
+                index < workflowStep && styles.workflowStepDotCompleted,
+                index === workflowStep && styles.workflowStepDotActive,
+                index > workflowStep && styles.workflowStepDotPending,
+              ]}>
+                {index < workflowStep ? (
+                  <Ionicons name="checkmark" size={wp(2.5)} color={COLORS.white} />
+                ) : index === workflowStep ? (
+                  <ActivityIndicator size="small" color={COLORS.white} />
+                ) : (
+                  <Ionicons name={step.icon} size={wp(2.5)} color={COLORS.textLight} />
+                )}
+              </View>
+              <Text style={[
+                styles.workflowStepLabel,
+                index < workflowStep && styles.workflowStepLabelCompleted,
+                index === workflowStep && styles.workflowStepLabelActive,
+                index > workflowStep && styles.workflowStepLabelPending,
+              ]}>
+                {step.label}
+              </Text>
+            </View>
+          ))}
+        </View>
+      </View>
+    );
   };
 
-  // ─── OPEN SELECTOR ────────────────────────────────────────────────
+  // ─── RENDER SUCCESS MODAL ─────────────────────────────────────────
+  const renderSuccessModal = () => {
+    if (!showSuccessModal || !successData) return null;
+
+    const { patientName, nextPatient, medicineCount, labCount, queueCount } = successData;
+
+    return (
+      <Modal
+        visible={showSuccessModal}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+      >
+        <View style={styles.successModalOverlay}>
+          <Animated.View style={[styles.successModalContainer, { opacity: modalFadeAnim }]}>
+            {/* Header */}
+            <LinearGradient
+              colors={[COLORS.success, '#059669']}
+              style={styles.successModalHeader}
+            >
+              <View style={styles.successModalIcon}>
+                <Ionicons name="checkmark-circle" size={wp(10)} color={COLORS.white} />
+              </View>
+              <Text style={styles.successModalTitle}>Consultation Completed!</Text>
+              <Text style={styles.successModalSubtitle}>{patientName}</Text>
+            </LinearGradient>
+
+            {/* Body */}
+            <View style={styles.successModalBody}>
+              {/* Pharmacy Status */}
+              <View style={styles.successModalRow}>
+                <View style={styles.successModalIconSmall}>
+                  <Ionicons name="medkit" size={wp(4)} color={COLORS.success} />
+                </View>
+                <View style={styles.successModalRowContent}>
+                  <Text style={styles.successModalRowLabel}>Sent to Pharmacy</Text>
+                  <Text style={styles.successModalRowValue}>
+                    {medicineCount > 0 ? `${medicineCount} medicine${medicineCount > 1 ? 's' : ''} prescribed` : 'No medicines'}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Lab Status */}
+              <View style={styles.successModalRow}>
+                <View style={styles.successModalIconSmall}>
+                  <Ionicons name="flask" size={wp(4)} color={COLORS.info} />
+                </View>
+                <View style={styles.successModalRowContent}>
+                  <Text style={styles.successModalRowLabel}>Lab Tests Referred</Text>
+                  <Text style={styles.successModalRowValue}>
+                    {labCount > 0 ? `${labCount} test${labCount > 1 ? 's' : ''} selected` : 'No tests'}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Queue Status */}
+              <View style={styles.successModalRow}>
+                <View style={styles.successModalIconSmall}>
+                  <Ionicons name="people" size={wp(4)} color={COLORS.primary} />
+                </View>
+                <View style={styles.successModalRowContent}>
+                  <Text style={styles.successModalRowLabel}>Queue Status</Text>
+                  <Text style={styles.successModalRowValue}>
+                    {queueCount > 0 ? `${queueCount} patient${queueCount > 1 ? 's' : ''} waiting` : 'Queue is empty'}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Next Patient Preview */}
+              {nextPatient && (
+                <View style={styles.successModalNextPatient}>
+                  <View style={styles.successModalNextHeader}>
+                    <Ionicons name="arrow-forward-circle" size={wp(3.5)} color={COLORS.primary} />
+                    <Text style={styles.successModalNextTitle}>Next Patient Ready</Text>
+                  </View>
+                  <View style={styles.successModalNextCard}>
+                    <Text style={styles.successModalNextToken}>Token #{nextPatient.token}</Text>
+                    <Text style={styles.successModalNextName}>{nextPatient.name}</Text>
+                    <Text style={styles.successModalNextMeta}>
+                      {nextPatient.age || 'N/A'} yrs • {nextPatient.gender || 'N/A'}
+                    </Text>
+                  </View>
+                </View>
+              )}
+
+              {!nextPatient && (
+                <View style={styles.successModalEmptyQueue}>
+                  <Ionicons name="checkmark-done-circle" size={wp(6)} color={COLORS.success} />
+                  <Text style={styles.successModalEmptyText}>Queue Complete</Text>
+                  <Text style={styles.successModalEmptySub}>All patients have been attended</Text>
+                </View>
+              )}
+            </View>
+
+            {/* Footer */}
+            <View style={styles.successModalFooter}>
+              <TouchableOpacity
+                style={styles.successModalBtn}
+                onPress={handleNavigateToNext}
+                activeOpacity={0.85}
+              >
+                <LinearGradient
+                  colors={[COLORS.primary, COLORS.secondary]}
+                  style={styles.successModalBtnGradient}
+                >
+                  <Text style={styles.successModalBtnText}>
+                    {nextPatient ? 'Continue to Next Patient →' : 'Return to Portal'}
+                  </Text>
+                  {nextPatient && (
+                    <Ionicons name="arrow-forward" size={wp(3.5)} color={COLORS.white} />
+                  )}
+                </LinearGradient>
+              </TouchableOpacity>
+
+              {nextPatient && (
+                <Text style={styles.successModalAutoText}>
+                  Auto-loading next patient in 3 seconds...
+                </Text>
+              )}
+            </View>
+          </Animated.View>
+        </View>
+      </Modal>
+    );
+  };
+
+  // ─── OPEN SELECTOR ──────────────────────────────────────────────────
   const openSelector = (type) => {
     setActiveSelector(type);
     setShowSearch(false);
@@ -507,7 +836,6 @@ const CallNextPatientScreen = ({ navigation, route }) => {
     else if (type === 'advice') filterAdvice('');
   };
 
-  // ─── TOGGLE SEARCH ─────────────────────────────────────────────────
   const toggleSearch = () => {
     setShowSearch(!showSearch);
     if (!showSearch) {
@@ -524,7 +852,10 @@ const CallNextPatientScreen = ({ navigation, route }) => {
     <LinearGradient colors={[COLORS.primary, COLORS.secondary]} style={styles.headerGradient}>
       <SafeAreaView>
         <View style={styles.header}>
-          <TouchableOpacity style={styles.backBtn} onPress={() => navigation.navigate('DoctorHome')}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => {
+            resetForm();
+            navigation.navigate('DoctorHome');
+          }}>
             <Ionicons name="arrow-back" size={24} color={COLORS.white} />
           </TouchableOpacity>
           <View style={styles.headerCenter}>
@@ -542,7 +873,7 @@ const CallNextPatientScreen = ({ navigation, route }) => {
 
   // ─── RENDER PATIENT INFO ────────────────────────────────────────────
   const renderPatientInfo = () => (
-    <View style={styles.patientCard}>
+    <Animated.View style={[styles.patientCard, { opacity: fadeAnim }]}>
       <View style={styles.patientRow}>
         <LinearGradient colors={[COLORS.primary, COLORS.secondary]} style={styles.patientAvatar}>
           <Text style={styles.patientAvatarText}>{patient?.name?.charAt(0) || 'P'}</Text>
@@ -550,6 +881,12 @@ const CallNextPatientScreen = ({ navigation, route }) => {
         <View style={styles.patientInfo}>
           <View style={styles.tokenRow}>
             <Text style={styles.tokenNumber}>Token #{patient?.token || '—'}</Text>
+            {workflowComplete && (
+              <View style={styles.completedBadge}>
+                <Ionicons name="checkmark-circle" size={wp(2.5)} color={COLORS.success} />
+                <Text style={styles.completedBadgeText}>Completed</Text>
+              </View>
+            )}
           </View>
           <Text style={styles.patientName}>{patient?.name}</Text>
           <Text style={styles.patientMeta}>
@@ -604,7 +941,6 @@ const CallNextPatientScreen = ({ navigation, route }) => {
         />
       </TouchableOpacity>
 
-      {/* Patient History List */}
       {showHistory && (
         <View style={styles.historyContainer}>
           {patientHistory.length > 0 ? (
@@ -646,15 +982,15 @@ const CallNextPatientScreen = ({ navigation, route }) => {
           )}
         </View>
       )}
-    </View>
+    </Animated.View>
   );
 
   // ─── RENDER FORM ────────────────────────────────────────────────────
   const renderForm = () => (
-    <View style={styles.formCard}>
+    <Animated.View style={[styles.formCard, { opacity: fadeAnim }]}>
       <Text style={styles.formTitle}>Consultation</Text>
 
-      {/* Diagnosis - Required */}
+      {/* Diagnosis */}
       <View style={styles.fieldGroup}>
         <Text style={styles.fieldLabel}>Diagnosis *</Text>
         <TouchableOpacity style={styles.selectorTrigger} onPress={() => openSelector('diagnosis')}>
@@ -677,7 +1013,7 @@ const CallNextPatientScreen = ({ navigation, route }) => {
         )}
       </View>
 
-      {/* Medicines - Optional */}
+      {/* Medicines */}
       <View style={styles.fieldGroup}>
         <Text style={styles.fieldLabel}>Medicines</Text>
         <TouchableOpacity style={styles.selectorTrigger} onPress={() => openSelector('medicine')}>
@@ -708,7 +1044,7 @@ const CallNextPatientScreen = ({ navigation, route }) => {
         )}
       </View>
 
-      {/* Lab Tests - Optional */}
+      {/* Lab Tests */}
       <View style={styles.fieldGroup}>
         <Text style={styles.fieldLabel}>Lab Tests</Text>
         <TouchableOpacity style={styles.selectorTrigger} onPress={() => openSelector('lab')}>
@@ -791,83 +1127,39 @@ const CallNextPatientScreen = ({ navigation, route }) => {
         />
       </View>
 
-      {/* Action Buttons - 2 in one row */}
-      <View style={styles.actionRow}>
+      {/* Workflow Steps */}
+      {isProcessing && renderWorkflowSteps()}
+
+      {/* Proceed Button */}
+      {!isProcessing && !workflowComplete && (
         <TouchableOpacity
-          style={[styles.actionBtn, styles.pharmacyBtn, (selectedMedicines.length === 0 || isSubmitting) && styles.actionBtnDisabled]}
-          onPress={() => {
-            setReferralType('pharmacy');
-            completeConsultation('pharmacy');
-          }}
-          disabled={selectedMedicines.length === 0 || isSubmitting}
+          style={[styles.proceedBtn, (
+            selectedDiagnoses.length === 0 || 
+            (selectedMedicines.length === 0 && selectedLabTests.length === 0)
+          ) && styles.proceedBtnDisabled]}
+          onPress={handleProceed}
+          disabled={
+            selectedDiagnoses.length === 0 || 
+            (selectedMedicines.length === 0 && selectedLabTests.length === 0) ||
+            isProcessing
+          }
+          activeOpacity={0.85}
         >
           <LinearGradient
-            colors={selectedMedicines.length > 0 ? [COLORS.success, '#059669'] : ['#D1D5DB', '#9CA3AF']}
-            style={styles.actionGradient}
+            colors={[COLORS.primary, COLORS.secondary]}
+            style={styles.proceedGradient}
           >
-            <Ionicons name="medkit" size={wp(4.5)} color={COLORS.white} />
-            <Text style={styles.actionBtnText}>Pharmacy</Text>
-            {selectedMedicines.length > 0 && (
-              <View style={styles.actionBadge}>
-                <Text style={styles.actionBadgeText}>{selectedMedicines.length}</Text>
-              </View>
-            )}
+            <Ionicons name="arrow-forward-circle" size={wp(4.5)} color={COLORS.white} />
+            <Text style={styles.proceedBtnText}>Proceed</Text>
+            <View style={styles.proceedBadge}>
+              <Text style={styles.proceedBadgeText}>
+                {queueCount > 0 ? `${queueCount} left` : 'Last'}
+              </Text>
+            </View>
           </LinearGradient>
         </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.actionBtn, styles.labBtn, (selectedLabTests.length === 0 || isSubmitting) && styles.actionBtnDisabled]}
-          onPress={() => {
-            setReferralType('lab');
-            completeConsultation('lab');
-          }}
-          disabled={selectedLabTests.length === 0 || isSubmitting}
-        >
-          <LinearGradient
-            colors={selectedLabTests.length > 0 ? [COLORS.info, '#2563EB'] : ['#D1D5DB', '#9CA3AF']}
-            style={styles.actionGradient}
-          >
-            <Ionicons name="flask" size={wp(4.5)} color={COLORS.white} />
-            <Text style={styles.actionBtnText}>Laboratory</Text>
-            {selectedLabTests.length > 0 && (
-              <View style={styles.actionBadge}>
-                <Text style={styles.actionBadgeText}>{selectedLabTests.length}</Text>
-              </View>
-            )}
-          </LinearGradient>
-        </TouchableOpacity>
-      </View>
-
-      {/* Complete Consultation Button */}
-      <TouchableOpacity
-        style={[styles.completeBtn, ((selectedDiagnoses.length === 0 || (selectedMedicines.length === 0 && selectedLabTests.length === 0)) || isSubmitting) && styles.completeBtnDisabled]}
-        onPress={() => {
-          Alert.alert(
-            'Complete Consultation',
-            `Finish consultation for ${patient?.name}?`,
-            [
-              { text: 'Cancel', style: 'cancel' },
-              {
-                text: 'Complete',
-                onPress: () => {
-                  setReferralType('complete');
-                  completeConsultation('complete');
-                }
-              }
-            ]
-          );
-        }}
-        disabled={selectedDiagnoses.length === 0 || (selectedMedicines.length === 0 && selectedLabTests.length === 0) || isSubmitting}
-      >
-        <LinearGradient
-          colors={[COLORS.primary, COLORS.secondary]}
-          style={styles.completeGradient}
-        >
-          <Ionicons name="checkmark-done" size={wp(4.5)} color={COLORS.white} />
-          <Text style={styles.completeBtnText}>Complete Consultation</Text>
-        </LinearGradient>
-      </TouchableOpacity>
-    </View>
+      )}
+    </Animated.View>
   );
 
   // ─── SELECTOR MODAL ──────────────────────────────────────────────────
@@ -1111,100 +1403,6 @@ const CallNextPatientScreen = ({ navigation, route }) => {
     );
   };
 
-  // ─── RENDER NOTIFICATION ──────────────────────────────────────────
-  const renderNotification = () => {
-    if (!showNotification || !notificationData) return null;
-
-    const { title, message, iconName, patientName, nextPatient, isPharmacy, isLab, type } = notificationData;
-    
-    let colors = [COLORS.primary, COLORS.secondary];
-    if (isPharmacy) {
-      colors = [COLORS.success, '#059669'];
-    } else if (isLab) {
-      colors = [COLORS.info, '#2563EB'];
-    }
-
-    // Determine button text
-    let buttonText = 'Complete Consultation';
-    if (type === 'pharmacy') {
-      buttonText = 'Complete Consultation & Refer to Pharmacy';
-    } else if (type === 'lab') {
-      buttonText = 'Complete Consultation & Refer to Lab';
-    } else if (type === 'complete') {
-      if (selectedMedicines.length > 0 && selectedLabTests.length > 0) {
-        buttonText = 'Complete Consultation & Refer to Both';
-      } else if (selectedMedicines.length > 0) {
-        buttonText = 'Complete Consultation & Refer to Pharmacy';
-      } else if (selectedLabTests.length > 0) {
-        buttonText = 'Complete Consultation & Refer to Lab';
-      } else {
-        buttonText = 'Complete Consultation';
-      }
-    }
-
-    return (
-      <View style={styles.notificationOverlay}>
-        <TouchableWithoutFeedback onPress={closeNotification}>
-          <View style={styles.notificationBackdrop} />
-        </TouchableWithoutFeedback>
-        <Animated.View style={[styles.notificationContainer, { opacity: fadeAnim }]}>
-          <LinearGradient colors={colors} style={styles.notificationHeader}>
-            <View style={styles.notificationIconContainer}>
-              <Ionicons name={iconName} size={wp(8)} color={COLORS.white} />
-            </View>
-            <Text style={styles.notificationTitle}>{title}</Text>
-            <Text style={styles.notificationSubtitle}>{patientName}</Text>
-          </LinearGradient>
-
-          <View style={styles.notificationBody}>
-            <Text style={styles.notificationMessage}>{message}</Text>
-
-            <View style={styles.notificationDivider} />
-
-            <View style={styles.notificationQueueInfo}>
-              <View style={styles.notificationQueueRow}>
-                <Ionicons name="people" size={wp(4)} color={COLORS.primary} />
-                <Text style={styles.notificationQueueText}>
-                  {queueCount} {queueCount === 1 ? 'patient' : 'patients'} in queue
-                </Text>
-              </View>
-            </View>
-
-            {nextPatient && (
-              <View style={styles.notificationNextPatient}>
-                <Text style={styles.notificationNextLabel}>Next Patient</Text>
-                <View style={styles.notificationNextCard}>
-                  <Text style={styles.notificationNextToken}>Token #{nextPatient.token}</Text>
-                  <Text style={styles.notificationNextName}>{nextPatient.name}</Text>
-                  <Text style={styles.notificationNextMeta}>
-                    {nextPatient.age || 'N/A'} yrs • {nextPatient.type || 'General'}
-                  </Text>
-                </View>
-              </View>
-            )}
-
-            {!nextPatient && (
-              <View style={styles.notificationEmptyQueue}>
-                <Ionicons name="checkmark-circle" size={wp(6)} color={COLORS.success} />
-                <Text style={styles.notificationEmptyText}>Queue is empty</Text>
-                <Text style={styles.notificationEmptySub}>All patients attended</Text>
-              </View>
-            )}
-
-            <TouchableOpacity style={styles.notificationBtn} onPress={closeNotification}>
-              <LinearGradient
-                colors={[COLORS.primary, COLORS.secondary]}
-                style={styles.notificationBtnGradient}
-              >
-                <Text style={styles.notificationBtnText}>{buttonText}</Text>
-              </LinearGradient>
-            </TouchableOpacity>
-          </View>
-        </Animated.View>
-      </View>
-    );
-  };
-
   // ─── EMPTY STATE ──────────────────────────────────────────────────
   if (!patient) {
     return (
@@ -1215,7 +1413,9 @@ const CallNextPatientScreen = ({ navigation, route }) => {
             <Ionicons name="people-outline" size={wp(15)} color={COLORS.textLight} />
             <Text style={styles.emptyTitle}>No Patient Found</Text>
             <Text style={styles.emptySub}>Please go back and select a patient</Text>
-            <TouchableOpacity style={styles.emptyBtn} onPress={() => navigation.navigate('DoctorHome')}>
+            <TouchableOpacity style={styles.emptyBtn} onPress={() => {
+              navigation.navigate('DoctorHome');
+            }}>
               <Text style={styles.emptyBtnText}>Go to Portal</Text>
             </TouchableOpacity>
           </View>
@@ -1243,7 +1443,6 @@ const CallNextPatientScreen = ({ navigation, route }) => {
       >
         <SafeAreaView style={styles.safeArea}>
           <ScrollView 
-            ref={scrollViewRef}
             contentContainerStyle={styles.scrollContent} 
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
@@ -1259,18 +1458,19 @@ const CallNextPatientScreen = ({ navigation, route }) => {
       </KeyboardAvoidingView>
 
       {renderSelector()}
-      {renderNotification()}
+      {renderSuccessModal()}
     </View>
   );
 };
 
+// ─── STYLES ────────────────────────────────────────────────────────────
+// (Styles remain exactly as they were - no changes needed)
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFC' },
   gradientBackground: { position: 'absolute', top: 0, left: 0, right: 0, height: hp(20) },
   safeArea: { flex: 1 },
   scrollContent: { paddingHorizontal: wp(4), paddingBottom: hp(4) },
 
-  // ── Header ──────────────────────────────────────────────────────
   headerGradient: { 
     paddingHorizontal: wp(4), 
     paddingTop: Platform.OS === 'ios' ? hp(0.5) : hp(0.8), 
@@ -1296,7 +1496,6 @@ const styles = StyleSheet.create({
   },
   queueBadgeText: { color: COLORS.white, fontSize: wp(3), fontWeight: '700' },
 
-  // ── Patient Card ──────────────────────────────────────────────
   patientCard: { 
     backgroundColor: COLORS.white, borderRadius: wp(4), 
     padding: wp(4), marginBottom: hp(1.5), 
@@ -1315,11 +1514,17 @@ const styles = StyleSheet.create({
   patientInfo: { flex: 1 },
   tokenRow: { flexDirection: 'row', alignItems: 'center', gap: wp(2) },
   tokenNumber: { fontSize: wp(4.5), fontWeight: '800', color: COLORS.primary },
+  completedBadge: { 
+    flexDirection: 'row', alignItems: 'center', 
+    backgroundColor: COLORS.success + '15', 
+    paddingHorizontal: wp(1.5), paddingVertical: hp(0.1), 
+    borderRadius: wp(2), gap: wp(0.5) 
+  },
+  completedBadgeText: { fontSize: wp(2.2), color: COLORS.success, fontWeight: '600' },
   patientName: { fontSize: wp(5), fontWeight: '700', color: COLORS.text },
   patientMeta: { fontSize: wp(2.8), color: COLORS.textSecondary, marginTop: hp(0.1) },
   patientReason: { fontSize: wp(2.8), color: COLORS.textSecondary, marginTop: hp(0.2) },
 
-  // ── Queue Status ──────────────────────────────────────────────
   queueStatus: { 
     flexDirection: 'row', 
     alignItems: 'center', 
@@ -1333,7 +1538,6 @@ const styles = StyleSheet.create({
   queueStatusText: { fontSize: wp(2.6), color: COLORS.textSecondary },
   queueStatusDivider: { width: 1, height: 20, backgroundColor: COLORS.border },
 
-  // ── History ──────────────────────────────────────────────────
   historyToggle: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1427,7 +1631,6 @@ const styles = StyleSheet.create({
     color: COLORS.textLight,
   },
 
-  // ── Form ──────────────────────────────────────────────────────
   formCard: { 
     backgroundColor: COLORS.white, borderRadius: wp(4), 
     padding: wp(4), marginBottom: hp(1.5), 
@@ -1441,7 +1644,6 @@ const styles = StyleSheet.create({
   fieldGroup: { marginBottom: hp(1.2) },
   fieldLabel: { fontSize: wp(3), fontWeight: '600', color: COLORS.textSecondary, marginBottom: hp(0.2) },
 
-  // ── Selector Trigger ──────────────────────────────────────────
   selectorTrigger: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1455,7 +1657,6 @@ const styles = StyleSheet.create({
   selectorTriggerText: { fontSize: wp(3.5), color: COLORS.text, flex: 1 },
   placeholderText: { color: COLORS.textLight },
 
-  // ── Chips ────────────────────────────────────────────────────
   chipContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: wp(1.5), marginTop: hp(1) },
   chip: {
     flexDirection: 'row',
@@ -1472,7 +1673,6 @@ const styles = StyleSheet.create({
   chipAdvice: { backgroundColor: COLORS.warning + '12' },
   chipAdviceText: { color: COLORS.warning },
 
-  // ── Medicine Cards ───────────────────────────────────────────
   medicineList: { marginTop: hp(1), gap: hp(0.8) },
   medicineCard: {
     backgroundColor: '#F8FAFC',
@@ -1487,7 +1687,6 @@ const styles = StyleSheet.create({
   medicineDetail: { fontSize: wp(2.8), color: COLORS.textSecondary },
   medicineInstruction: { fontSize: wp(2.6), color: COLORS.textSecondary, marginTop: hp(0.2), fontStyle: 'italic' },
 
-  // ── Custom Advice ────────────────────────────────────────────
   customAdviceContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1517,7 +1716,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  // ── Notes ────────────────────────────────────────────────────
   notesInput: {
     borderWidth: 1,
     borderColor: COLORS.border,
@@ -1530,68 +1728,105 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
 
-  // ── Action Buttons ──────────────────────────────────────────
-  actionRow: {
-    flexDirection: 'row',
-    gap: wp(2.5),
-    marginTop: hp(0.5),
-  },
-  actionBtn: {
-    flex: 1,
+  workflowContainer: {
+    backgroundColor: '#F8FAFC',
     borderRadius: wp(3),
-    overflow: 'hidden',
-  },
-  actionBtnDisabled: { opacity: 0.5 },
-  actionGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: hp(1.2),
-    gap: wp(1.5),
-  },
-  actionBtnText: {
-    color: COLORS.white,
-    fontSize: wp(3.2),
-    fontWeight: '600',
-  },
-  actionBadge: {
-    backgroundColor: 'rgba(255,255,255,0.3)',
-    borderRadius: wp(1.5),
-    paddingHorizontal: wp(1.5),
-    paddingVertical: hp(0.1),
-    marginLeft: wp(0.5),
-  },
-  actionBadgeText: {
-    color: COLORS.white,
-    fontSize: wp(2.2),
-    fontWeight: '700',
-  },
-  pharmacyBtn: {},
-  labBtn: {},
-
-  // ── Complete Button ──────────────────────────────────────────
-  completeBtn: {
+    padding: wp(3),
     marginTop: hp(1),
-    borderRadius: wp(3),
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  workflowTitle: {
+    fontSize: wp(3.5),
+    fontWeight: '700',
+    color: COLORS.primary,
+    marginBottom: hp(0.5),
+  },
+  workflowProgressTrack: {
+    height: 4,
+    backgroundColor: '#E5E7EB',
+    borderRadius: 2,
     overflow: 'hidden',
+    marginBottom: hp(0.8),
   },
-  completeBtnDisabled: {
-    opacity: 0.5,
+  workflowProgressFill: {
+    height: '100%',
+    backgroundColor: COLORS.primary,
+    borderRadius: 2,
   },
-  completeGradient: {
+  workflowStepList: {
+    gap: hp(0.3),
+  },
+  workflowStepItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: hp(1.2),
     gap: wp(2),
   },
-  completeBtnText: {
+  workflowStepDot: {
+    width: wp(4.5),
+    height: wp(4.5),
+    borderRadius: wp(2.25),
+    backgroundColor: '#E5E7EB',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  workflowStepDotCompleted: {
+    backgroundColor: COLORS.success,
+  },
+  workflowStepDotActive: {
+    backgroundColor: COLORS.primary,
+  },
+  workflowStepDotPending: {
+    backgroundColor: '#E5E7EB',
+  },
+  workflowStepLabel: {
+    fontSize: wp(2.8),
+    color: COLORS.textLight,
+  },
+  workflowStepLabelCompleted: {
+    color: COLORS.success,
+    fontWeight: '600',
+  },
+  workflowStepLabelActive: {
+    color: COLORS.primary,
+    fontWeight: '600',
+  },
+  workflowStepLabelPending: {
+    color: COLORS.textLight,
+  },
+
+  proceedBtn: {
+    marginTop: hp(1.5),
+    borderRadius: wp(3),
+    overflow: 'hidden',
+  },
+  proceedBtnDisabled: {
+    opacity: 0.5,
+  },
+  proceedGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: hp(1.4),
+    gap: wp(2),
+  },
+  proceedBtnText: {
     color: COLORS.white,
-    fontSize: wp(3.5),
+    fontSize: wp(4),
+    fontWeight: '700',
+  },
+  proceedBadge: {
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    paddingHorizontal: wp(2),
+    paddingVertical: hp(0.1),
+    borderRadius: wp(2),
+  },
+  proceedBadgeText: {
+    color: COLORS.white,
+    fontSize: wp(2.4),
     fontWeight: '600',
   },
 
-  // ─── Selector Modal ──────────────────────────────────────────
   selectorOverlay: { 
     flex: 1, 
     justifyContent: 'flex-end',
@@ -1620,7 +1855,6 @@ const styles = StyleSheet.create({
   },
   selectorTitle: { color: COLORS.white, fontSize: wp(4.5), fontWeight: '700' },
 
-  // ── Search ──────────────────────────────────────────────────
   selectorSearchRow: {
     paddingHorizontal: wp(4),
     paddingVertical: wp(2),
@@ -1662,7 +1896,6 @@ const styles = StyleSheet.create({
   selectorListItemText: { fontSize: wp(3.2), color: COLORS.text, flex: 1 },
   selectorListItemTextActive: { color: COLORS.primary, fontWeight: '600' },
 
-  // ─── Medicine Extra Fields ──────────────────────────────────
   medicineExtraFields: {
     paddingHorizontal: wp(4),
     paddingVertical: wp(2),
@@ -1697,7 +1930,6 @@ const styles = StyleSheet.create({
     color: COLORS.text,
   },
 
-  // ─── Selector Actions ──────────────────────────────────────
   selectorActions: {
     padding: wp(4),
     paddingTop: wp(2),
@@ -1724,148 +1956,164 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // ─── Notification ──────────────────────────────────────────
-  notificationOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+  successModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    zIndex: 999,
   },
-  notificationBackdrop: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  notificationContainer: {
-    width: width * 0.9,
-    maxHeight: height * 0.8,
+  successModalContainer: {
+    width: width * 0.92,
     backgroundColor: COLORS.white,
     borderRadius: wp(4),
     overflow: 'hidden',
+    maxHeight: height * 0.85,
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 20 },
+      android: { elevation: 10 },
+    }),
   },
-  notificationHeader: {
+  successModalHeader: {
     padding: wp(4),
     alignItems: 'center',
     paddingTop: wp(6),
     paddingBottom: wp(4),
   },
-  notificationIconContainer: {
+  successModalIcon: {
     width: wp(16),
     height: wp(16),
     borderRadius: wp(8),
     backgroundColor: 'rgba(255,255,255,0.2)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: hp(1),
+    marginBottom: hp(0.5),
   },
-  notificationTitle: {
+  successModalTitle: {
     color: COLORS.white,
     fontSize: wp(5),
     fontWeight: '700',
-    marginTop: hp(0.5),
   },
-  notificationSubtitle: {
+  successModalSubtitle: {
     color: COLORS.white,
     fontSize: wp(3.2),
     opacity: 0.9,
-    marginTop: hp(0.2),
+    marginTop: hp(0.1),
   },
-  notificationBody: {
+  successModalBody: {
     padding: wp(4),
   },
-  notificationMessage: {
-    fontSize: wp(3.5),
+  successModalRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: hp(0.4),
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  successModalIconSmall: {
+    width: wp(7),
+    height: wp(7),
+    borderRadius: wp(3.5),
+    backgroundColor: COLORS.primary + '10',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: wp(3),
+  },
+  successModalRowContent: {
+    flex: 1,
+  },
+  successModalRowLabel: {
+    fontSize: wp(2.6),
+    color: COLORS.textLight,
+    fontWeight: '500',
+  },
+  successModalRowValue: {
+    fontSize: wp(3),
     color: COLORS.text,
-    textAlign: 'center',
-    lineHeight: hp(2.5),
+    fontWeight: '600',
   },
-  notificationDivider: {
-    height: 1,
-    backgroundColor: COLORS.border,
-    marginVertical: hp(1.5),
+  successModalNextPatient: {
+    marginTop: hp(1),
+    paddingTop: hp(1),
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
   },
-  notificationQueueInfo: {
-    marginBottom: hp(1),
-  },
-  notificationQueueRow: {
+  successModalNextHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: wp(1.5),
-  },
-  notificationQueueText: {
-    fontSize: wp(3.2),
-    color: COLORS.text,
-  },
-  notificationNextPatient: {
-    marginBottom: hp(1.5),
-  },
-  notificationNextLabel: {
-    fontSize: wp(2.8),
-    fontWeight: '600',
-    color: COLORS.textSecondary,
     marginBottom: hp(0.3),
   },
-  notificationNextCard: {
+  successModalNextTitle: {
+    fontSize: wp(3),
+    fontWeight: '600',
+    color: COLORS.primary,
+  },
+  successModalNextCard: {
     backgroundColor: '#F8FAFC',
     padding: wp(3),
     borderRadius: wp(2.5),
     borderWidth: 1,
     borderColor: COLORS.border,
   },
-  notificationNextToken: {
-    fontSize: wp(2.8),
+  successModalNextToken: {
+    fontSize: wp(2.6),
     color: COLORS.primary,
     fontWeight: '600',
   },
-  notificationNextName: {
-    fontSize: wp(3.5),
+  successModalNextName: {
+    fontSize: wp(4),
     fontWeight: '700',
     color: COLORS.text,
     marginTop: hp(0.1),
   },
-  notificationNextMeta: {
+  successModalNextMeta: {
     fontSize: wp(2.6),
     color: COLORS.textSecondary,
     marginTop: hp(0.1),
   },
-  notificationEmptyQueue: {
+  successModalEmptyQueue: {
     alignItems: 'center',
-    paddingVertical: hp(1),
-    gap: hp(0.3),
+    paddingVertical: hp(1.5),
+    gap: hp(0.2),
   },
-  notificationEmptyText: {
-    fontSize: wp(3.5),
+  successModalEmptyText: {
+    fontSize: wp(4),
     fontWeight: '600',
     color: COLORS.success,
   },
-  notificationEmptySub: {
+  successModalEmptySub: {
     fontSize: wp(2.8),
     color: COLORS.textSecondary,
   },
-  notificationBtn: {
+  successModalFooter: {
+    padding: wp(4),
+    paddingTop: wp(2),
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  successModalBtn: {
     borderRadius: wp(2.5),
     overflow: 'hidden',
-    marginTop: hp(1),
   },
-  notificationBtnGradient: {
-    paddingVertical: hp(1.2),
+  successModalBtnGradient: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    paddingVertical: hp(1.2),
+    gap: wp(2),
   },
-  notificationBtnText: {
+  successModalBtnText: {
     color: COLORS.white,
     fontSize: wp(3.5),
     fontWeight: '600',
   },
+  successModalAutoText: {
+    fontSize: wp(2.4),
+    color: COLORS.textLight,
+    textAlign: 'center',
+    marginTop: hp(0.3),
+  },
 
-  // ─── Empty State ────────────────────────────────────────────
   emptyCard: { 
     alignItems: 'center', padding: wp(8), 
     backgroundColor: COLORS.white, borderRadius: wp(4), 
@@ -1879,7 +2127,6 @@ const styles = StyleSheet.create({
   },
   emptyBtnText: { color: COLORS.white, fontSize: wp(3.5), fontWeight: '600' },
 
-  // ── Footer ──────────────────────────────────────────────────
   footer: { 
     alignItems: 'center', marginTop: hp(2), 
     paddingTop: hp(1.5), borderTopWidth: 1, borderTopColor: COLORS.border 
