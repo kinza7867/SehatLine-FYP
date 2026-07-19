@@ -60,6 +60,8 @@ const MOCK_DOCTOR = {
   rating: 4.8,
   totalPatients: 32,
   totalAppointments: 28,
+  about1: 'Expert in Interventional Cardiology',
+  about2: '15+ Years of Clinical Experience',
 };
 
 const MOCK_QUEUE = [
@@ -68,14 +70,6 @@ const MOCK_QUEUE = [
   { id: 'p_003', name: 'Aslam Malik', token: 19, age: 52, reason: 'Follow Up - Post Surgery', gender: 'Male' },
   { id: 'p_004', name: 'Bilal Hussain', token: 20, age: 38, reason: 'New Patient - Palpitations', gender: 'Male' },
   { id: 'p_005', name: 'Zainab Bibi', token: 21, age: 60, reason: 'Follow Up - Diabetes', gender: 'Female' },
-];
-
-// ── Quick Actions ──────────────────────────────────────────
-const QUICK_ACTIONS = [
-  { id: 1, title: 'Patient Records', icon: 'folder-outline', screen: 'PatientRecords', sub: 'History & Reports' },
-  { id: 2, title: 'Write Prescription', icon: 'medkit-outline', screen: 'PrescriptionScreen', sub: 'e-Prescription' },
-  { id: 3, title: 'Lab Requests', icon: 'flask-outline', screen: 'LabRequestsScreen', sub: 'Order Tests' },
-  { id: 4, title: 'Referrals', icon: 'git-branch-outline', screen: 'ReferralsScreen', sub: 'Specialist Refer' },
 ];
 
 // ── Performance Stats ─────────────────────────────────────────────────
@@ -314,7 +308,7 @@ const DoctorPortalScreen = ({ navigation }) => {
       return;
     }
     const patient = queuePatients[0];
-    navigateToScreen('CallNextPatientScreen', { patient, doctorData: doctor });
+    navigation.navigate('CallNextPatientScreen', { patient, doctorData: doctor });
   };
 
   const toggleMetric = (index) => {
@@ -418,14 +412,15 @@ const DoctorPortalScreen = ({ navigation }) => {
               {/* Doctor Name */}
               <Text style={styles.doctorName}>{doctor.name}</Text>
               
-              {/* Doctor Specialty - THIS WILL SHOW NOW */}
+              {/* Doctor Specialty */}
               <View style={styles.specialtyContainer}>
                 <Ionicons name="medical-outline" size={16} color={COLORS.primary} />
                 <Text style={styles.doctorSpecialty}>{doctor.specialty || 'Cardiologist'}</Text>
               </View>
               
-              {/* Doctor Department */}
-              <Text style={styles.doctorDepartment}>{doctor.department || 'Cardiology Department'}</Text>
+              {/* Doctor About Lines - Replacing Department */}
+              <Text style={styles.doctorAbout}>{doctor.about1 || 'Expert in Interventional Cardiology'}</Text>
+              <Text style={styles.doctorAbout}>{doctor.about2 || '15+ Years of Clinical Experience'}</Text>
               
               {/* Stats Row */}
               <View style={styles.doctorStatsRow}>
@@ -503,7 +498,7 @@ const DoctorPortalScreen = ({ navigation }) => {
 
           {!sessionStarted ? (
             <TouchableOpacity 
-              style={[styles.consultationCard, styles.shadow, { backgroundColor: COLORS.primary + '04' }]}
+              style={[styles.consultationCard, styles.shadow, { backgroundColor: COLORS.primary + '04', borderColor: COLORS.primary + '20', borderWidth: 2 }]}
               onPress={handleCardTap}
               activeOpacity={0.8}
             >
@@ -547,7 +542,7 @@ const DoctorPortalScreen = ({ navigation }) => {
               </Animated.View>
             </TouchableOpacity>
           ) : (
-            <View style={[styles.consultationCardActive, styles.shadow, { backgroundColor: COLORS.success + '04' }]}>
+            <View style={[styles.consultationCardActive, styles.shadow, { backgroundColor: COLORS.success + '04', borderColor: COLORS.success + '30', borderWidth: 2 }]}>
               <View style={styles.sessionHeader}>
                 <Ionicons name="checkmark-circle" size={20} color={COLORS.success} />
                 <Text style={styles.sessionHeaderText}>Session Active</Text>
@@ -634,32 +629,10 @@ const DoctorPortalScreen = ({ navigation }) => {
           )}
         </Animated.View>
 
-        {/* ═══ 6. QUICK ACTIONS ══════════════════════════════════════════ */}
-        <Animated.View style={[styles.section, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
-          <View style={styles.quickActionsGrid}>
-            {QUICK_ACTIONS.map((action) => (
-              <TouchableOpacity
-                key={action.id}
-                style={[styles.quickActionCard, { backgroundColor: COLORS.primary + '04' }]}
-                activeOpacity={0.7}
-                onPress={() => navigateToScreen(action.screen)}
-              >
-                <View style={[styles.quickActionIconBox, { backgroundColor: COLORS.primary + '12' }]}>
-                  <Ionicons name={action.icon} size={28} color={COLORS.primary} />
-                </View>
-                <Text style={styles.quickActionTitle}>{action.title}</Text>
-                <Text style={styles.quickActionSub}>{action.sub}</Text>
-                <View style={styles.quickActionUnderline} />
-              </TouchableOpacity>
-            ))}
-          </View>
-        </Animated.View>
-
-        {/* ═══ 7. TODAY'S SCHEDULE ════════════════════════════════════════ */}
+        {/* ═══ 6. TODAY'S SCHEDULE ════════════════════════════════════════ */}
         <Animated.View style={[styles.section, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
           <Text style={styles.sectionTitle}>Today's Schedule</Text>
-          <View style={[styles.scheduleCard, styles.shadowSmall, { backgroundColor: COLORS.primary + '04' }]}>
+          <View style={[styles.scheduleCard, styles.shadowSmall, { backgroundColor: '#F8FAFE', borderWidth: 2, borderColor: COLORS.primary + '25' }]}>
             <View style={styles.scheduleRow}>
               <Ionicons name="time-outline" size={22} color={COLORS.primary} />
               <View style={styles.scheduleTimeInfo}>
@@ -694,7 +667,7 @@ const DoctorPortalScreen = ({ navigation }) => {
           </View>
         </Animated.View>
 
-        {/* ═══ 8. PERFORMANCE METRICS ════════════════════════════════════ */}
+        {/* ═══ 7. PERFORMANCE METRICS ════════════════════════════════════ */}
         <Animated.View style={[styles.section, styles.lastSection, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Performance Metrics</Text>
@@ -926,11 +899,11 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontWeight: '600',
   },
-  doctorDepartment: {
-    fontSize: 14,
+  doctorAbout: {
+    fontSize: 13,
     color: COLORS.textSecondary,
-    fontWeight: '500',
-    marginBottom: 12,
+    fontWeight: '400',
+    marginBottom: 2,
   },
   doctorStatsRow: {
     flexDirection: 'row',
@@ -939,7 +912,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 10,
     paddingHorizontal: 16,
-    marginTop: 4,
+    marginTop: 8,
   },
   doctorStat: {
     flex: 1,
@@ -1254,65 +1227,7 @@ const styles = StyleSheet.create({
     color: COLORS.textLight,
   },
 
-  // ── 6. Quick Actions ──────────────────────────────────────────────
-  quickActionsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    gap: 10,
-  },
-  quickActionCard: {
-    width: (width - 40 - 10) / 2,
-    minHeight: 110,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    padding: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 4,
-    ...Platform.select({
-      ios: {
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-      },
-      android: { elevation: 1 },
-    }),
-  },
-  quickActionIconBox: {
-    width: 56,
-    height: 56,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  quickActionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.text,
-    textAlign: 'center',
-    marginTop: 2,
-  },
-  quickActionSub: {
-    fontSize: 11,
-    color: COLORS.textLight,
-    textAlign: 'center',
-    marginTop: 1,
-  },
-  quickActionUnderline: {
-    position: 'absolute',
-    left: 20,
-    right: 20,
-    bottom: 0,
-    height: 3,
-    borderRadius: 2,
-    backgroundColor: COLORS.primary + '40',
-  },
-
-  // ── 7. Today's Schedule ─────────────────────────────────────────────
+  // ── 6. Today's Schedule ─────────────────────────────────────────────
   scheduleCard: {
     backgroundColor: COLORS.white,
     borderRadius: 14,
@@ -1346,7 +1261,7 @@ const styles = StyleSheet.create({
     marginVertical: 8,
   },
 
-  // ── 8. Performance Metrics ──────────────────────────────────────────
+  // ── 7. Performance Metrics ──────────────────────────────────────────
   performancePeriod: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -307,7 +307,7 @@ export default function DoctorDrawerNavigator() {
         component={CallNextPatientScreen}
         options={{ 
           title: 'Call Next Patient',
-          drawerItemStyle: { display: 'none' }
+          //drawerItemStyle: { display: 'none' }
         }}
       />
 

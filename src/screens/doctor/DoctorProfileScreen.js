@@ -18,7 +18,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
-import { COLORS, SHADOWS } from '../../theme';
+import { COLORS } from '../../theme';
 
 const { width, height } = Dimensions.get('window');
 const wp = (p) => (width * p) / 100;
@@ -36,7 +36,6 @@ const DoctorProfileScreen = ({ navigation }) => {
     loadDoctorData();
   }, []);
 
-  // Refresh data when coming back from edit screen
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
       loadDoctorData();
@@ -46,46 +45,45 @@ const DoctorProfileScreen = ({ navigation }) => {
 
   const loadDoctorData = async () => {
     try {
-      // Load profile image separately from persistent storage
       const profileImage = await AsyncStorage.getItem(PROFILE_IMAGE_KEY);
-      
       const userData = await AsyncStorage.getItem(USER_DATA_KEY);
+      
       if (userData) {
         const parsed = JSON.parse(userData);
         setDoctor({
-          name: parsed.name || 'Dr. Ahmed Hassan',
+          name: parsed.name || 'Dr. Ahmed Khan',
           designation: parsed.specialty || 'Consultant Cardiologist',
-          department: parsed.department || 'Cardiology OPD',
+          department: parsed.department || 'Cardiology Department',
           hospital: parsed.hospital || 'Capital Hospital CDA',
-          room: parsed.room || 'Room 204',
-          employeeId: parsed.employeeId || 'CDA-2045',
-          qualification: parsed.qualification || 'MBBS, FCPS Cardiology',
-          experience: parsed.experience || '14 Years',
+          room: parsed.room || 'Room 12',
+          employeeId: parsed.employeeId || 'DR-1024',
+          qualification: parsed.qualification || 'MBBS, FCPS (Cardiology)',
+          experience: parsed.experience || '15 Years',
           pmdcRegistration: parsed.pmdcRegistration || 'PMC-123456',
-          workingHours: parsed.shift || '08:30 AM – 02:00 PM',
+          workingHours: parsed.workingHours || '09:00 AM – 01:00 PM',
           isOnline: parsed.isOnline !== undefined ? parsed.isOnline : true,
-          avatar: parsed.avatar || 'AH',
+          avatar: parsed.avatar || 'AK',
           color: parsed.color || COLORS.primary,
           color2: parsed.color2 || COLORS.secondary,
           profileImage: profileImage || parsed.profileImage || null,
         });
       } else {
         setDoctor({
-          name: 'Dr. Ahmed Hassan',
+          name: 'Dr. Ahmed Khan',
           designation: 'Consultant Cardiologist',
-          department: 'Cardiology OPD',
+          department: 'Cardiology Department',
           hospital: 'Capital Hospital CDA',
-          room: 'Room 204',
-          employeeId: 'CDA-2045',
-          qualification: 'MBBS, FCPS Cardiology',
-          experience: '14 Years',
+          room: 'Room 12',
+          employeeId: 'DR-1024',
+          qualification: 'MBBS, FCPS (Cardiology)',
+          experience: '15 Years',
           pmdcRegistration: 'PMC-123456',
-          workingHours: '08:30 AM – 02:00 PM',
+          workingHours: '09:00 AM – 01:00 PM',
           isOnline: true,
-          avatar: 'AH',
+          avatar: 'AK',
           color: COLORS.primary,
           color2: COLORS.secondary,
-          profileImage: profileImage || null,
+          profileImage: null,
         });
       }
     } catch (error) {
@@ -119,18 +117,9 @@ const DoctorProfileScreen = ({ navigation }) => {
       'Update Profile Photo',
       'Choose an option to update your profile picture',
       [
-        {
-          text: 'Take Photo',
-          onPress: () => openCamera(),
-        },
-        {
-          text: 'Choose from Gallery',
-          onPress: () => openGallery(),
-        },
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
+        { text: 'Take Photo', onPress: () => openCamera() },
+        { text: 'Choose from Gallery', onPress: () => openGallery() },
+        { text: 'Cancel', style: 'cancel' },
       ]
     );
   };
@@ -184,13 +173,9 @@ const DoctorProfileScreen = ({ navigation }) => {
   const saveProfileImage = async (imageUri) => {
     setUploading(true);
     try {
-      // Save image persistently - this will survive logout
       await AsyncStorage.setItem(PROFILE_IMAGE_KEY, imageUri);
-      
-      // Update local state
       setDoctor((prev) => ({ ...prev, profileImage: imageUri }));
       
-      // Also update user data for consistency
       const userData = await AsyncStorage.getItem(USER_DATA_KEY);
       if (userData) {
         const parsed = JSON.parse(userData);
@@ -202,7 +187,6 @@ const DoctorProfileScreen = ({ navigation }) => {
     } catch (error) {
       console.error('Error saving profile image:', error);
       Alert.alert('Error', 'Failed to save profile photo. Please try again.');
-      // Revert state
       loadDoctorData();
     } finally {
       setUploading(false);
@@ -220,9 +204,7 @@ const DoctorProfileScreen = ({ navigation }) => {
           style: 'destructive',
           onPress: async () => {
             try {
-              // Remove from persistent storage
               await AsyncStorage.removeItem(PROFILE_IMAGE_KEY);
-              
               setDoctor((prev) => ({ ...prev, profileImage: null }));
               
               const userData = await AsyncStorage.getItem(USER_DATA_KEY);
@@ -270,57 +252,55 @@ const DoctorProfileScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
+      <StatusBar barStyle="dark-content" backgroundColor="#F4F7FC" />
 
-      <SafeAreaView style={styles.safeArea}>
-        {/* ─── HEADER ───────────────────────────────────────────────────── */}
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.menuBtn} onPress={() => navigation.goBack()}>
-            <Ionicons name="arrow-back" size={wp(5.5)} color={COLORS.text} />
-          </TouchableOpacity>
+      {/* ─── HEADER - STICKY, DOES NOT MOVE ───────────────────────────── */}
+      <View style={styles.header}>
+        <TouchableOpacity 
+          style={styles.iconBtn} 
+          onPress={() => navigation.goBack()}
+          activeOpacity={0.6}
+        >
+          <Ionicons name="arrow-back" size={25} color={COLORS.text} />
+        </TouchableOpacity>
 
-          <View style={styles.headerCenter}>
+        <View style={styles.brandWrap}>
+          <View style={styles.logoCircle}>
             <Image 
-              source={require('../../../assets/logo.png')} 
-              style={styles.headerLogo} 
-              resizeMode="contain" 
+              source={require('../../../assets/logoo.png')} 
+              style={styles.logoImage} 
+              resizeMode="contain"
             />
-            <Text style={styles.headerTitle}>Doctor Profile</Text>
           </View>
-
-          <View style={styles.headerRight}>
-            <TouchableOpacity 
-              style={styles.settingsBtn}
-              onPress={handleSettingsPress}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="settings-outline" size={wp(5.5)} color={COLORS.primary} />
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.editBtn}
-              onPress={handleEditPress}
-              activeOpacity={0.7}
-            >
-              <LinearGradient
-                colors={[COLORS.primary, COLORS.secondary]}
-                style={styles.editBtnGradient}
-              >
-                <Ionicons name="create-outline" size={wp(4)} color={COLORS.white} />
-                <Text style={styles.editBtnText}>Edit</Text>
-              </LinearGradient>
-            </TouchableOpacity>
-          </View>
+          <Text style={styles.screenTitle}>
+            SEHAT<Text style={styles.brandAccent}>LINE</Text>
+          </Text>
+          <Text style={styles.tagline}>Doctor Profile</Text>
         </View>
 
-        <ScrollView 
-          style={styles.scrollView} 
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
+        <TouchableOpacity 
+          style={styles.iconBtn} 
+          onPress={handleSettingsPress}
+          activeOpacity={0.6}
         >
-          {/* ─── 1. DOCTOR IDENTITY CARD ───────────────────────────────── */}
-          <View style={[styles.identityCard, SHADOWS.medium]}>
-            {/* ─── Avatar with Update Button ──────────────────────────── */}
+          <Ionicons name="settings-outline" size={25} color={COLORS.primary} />
+        </TouchableOpacity>
+      </View>
+
+      {/* ─── SCROLLABLE CONTENT ────────────────────────────────────────── */}
+      <ScrollView 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+        style={styles.scrollView}
+      >
+        {/* ─── 1. DOCTOR IDENTITY CARD ───────────────────────────────── */}
+        <View style={styles.doctorCard}>
+          <LinearGradient
+            colors={[COLORS.primary + '06', '#FFFFFF']}
+            style={styles.doctorCardGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          >
             <TouchableOpacity 
               style={styles.avatarContainer}
               onPress={handleUpdatePhoto}
@@ -338,91 +318,109 @@ const DoctorProfileScreen = ({ navigation }) => {
                 )}
               </LinearGradient>
               
-              {/* ─── Camera Icon Overlay (Fixed) ────────────────────────── */}
               <View style={styles.cameraOverlay}>
                 {uploading ? (
                   <ActivityIndicator size="small" color={COLORS.white} />
                 ) : (
-                  <View style={styles.cameraIconContainer}>
-                    <Ionicons name="camera-outline" size={wp(4)} color={COLORS.white} />
-                  </View>
+                  <Ionicons name="camera-outline" size={14} color={COLORS.white} />
                 )}
               </View>
             </TouchableOpacity>
 
             <Text style={styles.doctorName}>{doctor.name}</Text>
-            <Text style={styles.doctorDesignation}>{doctor.designation}</Text>
+            
+            <View style={styles.specialtyContainer}>
+              <Ionicons name="medical-outline" size={16} color={COLORS.primary} />
+              <Text style={styles.doctorSpecialty}>{doctor.designation}</Text>
+            </View>
+            
+            <Text style={styles.doctorDepartment}>{doctor.department}</Text>
             <Text style={styles.doctorHospital}>{doctor.hospital}</Text>
-            <Text style={styles.doctorId}>Employee ID: {doctor.employeeId}</Text>
-
-            <View style={[styles.statusBadge, doctor.isOnline && styles.statusOnline]}>
-              <View style={[styles.statusDot, doctor.isOnline && styles.statusDotOnline]} />
-              <Text style={[styles.statusText, doctor.isOnline && styles.statusTextOnline]}>
-                {doctor.isOnline ? 'On Duty' : 'Off Duty'}
-              </Text>
+            
+            <View style={styles.doctorIdRow}>
+              <View style={styles.doctorIdItem}>
+                <Text style={styles.doctorIdLabel}>Employee ID</Text>
+                <Text style={styles.doctorIdValue}>{doctor.employeeId}</Text>
+              </View>
+              <View style={styles.doctorIdDivider} />
+              <View style={styles.doctorIdItem}>
+                <Text style={styles.doctorIdLabel}>Status</Text>
+                <Text style={[styles.doctorIdValue, { color: doctor.isOnline ? COLORS.success : COLORS.textLight }]}>
+                  {doctor.isOnline ? 'On Duty' : 'Off Duty'}
+                </Text>
+              </View>
             </View>
 
-            {/* ─── Photo Actions ──────────────────────────────────────── */}
             {doctor.profileImage && (
               <TouchableOpacity 
                 style={styles.removePhotoBtn}
                 onPress={handleRemovePhoto}
                 activeOpacity={0.7}
               >
-                <Ionicons name="trash-outline" size={wp(3)} color={COLORS.danger} />
+                <Ionicons name="trash-outline" size={14} color={COLORS.danger} />
                 <Text style={styles.removePhotoText}>Remove Photo</Text>
               </TouchableOpacity>
             )}
-          </View>
+          </LinearGradient>
+        </View>
 
-          {/* ─── 2. PROFESSIONAL INFORMATION ──────────────────────────── */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Professional Information</Text>
-            <View style={[styles.infoCard, SHADOWS.small]}>
-              <InfoItem icon="medkit-outline" label="Designation" value={doctor.designation} />
-              <InfoItem icon="school-outline" label="Qualification" value={doctor.qualification} />
-              <InfoItem icon="briefcase-outline" label="Experience" value={doctor.experience} />
-              <InfoItem icon="id-card-outline" label="PMDC Registration No." value={doctor.pmdcRegistration} />
-            </View>
+        {/* ─── 2. PROFESSIONAL INFORMATION ──────────────────────────── */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Professional Information</Text>
+          <View style={[styles.infoCard, { backgroundColor: COLORS.primary + '04' }]}>
+            <InfoItem icon="medkit-outline" label="Designation" value={doctor.designation} />
+            <InfoItem icon="school-outline" label="Qualification" value={doctor.qualification} />
+            <InfoItem icon="briefcase-outline" label="Experience" value={doctor.experience} />
+            <InfoItem icon="id-card-outline" label="PMDC Registration" value={doctor.pmdcRegistration} />
           </View>
+        </View>
 
-          {/* ─── 3. DEPARTMENT & DUTY INFORMATION ────────────────────── */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Department & Duty</Text>
-            <View style={[styles.infoCard, SHADOWS.small]}>
-              <InfoItem icon="business-outline" label="Hospital" value={doctor.hospital} />
-              <InfoItem icon="people-outline" label="Department" value={doctor.department} />
-              <InfoItem icon="location-outline" label="Room" value={doctor.room} />
-              <InfoItem icon="time-outline" label="Working Hours" value={doctor.workingHours} />
-              <InfoItem 
-                icon="toggle-outline" 
-                label="Current Status" 
-                value={doctor.isOnline ? 'On Duty' : 'Off Duty'}
-                valueColor={doctor.isOnline ? COLORS.success : COLORS.textLight}
-              />
-            </View>
+        {/* ─── 3. DEPARTMENT & DUTY INFORMATION ────────────────────── */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Department & Duty</Text>
+          <View style={[styles.infoCard, { backgroundColor: COLORS.primary + '04' }]}>
+            <InfoItem icon="business-outline" label="Hospital" value={doctor.hospital} />
+            <InfoItem icon="people-outline" label="Department" value={doctor.department} />
+            <InfoItem icon="location-outline" label="Room" value={doctor.room} />
+            <InfoItem icon="time-outline" label="Working Hours" value={doctor.workingHours} />
           </View>
+        </View>
 
-          {/* ─── FOOTER ────────────────────────────────────────────────── */}
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>Capital Hospital CDA</Text>
-            <Text style={styles.footerSub}>SehatLine v2.0.1</Text>
-          </View>
-        </ScrollView>
-      </SafeAreaView>
+        {/* ─── 4. EDIT BUTTON ────────────────────────────────────────── */}
+        <TouchableOpacity
+          style={styles.editBtn}
+          onPress={handleEditPress}
+          activeOpacity={0.9}
+        >
+          <LinearGradient
+            colors={[COLORS.primary, COLORS.secondary]}
+            style={styles.editBtnGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+          >
+            <Ionicons name="create-outline" size={20} color={COLORS.white} />
+            <Text style={styles.editBtnText}>Edit Profile</Text>
+          </LinearGradient>
+        </TouchableOpacity>
+
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>Capital Hospital CDA</Text>
+          <Text style={styles.footerSub}>SehatLine v2.0.1</Text>
+        </View>
+      </ScrollView>
     </View>
   );
 };
 
 // ── Info Item Component ──────────────────────────────────────────────
-const InfoItem = ({ icon, label, value, valueColor }) => (
+const InfoItem = ({ icon, label, value }) => (
   <View style={styles.infoRow}>
     <View style={styles.infoIcon}>
-      <Ionicons name={icon} size={wp(4)} color={COLORS.primary} />
+      <Ionicons name={icon} size={18} color={COLORS.primary} />
     </View>
     <View style={styles.infoContent}>
       <Text style={styles.infoLabel}>{label}</Text>
-      <Text style={[styles.infoValue, valueColor && { color: valueColor }]}>{value}</Text>
+      <Text style={styles.infoValue}>{value}</Text>
     </View>
   </View>
 );
@@ -430,288 +428,298 @@ const InfoItem = ({ icon, label, value, valueColor }) => (
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: '#F4F7FC',
   },
-  safeArea: {
-    flex: 1,
-  },
+
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: COLORS.background,
+    backgroundColor: '#F4F7FC',
   },
   loadingText: {
-    marginTop: hp(1),
-    fontSize: wp(3.5),
+    marginTop: 12,
+    fontSize: 14,
     color: COLORS.textSecondary,
   },
 
-  // ── Header ────────────────────────────────────────────────────────
+  // ─── HEADER - STICKY (DOES NOT SCROLL) ────────────────────────────
   header: {
     flexDirection: 'row',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: wp(4),
-    paddingVertical: hp(1.5),
-    backgroundColor: COLORS.white,
-    borderBottomWidth: 2,
-    borderBottomColor: COLORS.primary + '20',
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === 'ios' ? 56 : (StatusBar.currentHeight || 28) + 14,
+    paddingBottom: 18,
+    backgroundColor: '#F4F7FC',
+    zIndex: 10,
   },
-  menuBtn: {
-    width: wp(9),
-    height: wp(9),
-    justifyContent: 'center',
+  iconBtn: {
+    width: 30,
     alignItems: 'center',
+    paddingTop: 24,
   },
-  headerCenter: {
+  brandWrap: {
     flex: 1,
-    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: wp(2),
+    paddingTop: 16,
   },
-  headerLogo: {
-    width: wp(10),
-    height: wp(10),
-    resizeMode: 'contain',
-  },
-  headerTitle: {
-    fontSize: wp(4.8),
-    fontWeight: '700',
-    color: COLORS.text,
-  },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: wp(2),
-  },
-  settingsBtn: {
-    width: wp(9),
-    height: wp(9),
+  logoCircle: {
+    width: 62,
+    height: 62,
+    borderRadius: 31,
+    borderWidth: 1.6,
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.white,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  editBtn: {
-    borderRadius: wp(2.5),
+    marginBottom: 8,
     overflow: 'hidden',
   },
-  editBtnGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: wp(3),
-    paddingVertical: hp(0.5),
-    gap: wp(1),
+  logoImage: {
+    width: 40,
+    height: 40,
+    resizeMode: 'contain',
   },
-  editBtnText: {
-    color: COLORS.white,
-    fontSize: wp(2.8),
-    fontWeight: '600',
+  screenTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: COLORS.primary,
+    letterSpacing: 0.4,
+  },
+  brandAccent: {
+    color: COLORS.text,
+  },
+  tagline: {
+    fontSize: 11,
+    color: COLORS.textLight,
+    marginTop: 2,
   },
 
-  // ── Scroll ────────────────────────────────────────────────────────
+  // ─── SCROLL VIEW ──────────────────────────────────────────────────
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: hp(4),
+    paddingBottom: 20,
   },
 
-  // ── Section ──────────────────────────────────────────────────────
+  // ─── Section ──────────────────────────────────────────────────────
   section: {
-    paddingHorizontal: wp(4),
-    marginTop: hp(2),
+    paddingHorizontal: 20,
+    marginTop: 20,
   },
   sectionTitle: {
-    fontSize: wp(3.8),
+    fontSize: 18,
     fontWeight: '700',
     color: COLORS.text,
-    marginBottom: hp(1),
+    marginBottom: 12,
+    letterSpacing: -0.3,
   },
 
-  // ─── 1. DOCTOR IDENTITY CARD ─────────────────────────────────────
-  identityCard: {
-    backgroundColor: COLORS.white,
-    borderRadius: wp(3.5),
-    marginHorizontal: wp(4),
-    marginTop: hp(1.5),
-    padding: wp(4),
+  // ─── 1. DOCTOR CARD ──────────────────────────────────────────────
+  doctorCard: {
+    marginHorizontal: 20,
+    marginTop: 4,
+    borderRadius: 20,
+    overflow: 'hidden',
     borderWidth: 1,
-    borderColor: COLORS.border,
-    alignItems: 'center',
+    borderColor: COLORS.primary + '20',
+  },
+  doctorCardGradient: {
+    padding: 20,
   },
   avatarContainer: {
     position: 'relative',
-    marginBottom: hp(1),
+    alignSelf: 'center',
+    marginBottom: 12,
   },
   avatar: {
-    width: wp(20),
-    height: wp(20),
-    borderRadius: wp(10),
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     justifyContent: 'center',
     alignItems: 'center',
-    ...SHADOWS.medium,
   },
   avatarImage: {
     width: '100%',
     height: '100%',
-    borderRadius: wp(10),
+    borderRadius: 40,
   },
   avatarText: {
-    fontSize: wp(7),
+    fontSize: 28,
     fontWeight: '700',
     color: '#fff',
   },
   cameraOverlay: {
     position: 'absolute',
-    bottom: 2,
-    right: 2,
-    width: wp(7),
-    height: wp(7),
-    borderRadius: wp(3.5),
+    bottom: 0,
+    right: 0,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     backgroundColor: COLORS.primary,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2.5,
     borderColor: COLORS.white,
-    ...SHADOWS.small,
   },
-  cameraIconContainer: {
-    width: wp(4.5),
-    height: wp(4.5),
-    justifyContent: 'center',
+  doctorName: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: COLORS.text,
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  specialtyContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 2,
+  },
+  doctorSpecialty: {
+    fontSize: 15,
+    color: COLORS.primary,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  doctorDepartment: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    fontWeight: '500',
+    textAlign: 'center',
+    marginTop: 2,
+  },
+  doctorHospital: {
+    fontSize: 13,
+    color: COLORS.textLight,
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  doctorIdRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.primary + '04',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+  },
+  doctorIdItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  doctorIdLabel: {
+    fontSize: 10,
+    color: COLORS.textLight,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  doctorIdValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginTop: 1,
+  },
+  doctorIdDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: '#E8EEF4',
   },
   removePhotoBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: wp(1.5),
-    marginTop: hp(0.8),
-    paddingHorizontal: wp(2.5),
-    paddingVertical: hp(0.3),
-    borderRadius: wp(2),
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 12,
+    paddingVertical: 4,
+    paddingHorizontal: 12,
+    borderRadius: 8,
     backgroundColor: COLORS.danger + '10',
   },
   removePhotoText: {
-    fontSize: wp(2.4),
+    fontSize: 12,
     color: COLORS.danger,
     fontWeight: '500',
-  },
-  doctorName: {
-    fontSize: wp(4.5),
-    fontWeight: '700',
-    color: COLORS.text,
-  },
-  doctorDesignation: {
-    fontSize: wp(3.5),
-    color: COLORS.primary,
-    marginTop: hp(0.2),
-    fontWeight: '500',
-  },
-  doctorHospital: {
-    fontSize: wp(3),
-    color: COLORS.textSecondary,
-    marginTop: hp(0.1),
-  },
-  doctorId: {
-    fontSize: wp(2.8),
-    color: COLORS.textLight,
-    marginTop: hp(0.2),
-  },
-  statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: wp(3.5),
-    paddingVertical: hp(0.5),
-    borderRadius: wp(4),
-    backgroundColor: COLORS.backgroundSecondary,
-    gap: wp(1.5),
-    marginTop: hp(1),
-  },
-  statusOnline: {
-    backgroundColor: COLORS.success + '15',
-    borderWidth: 1,
-    borderColor: COLORS.success + '30',
-  },
-  statusDot: {
-    width: wp(2),
-    height: wp(2),
-    borderRadius: wp(1),
-    backgroundColor: COLORS.textLight,
-  },
-  statusDotOnline: {
-    backgroundColor: COLORS.success,
-  },
-  statusText: {
-    fontSize: wp(2.8),
-    color: COLORS.textSecondary,
-    fontWeight: '600',
-  },
-  statusTextOnline: {
-    color: COLORS.success,
   },
 
   // ─── INFO CARD ─────────────────────────────────────────────────────
   infoCard: {
-    backgroundColor: COLORS.white,
-    borderRadius: wp(3.5),
-    padding: wp(3.5),
+    borderRadius: 14,
+    padding: 16,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: '#E8EEF4',
   },
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: hp(0.4),
+    paddingVertical: 6,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  infoRowLast: {
-    borderBottomWidth: 0,
+    borderBottomColor: '#F0F0F0',
   },
   infoIcon: {
-    width: wp(9),
-    height: wp(9),
-    borderRadius: wp(2.5),
+    width: 34,
+    height: 34,
+    borderRadius: 8,
     backgroundColor: COLORS.primary + '15',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: wp(3),
+    marginRight: 12,
   },
   infoContent: {
     flex: 1,
   },
   infoLabel: {
-    fontSize: wp(2.6),
+    fontSize: 11,
     color: COLORS.textLight,
     fontWeight: '500',
   },
   infoValue: {
-    fontSize: wp(3.2),
+    fontSize: 14,
     fontWeight: '600',
     color: COLORS.text,
-    marginTop: hp(0.1),
+    marginTop: 1,
+  },
+
+  // ─── EDIT BUTTON ──────────────────────────────────────────────────
+  editBtn: {
+    marginHorizontal: 20,
+    marginTop: 20,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  editBtnGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    gap: 10,
+  },
+  editBtnText: {
+    color: COLORS.white,
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: 0.3,
   },
 
   // ─── FOOTER ──────────────────────────────────────────────────────
   footer: {
     alignItems: 'center',
-    marginTop: hp(3),
-    paddingTop: hp(1.5),
-    paddingBottom: hp(1),
+    marginTop: 20,
+    paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-    marginHorizontal: wp(4),
+    borderTopColor: '#E8EEF4',
+    marginHorizontal: 20,
   },
   footerText: {
-    fontSize: wp(2.8),
+    fontSize: 12,
     color: COLORS.textSecondary,
     fontWeight: '500',
   },
   footerSub: {
-    fontSize: wp(2.4),
+    fontSize: 10,
     color: COLORS.textLight,
-    marginTop: hp(0.2),
+    marginTop: 2,
   },
 });
 
