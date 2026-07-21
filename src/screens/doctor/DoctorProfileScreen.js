@@ -1,4 +1,4 @@
-// src/screens/doctor/DoctorProfileScreen.js
+// mobile/src/screens/doctor/DoctorProfileScreen.js
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -8,29 +8,83 @@ import {
   Dimensions,
   Platform,
   StatusBar,
-  SafeAreaView,
   ScrollView,
   Image,
   ActivityIndicator,
   Alert,
+  RefreshControl,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import { COLORS } from '../../theme';
+import FadeInView from '../../components/ui/FadeInView';
 
-const { width, height } = Dimensions.get('window');
-const wp = (p) => (width * p) / 100;
-const hp = (p) => (height * p) / 100;
+const { width } = Dimensions.get('window');
 
+// ── Storage Keys ──────────────────────────────────────────────────────
 const USER_DATA_KEY = '@sehatline_userData';
 const PROFILE_IMAGE_KEY = '@sehatline_profile_image';
+
+// ── Helper ────────────────────────────────────────────────────────────
+const getInitials = (name) => {
+  if (!name) return 'DR';
+  const parts = name.trim().split(' ');
+  if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+};
 
 const DoctorProfileScreen = ({ navigation }) => {
   const [doctor, setDoctor] = useState(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // ── Load Data ──────────────────────────────────────────────────────
+  const loadDoctorData = async () => {
+    try {
+      const profileImage = await AsyncStorage.getItem(PROFILE_IMAGE_KEY);
+      const userData = await AsyncStorage.getItem(USER_DATA_KEY);
+      
+      let doctorData = {
+        id: 'DR-1024',
+        name: 'Dr. Ahmed Khan',
+        designation: 'Consultant Cardiologist',
+        department: 'Cardiology Department',
+        hospital: 'Capital Hospital CDA',
+        room: 'Room 12',
+        employeeId: 'DR-1024',
+        qualification: 'MBBS, FCPS (Cardiology)',
+        experience: '15 Years',
+        pmdcRegistration: 'PMC-123456',
+        workingHours: '09:00 AM – 01:00 PM',
+        isOnline: true,
+        color: COLORS.primary,
+        color2: COLORS.secondary,
+        profileImage: null,
+      };
+
+      if (userData) {
+        const parsed = JSON.parse(userData);
+        doctorData = { ...doctorData, ...parsed };
+      }
+
+      // Load profile image from storage
+      if (profileImage) {
+        doctorData.profileImage = profileImage;
+      }
+
+      // Set avatar from name
+      doctorData.avatar = getInitials(doctorData.name);
+
+      setDoctor(doctorData);
+    } catch (error) {
+      console.error('Error loading doctor data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     loadDoctorData();
@@ -43,57 +97,13 @@ const DoctorProfileScreen = ({ navigation }) => {
     return unsubscribe;
   }, [navigation]);
 
-  const loadDoctorData = async () => {
-    try {
-      const profileImage = await AsyncStorage.getItem(PROFILE_IMAGE_KEY);
-      const userData = await AsyncStorage.getItem(USER_DATA_KEY);
-      
-      if (userData) {
-        const parsed = JSON.parse(userData);
-        setDoctor({
-          name: parsed.name || 'Dr. Ahmed Khan',
-          designation: parsed.specialty || 'Consultant Cardiologist',
-          department: parsed.department || 'Cardiology Department',
-          hospital: parsed.hospital || 'Capital Hospital CDA',
-          room: parsed.room || 'Room 12',
-          employeeId: parsed.employeeId || 'DR-1024',
-          qualification: parsed.qualification || 'MBBS, FCPS (Cardiology)',
-          experience: parsed.experience || '15 Years',
-          pmdcRegistration: parsed.pmdcRegistration || 'PMC-123456',
-          workingHours: parsed.workingHours || '09:00 AM – 01:00 PM',
-          isOnline: parsed.isOnline !== undefined ? parsed.isOnline : true,
-          avatar: parsed.avatar || 'AK',
-          color: parsed.color || COLORS.primary,
-          color2: parsed.color2 || COLORS.secondary,
-          profileImage: profileImage || parsed.profileImage || null,
-        });
-      } else {
-        setDoctor({
-          name: 'Dr. Ahmed Khan',
-          designation: 'Consultant Cardiologist',
-          department: 'Cardiology Department',
-          hospital: 'Capital Hospital CDA',
-          room: 'Room 12',
-          employeeId: 'DR-1024',
-          qualification: 'MBBS, FCPS (Cardiology)',
-          experience: '15 Years',
-          pmdcRegistration: 'PMC-123456',
-          workingHours: '09:00 AM – 01:00 PM',
-          isOnline: true,
-          avatar: 'AK',
-          color: COLORS.primary,
-          color2: COLORS.secondary,
-          profileImage: null,
-        });
-      }
-    } catch (error) {
-      console.error('Error loading doctor data:', error);
-    } finally {
-      setLoading(false);
-    }
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadDoctorData();
+    setTimeout(() => setRefreshing(false), 500);
   };
 
-  // ─── Profile Picture Update ──────────────────────────────────────
+  // ── Profile Picture ────────────────────────────────────────────────
   const requestPermissions = async () => {
     if (Platform.OS !== 'web') {
       const { status: cameraStatus } = await ImagePicker.requestCameraPermissionsAsync();
@@ -173,9 +183,13 @@ const DoctorProfileScreen = ({ navigation }) => {
   const saveProfileImage = async (imageUri) => {
     setUploading(true);
     try {
+      // Save to AsyncStorage
       await AsyncStorage.setItem(PROFILE_IMAGE_KEY, imageUri);
-      setDoctor((prev) => ({ ...prev, profileImage: imageUri }));
       
+      // Update state
+      setDoctor(prev => ({ ...prev, profileImage: imageUri }));
+      
+      // Update user data
       const userData = await AsyncStorage.getItem(USER_DATA_KEY);
       if (userData) {
         const parsed = JSON.parse(userData);
@@ -205,7 +219,7 @@ const DoctorProfileScreen = ({ navigation }) => {
           onPress: async () => {
             try {
               await AsyncStorage.removeItem(PROFILE_IMAGE_KEY);
-              setDoctor((prev) => ({ ...prev, profileImage: null }));
+              setDoctor(prev => ({ ...prev, profileImage: null }));
               
               const userData = await AsyncStorage.getItem(USER_DATA_KEY);
               if (userData) {
@@ -242,166 +256,174 @@ const DoctorProfileScreen = ({ navigation }) => {
     );
   }
 
-  const handleEditPress = () => {
-    navigation.navigate('DoctorEditProfileScreen', { doctor });
-  };
-
-  const handleSettingsPress = () => {
-    navigation.navigate('DoctorSettings');
-  };
-
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#F4F7FC" />
 
-      {/* ─── HEADER - STICKY, DOES NOT MOVE ───────────────────────────── */}
-      <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.iconBtn} 
-          onPress={() => navigation.goBack()}
-          activeOpacity={0.6}
-        >
-          <Ionicons name="arrow-back" size={25} color={COLORS.text} />
-        </TouchableOpacity>
-
-        <View style={styles.brandWrap}>
-          <View style={styles.logoCircle}>
-            <Image 
-              source={require('../../../assets/logoo.png')} 
-              style={styles.logoImage} 
-              resizeMode="contain"
-            />
-          </View>
-          <Text style={styles.screenTitle}>
-            SEHAT<Text style={styles.brandAccent}>LINE</Text>
-          </Text>
-          <Text style={styles.tagline}>Doctor Profile</Text>
-        </View>
-
-        <TouchableOpacity 
-          style={styles.iconBtn} 
-          onPress={handleSettingsPress}
-          activeOpacity={0.6}
-        >
-          <Ionicons name="settings-outline" size={25} color={COLORS.primary} />
-        </TouchableOpacity>
-      </View>
-
-      {/* ─── SCROLLABLE CONTENT ────────────────────────────────────────── */}
-      <ScrollView 
+      <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
-        style={styles.scrollView}
+        refreshControl={
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={onRefresh} 
+            colors={[COLORS.primary]} 
+            tintColor={COLORS.primary} 
+          />
+        }
       >
-        {/* ─── 1. DOCTOR IDENTITY CARD ───────────────────────────────── */}
-        <View style={styles.doctorCard}>
-          <LinearGradient
-            colors={[COLORS.primary + '06', '#FFFFFF']}
-            style={styles.doctorCardGradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
+        {/* ═══ 1. HEADER - SCROLLABLE (like DoctorPortalScreen) ══════════ */}
+        <View style={styles.header}>
+          <TouchableOpacity 
+            style={styles.iconBtn} 
+            onPress={() => navigation.goBack()}
+            activeOpacity={0.6}
           >
-            <TouchableOpacity 
-              style={styles.avatarContainer}
-              onPress={handleUpdatePhoto}
-              activeOpacity={0.8}
-              disabled={uploading}
+            <Ionicons name="arrow-back" size={26} color={COLORS.primary} />
+          </TouchableOpacity>
+
+          <View style={styles.brandWrap}>
+            <View style={styles.logoCircle}>
+              <Image 
+                source={require('../../../assets/logoo.png')} 
+                style={styles.logoImage} 
+                resizeMode="contain"
+              />
+            </View>
+            <Text style={styles.brand}>
+              SEHAT<Text style={styles.brandAccent}>LINE</Text>
+            </Text>
+            <Text style={styles.tagline}>Doctor Profile</Text>
+          </View>
+
+          <TouchableOpacity 
+            style={styles.iconBtn} 
+            onPress={() => navigation.navigate('DoctorSettings')}
+            activeOpacity={0.6}
+          >
+            <Ionicons name="settings-outline" size={25} color={COLORS.primary} />
+          </TouchableOpacity>
+        </View>
+
+        {/* ═══ 2. DOCTOR IDENTITY CARD ════════════════════════════════════ */}
+        <FadeInView delay={60}>
+          <View style={styles.doctorCard}>
+            <LinearGradient
+              colors={[COLORS.primary + '06', '#FFFFFF']}
+              style={styles.doctorCardGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
             >
-              <LinearGradient
-                colors={[doctor.color || COLORS.primary, doctor.color2 || COLORS.secondary]}
-                style={styles.avatar}
+              <TouchableOpacity 
+                style={styles.avatarContainer}
+                onPress={handleUpdatePhoto}
+                activeOpacity={0.8}
+                disabled={uploading}
               >
                 {doctor.profileImage ? (
                   <Image source={{ uri: doctor.profileImage }} style={styles.avatarImage} />
                 ) : (
-                  <Text style={styles.avatarText}>{doctor.avatar || 'DR'}</Text>
+                  <LinearGradient
+                    colors={[doctor.color || COLORS.primary, doctor.color2 || COLORS.secondary]}
+                    style={styles.avatar}
+                  >
+                    <Text style={styles.avatarText}>{doctor.avatar || 'DR'}</Text>
+                  </LinearGradient>
                 )}
-              </LinearGradient>
-              
-              <View style={styles.cameraOverlay}>
-                {uploading ? (
-                  <ActivityIndicator size="small" color={COLORS.white} />
-                ) : (
-                  <Ionicons name="camera-outline" size={14} color={COLORS.white} />
-                )}
-              </View>
-            </TouchableOpacity>
-
-            <Text style={styles.doctorName}>{doctor.name}</Text>
-            
-            <View style={styles.specialtyContainer}>
-              <Ionicons name="medical-outline" size={16} color={COLORS.primary} />
-              <Text style={styles.doctorSpecialty}>{doctor.designation}</Text>
-            </View>
-            
-            <Text style={styles.doctorDepartment}>{doctor.department}</Text>
-            <Text style={styles.doctorHospital}>{doctor.hospital}</Text>
-            
-            <View style={styles.doctorIdRow}>
-              <View style={styles.doctorIdItem}>
-                <Text style={styles.doctorIdLabel}>Employee ID</Text>
-                <Text style={styles.doctorIdValue}>{doctor.employeeId}</Text>
-              </View>
-              <View style={styles.doctorIdDivider} />
-              <View style={styles.doctorIdItem}>
-                <Text style={styles.doctorIdLabel}>Status</Text>
-                <Text style={[styles.doctorIdValue, { color: doctor.isOnline ? COLORS.success : COLORS.textLight }]}>
-                  {doctor.isOnline ? 'On Duty' : 'Off Duty'}
-                </Text>
-              </View>
-            </View>
-
-            {doctor.profileImage && (
-              <TouchableOpacity 
-                style={styles.removePhotoBtn}
-                onPress={handleRemovePhoto}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="trash-outline" size={14} color={COLORS.danger} />
-                <Text style={styles.removePhotoText}>Remove Photo</Text>
+                
+                <View style={styles.cameraOverlay}>
+                  {uploading ? (
+                    <ActivityIndicator size="small" color={COLORS.white} />
+                  ) : (
+                    <Ionicons name="camera-outline" size={14} color={COLORS.white} />
+                  )}
+                </View>
               </TouchableOpacity>
-            )}
-          </LinearGradient>
-        </View>
 
-        {/* ─── 2. PROFESSIONAL INFORMATION ──────────────────────────── */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Professional Information</Text>
-          <View style={[styles.infoCard, { backgroundColor: COLORS.primary + '04' }]}>
-            <InfoItem icon="medkit-outline" label="Designation" value={doctor.designation} />
-            <InfoItem icon="school-outline" label="Qualification" value={doctor.qualification} />
-            <InfoItem icon="briefcase-outline" label="Experience" value={doctor.experience} />
-            <InfoItem icon="id-card-outline" label="PMDC Registration" value={doctor.pmdcRegistration} />
+              <Text style={styles.doctorName}>{doctor.name}</Text>
+              
+              <View style={styles.specialtyContainer}>
+                <Ionicons name="medical-outline" size={16} color={COLORS.primary} />
+                <Text style={styles.doctorSpecialty}>{doctor.designation}</Text>
+              </View>
+              
+              <Text style={styles.doctorDepartment}>{doctor.department}</Text>
+              <Text style={styles.doctorHospital}>{doctor.hospital}</Text>
+              
+              <View style={styles.doctorIdRow}>
+                <View style={styles.doctorIdItem}>
+                  <Text style={styles.doctorIdLabel}>Employee ID</Text>
+                  <Text style={styles.doctorIdValue}>{doctor.employeeId}</Text>
+                </View>
+                <View style={styles.doctorIdDivider} />
+                <View style={styles.doctorIdItem}>
+                  <Text style={styles.doctorIdLabel}>Status</Text>
+                  <Text style={[styles.doctorIdValue, { color: doctor.isOnline ? COLORS.success : COLORS.textLight }]}>
+                    {doctor.isOnline ? 'On Duty' : 'Off Duty'}
+                  </Text>
+                </View>
+              </View>
+
+              {doctor.profileImage && (
+                <TouchableOpacity 
+                  style={styles.removePhotoBtn}
+                  onPress={handleRemovePhoto}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="trash-outline" size={14} color={COLORS.danger} />
+                  <Text style={styles.removePhotoText}>Remove Photo</Text>
+                </TouchableOpacity>
+              )}
+            </LinearGradient>
           </View>
-        </View>
+        </FadeInView>
 
-        {/* ─── 3. DEPARTMENT & DUTY INFORMATION ────────────────────── */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Department & Duty</Text>
-          <View style={[styles.infoCard, { backgroundColor: COLORS.primary + '04' }]}>
-            <InfoItem icon="business-outline" label="Hospital" value={doctor.hospital} />
-            <InfoItem icon="people-outline" label="Department" value={doctor.department} />
-            <InfoItem icon="location-outline" label="Room" value={doctor.room} />
-            <InfoItem icon="time-outline" label="Working Hours" value={doctor.workingHours} />
+        {/* ═══ 3. PROFESSIONAL INFORMATION ════════════════════════════════ */}
+        <FadeInView delay={100}>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Professional Information</Text>
+            <View style={styles.sectionRule} />
+            <View style={styles.infoCard}>
+              <InfoItem icon="medkit-outline" label="Designation" value={doctor.designation} />
+              <InfoItem icon="school-outline" label="Qualification" value={doctor.qualification} />
+              <InfoItem icon="briefcase-outline" label="Experience" value={doctor.experience} />
+              <InfoItem icon="id-card-outline" label="PMDC Registration" value={doctor.pmdcRegistration} />
+            </View>
           </View>
-        </View>
+        </FadeInView>
 
-        {/* ─── 4. EDIT BUTTON ────────────────────────────────────────── */}
-        <TouchableOpacity
-          style={styles.editBtn}
-          onPress={handleEditPress}
-          activeOpacity={0.9}
-        >
-          <LinearGradient
-            colors={[COLORS.primary, COLORS.secondary]}
-            style={styles.editBtnGradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
+        {/* ═══ 4. DEPARTMENT & DUTY ════════════════════════════════════════ */}
+        <FadeInView delay={140}>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Department & Duty</Text>
+            <View style={styles.sectionRule} />
+            <View style={styles.infoCard}>
+              <InfoItem icon="business-outline" label="Hospital" value={doctor.hospital} />
+              <InfoItem icon="people-outline" label="Department" value={doctor.department} />
+              <InfoItem icon="location-outline" label="Room" value={doctor.room} />
+              <InfoItem icon="time-outline" label="Working Hours" value={doctor.workingHours} />
+            </View>
+          </View>
+        </FadeInView>
+
+        {/* ═══ 5. EDIT BUTTON ══════════════════════════════════════════════ */}
+        <FadeInView delay={180}>
+          <TouchableOpacity
+            style={styles.editBtn}
+            onPress={() => navigation.navigate('DoctorEditProfileScreen', { doctor })}
+            activeOpacity={0.9}
           >
-            <Ionicons name="create-outline" size={20} color={COLORS.white} />
-            <Text style={styles.editBtnText}>Edit Profile</Text>
-          </LinearGradient>
-        </TouchableOpacity>
+            <LinearGradient
+              colors={[COLORS.primary, COLORS.secondary]}
+              style={styles.editBtnGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+            >
+              <Ionicons name="create-outline" size={20} color={COLORS.white} />
+              <Text style={styles.editBtnText}>Edit Profile</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </FadeInView>
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>Capital Hospital CDA</Text>
@@ -412,7 +434,7 @@ const DoctorProfileScreen = ({ navigation }) => {
   );
 };
 
-// ── Info Item Component ──────────────────────────────────────────────
+// ── Info Item ──────────────────────────────────────────────────────────
 const InfoItem = ({ icon, label, value }) => (
   <View style={styles.infoRow}>
     <View style={styles.infoIcon}>
@@ -425,6 +447,9 @@ const InfoItem = ({ icon, label, value }) => (
   </View>
 );
 
+// ═══════════════════════════════════════════════════════════════════════════
+// STYLES
+// ═══════════════════════════════════════════════════════════════════════════
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -443,7 +468,7 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
   },
 
-  // ─── HEADER - STICKY (DOES NOT SCROLL) ────────────────────────────
+  // ─── HEADER - SCROLLABLE (like DoctorPortalScreen) ──────────────
   header: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -452,7 +477,6 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'ios' ? 56 : (StatusBar.currentHeight || 28) + 14,
     paddingBottom: 18,
     backgroundColor: '#F4F7FC',
-    zIndex: 10,
   },
   iconBtn: {
     width: 30,
@@ -481,7 +505,7 @@ const styles = StyleSheet.create({
     height: 40,
     resizeMode: 'contain',
   },
-  screenTitle: {
+  brand: {
     fontSize: 20,
     fontWeight: '800',
     color: COLORS.primary,
@@ -496,15 +520,12 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 
-  // ─── SCROLL VIEW ──────────────────────────────────────────────────
-  scrollView: {
-    flex: 1,
-  },
+  // ─── SCROLL CONTENT ──────────────────────────────────────────────
   scrollContent: {
     paddingBottom: 20,
   },
 
-  // ─── Section ──────────────────────────────────────────────────────
+  // ─── SECTION ──────────────────────────────────────────────────────
   section: {
     paddingHorizontal: 20,
     marginTop: 20,
@@ -513,8 +534,15 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     color: COLORS.text,
-    marginBottom: 12,
+    marginBottom: 8,
     letterSpacing: -0.3,
+  },
+  sectionRule: {
+    width: 44,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: COLORS.primary,
+    marginBottom: 16,
   },
 
   // ─── 1. DOCTOR CARD ──────────────────────────────────────────────
@@ -525,6 +553,17 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: COLORS.primary + '20',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.08,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
   doctorCardGradient: {
     padding: 20,
@@ -542,9 +581,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   avatarImage: {
-    width: '100%',
-    height: '100%',
+    width: 80,
+    height: 80,
     borderRadius: 40,
+    resizeMode: 'cover',
   },
   avatarText: {
     fontSize: 28,
@@ -649,6 +689,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderWidth: 1,
     borderColor: '#E8EEF4',
+    backgroundColor: COLORS.white,
   },
   infoRow: {
     flexDirection: 'row',
@@ -687,6 +728,17 @@ const styles = StyleSheet.create({
     marginTop: 20,
     borderRadius: 12,
     overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: COLORS.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.25,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
   editBtnGradient: {
     flexDirection: 'row',

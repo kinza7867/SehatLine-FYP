@@ -16,7 +16,9 @@ import {
   Alert,
   ActivityIndicator,
   Image,
+  height,
   Animated,
+  Modal,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -88,6 +90,25 @@ const PERFORMANCE_METRICS = [
   { label: 'Treatment Success', value: 95, icon: 'medal-outline', color: '#9B59B6' },
 ];
 
+// ─── MONTHLY PERFORMANCE DATA ────────────────────────────────────────
+const MONTHLY_PERFORMANCE = {
+  totalPatients: 342,
+  avgRating: 4.7,
+  totalAppointments: 298,
+  completedConsultations: 285,
+  efficiency: 85,
+  satisfaction: 92,
+  onTime: 78,
+  treatmentSuccess: 95,
+  monthlyGrowth: 12,
+  weeklyData: [
+    { week: 'Week 1', patients: 82, efficiency: 82 },
+    { week: 'Week 2', patients: 88, efficiency: 84 },
+    { week: 'Week 3', patients: 91, efficiency: 86 },
+    { week: 'Week 4', patients: 81, efficiency: 88 },
+  ],
+};
+
 // ═══════════════════════════════════════════════════════════════════════════
 // MAIN SCREEN
 // ═══════════════════════════════════════════════════════════════════════════
@@ -103,12 +124,17 @@ const DoctorPortalScreen = ({ navigation }) => {
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [isCardExpanded, setIsCardExpanded] = useState(false);
   const [expandedMetric, setExpandedMetric] = useState(null);
+  
+  // ─── Monthly Performance Modal ──────────────────────────────────────
+  const [showMonthlyModal, setShowMonthlyModal] = useState(false);
+  const [monthlyData, setMonthlyData] = useState(MONTHLY_PERFORMANCE);
 
   // ── Animations ──────────────────────────────────────────────────────────
   const expandAnim = useRef(new Animated.Value(0)).current;
   const buttonAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(16)).current;
+  const modalFadeAnim = useRef(new Animated.Value(0)).current;
 
   // ── LIFECYCLE ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -126,6 +152,14 @@ const DoctorPortalScreen = ({ navigation }) => {
       Animated.timing(fadeAnim, { toValue: 1, duration: 550, useNativeDriver: true }),
       Animated.spring(slideAnim, { toValue: 0, friction: 8, tension: 40, useNativeDriver: true }),
     ]).start();
+  };
+
+  const animateModalIn = () => {
+    Animated.timing(modalFadeAnim, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
   };
 
   // ── DATA LOADING ──────────────────────────────────────────────────────
@@ -156,24 +190,19 @@ const DoctorPortalScreen = ({ navigation }) => {
         doctorData = { ...doctorData, ...parsed };
       }
       
-      // FORCE set avatar from name
       if (doctorData.name) {
         doctorData.avatar = getInitials(doctorData.name);
       }
       
-      // FORCE set specialty
       if (!doctorData.specialty) {
         doctorData.specialty = 'Cardiologist';
       }
       
-      // Store profile image but DON'T use it for avatar
-      doctorData.profileImage = null; // FORCE null to always show initials
-      
-      console.log('=== DOCTOR DATA ===');
-      console.log('Name:', doctorData.name);
-      console.log('Avatar:', doctorData.avatar);
-      console.log('Specialty:', doctorData.specialty);
-      console.log('===================');
+      if (profileImage) {
+        doctorData.profileImage = profileImage;
+      } else {
+        doctorData.profileImage = null;
+      }
       
       setDoctor(doctorData);
     } catch (e) {
@@ -315,6 +344,17 @@ const DoctorPortalScreen = ({ navigation }) => {
     setExpandedMetric(expandedMetric === index ? null : index);
   };
 
+  // ─── MONTHLY PERFORMANCE MODAL ──────────────────────────────────────
+  const openMonthlyModal = () => {
+    setShowMonthlyModal(true);
+    animateModalIn();
+  };
+
+  const closeMonthlyModal = () => {
+    setShowMonthlyModal(false);
+    modalFadeAnim.setValue(0);
+  };
+
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     setTimeout(() => {
@@ -359,21 +399,28 @@ const DoctorPortalScreen = ({ navigation }) => {
         contentContainerStyle={styles.scroll}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} tintColor={COLORS.primary} />}
       >
-        {/* ═══ 1. HEADER - ALWAYS SHOW INITIALS ═══════════════════════ */}
+        {/* ═══ 1. HEADER - SHOW PROFILE IMAGE OR INITIALS ═══════════════ */}
         <Animated.View style={[styles.header, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
           <TouchableOpacity 
             style={styles.iconBtn} 
             onPress={() => navigateToScreen('DoctorProfile')} 
             activeOpacity={0.6}
           >
-            <LinearGradient 
-              colors={[doctor.color || COLORS.primary, doctor.color2 || COLORS.secondary]} 
-              style={styles.headerAvatar}
-            >
-              <Text style={styles.headerAvatarText}>
-                {doctor.avatar || 'DR'}
-              </Text>
-            </LinearGradient>
+            {doctor.profileImage ? (
+              <Image 
+                source={{ uri: doctor.profileImage, cache: 'reload' }} 
+                style={styles.headerAvatarImage} 
+              />
+            ) : (
+              <LinearGradient 
+                colors={[doctor.color || COLORS.primary, doctor.color2 || COLORS.secondary]} 
+                style={styles.headerAvatar}
+              >
+                <Text style={styles.headerAvatarText}>
+                  {doctor.avatar || 'DR'}
+                </Text>
+              </LinearGradient>
+            )}
           </TouchableOpacity>
 
           <View style={styles.brandWrap}>
@@ -409,20 +456,16 @@ const DoctorPortalScreen = ({ navigation }) => {
             end={{ x: 1, y: 1 }}
           >
             <View style={styles.doctorInfoContainer}>
-              {/* Doctor Name */}
               <Text style={styles.doctorName}>{doctor.name}</Text>
               
-              {/* Doctor Specialty */}
               <View style={styles.specialtyContainer}>
                 <Ionicons name="medical-outline" size={16} color={COLORS.primary} />
                 <Text style={styles.doctorSpecialty}>{doctor.specialty || 'Cardiologist'}</Text>
               </View>
               
-              {/* Doctor About Lines - Replacing Department */}
               <Text style={styles.doctorAbout}>{doctor.about1 || 'Expert in Interventional Cardiology'}</Text>
               <Text style={styles.doctorAbout}>{doctor.about2 || '15+ Years of Clinical Experience'}</Text>
               
-              {/* Stats Row */}
               <View style={styles.doctorStatsRow}>
                 <View style={styles.doctorStat}>
                   <Text style={styles.doctorStatValue}>{patientsWaiting || 18}</Text>
@@ -632,13 +675,18 @@ const DoctorPortalScreen = ({ navigation }) => {
         {/* ═══ 6. TODAY'S SCHEDULE ════════════════════════════════════════ */}
         <Animated.View style={[styles.section, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
           <Text style={styles.sectionTitle}>Today's Schedule</Text>
-          <View style={[styles.scheduleCard, styles.shadowSmall, { backgroundColor: '#F8FAFE', borderWidth: 2, borderColor: COLORS.primary + '25' }]}>
+          <TouchableOpacity 
+            style={[styles.scheduleCard, styles.shadowSmall, { backgroundColor: '#F8FAFE', borderWidth: 2, borderColor: COLORS.primary + '25' }]}
+            onPress={() => navigateToScreen('DoctorScheduleScreen')}
+            activeOpacity={0.7}
+          >
             <View style={styles.scheduleRow}>
               <Ionicons name="time-outline" size={22} color={COLORS.primary} />
               <View style={styles.scheduleTimeInfo}>
                 <Text style={styles.scheduleLabel}>Working Hours</Text>
                 <Text style={styles.scheduleValue}>09:00 AM – 01:00 PM</Text>
               </View>
+              <Ionicons name="chevron-forward" size={18} color={COLORS.textLight} />
             </View>
             <View style={styles.scheduleDivider} />
             <View style={styles.scheduleRow}>
@@ -664,17 +712,21 @@ const DoctorPortalScreen = ({ navigation }) => {
                 <Text style={styles.scheduleValue}>{doctor?.department || 'Cardiology OPD'}</Text>
               </View>
             </View>
-          </View>
+          </TouchableOpacity>
         </Animated.View>
 
         {/* ═══ 7. PERFORMANCE METRICS ════════════════════════════════════ */}
         <Animated.View style={[styles.section, styles.lastSection, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Performance Metrics</Text>
-            <View style={styles.performancePeriod}>
+            <TouchableOpacity 
+              style={styles.performancePeriod}
+              onPress={openMonthlyModal}
+              activeOpacity={0.7}
+            >
               <Text style={styles.performancePeriodText}>This Month</Text>
               <Ionicons name="chevron-down" size={16} color={COLORS.textLight} />
-            </View>
+            </TouchableOpacity>
           </View>
 
           <View style={[styles.performanceCard, { backgroundColor: COLORS.primary + '04' }]}>
@@ -718,7 +770,7 @@ const DoctorPortalScreen = ({ navigation }) => {
                         styles.metricDetailStatus,
                         metric.value >= 80 ? styles.statusGood : styles.statusNeedsWork
                       ]}>
-                        {metric.value >= 80 ? '✅ Good' : '⚠️ Needs Improvement'}
+                        {metric.value >= 80 ? 'Good' : 'Needs Improvement'}
                       </Text>
                     </View>
                   </View>
@@ -730,6 +782,130 @@ const DoctorPortalScreen = ({ navigation }) => {
 
         <View style={{ height: 20 }} />
       </ScrollView>
+
+      {/* ═══ MONTHLY PERFORMANCE MODAL ════════════════════════════════ */}
+      <Modal
+        visible={showMonthlyModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={closeMonthlyModal}
+      >
+        <View style={styles.modalOverlay}>
+          <Animated.View style={[styles.modalContainer, { opacity: modalFadeAnim }]}>
+            <LinearGradient
+              colors={[COLORS.primary, COLORS.tealDark]}
+              style={styles.modalHeader}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+            >
+              <Text style={styles.modalTitle}>Monthly Performance</Text>
+              <TouchableOpacity style={styles.modalCloseBtn} onPress={closeMonthlyModal}>
+                <Ionicons name="close" size={24} color={COLORS.white} />
+              </TouchableOpacity>
+            </LinearGradient>
+
+            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+              {/* Summary Stats */}
+              <View style={styles.modalStatsGrid}>
+                <View style={styles.modalStatItem}>
+                  <Text style={[styles.modalStatNumber, { color: COLORS.primary }]}>
+                    {monthlyData.totalPatients}
+                  </Text>
+                  <Text style={styles.modalStatLabel}>Total Patients</Text>
+                </View>
+                <View style={styles.modalStatItem}>
+                  <Text style={[styles.modalStatNumber, { color: '#FFB800' }]}>
+                    {monthlyData.avgRating}
+                  </Text>
+                  <Text style={styles.modalStatLabel}>Avg Rating</Text>
+                </View>
+                <View style={styles.modalStatItem}>
+                  <Text style={[styles.modalStatNumber, { color: COLORS.success }]}>
+                    {monthlyData.totalAppointments}
+                  </Text>
+                  <Text style={styles.modalStatLabel}>Appointments</Text>
+                </View>
+                <View style={styles.modalStatItem}>
+                  <Text style={[styles.modalStatNumber, { color: COLORS.info }]}>
+                    {monthlyData.completedConsultations}
+                  </Text>
+                  <Text style={styles.modalStatLabel}>Completed</Text>
+                </View>
+              </View>
+
+              <View style={styles.modalDivider} />
+
+              {/* Growth Indicator */}
+              <View style={styles.modalGrowthContainer}>
+                <View style={styles.modalGrowthIcon}>
+                  <Ionicons name="arrow-up-circle" size={24} color={COLORS.success} />
+                </View>
+                <Text style={styles.modalGrowthText}>
+                  <Text style={[styles.modalGrowthValue, { color: COLORS.success }]}>
+                    +{monthlyData.monthlyGrowth}%
+                  </Text>
+                  {' '}growth from last month
+                </Text>
+              </View>
+
+              <View style={styles.modalDivider} />
+
+              {/* Weekly Breakdown */}
+              <Text style={styles.modalSubTitle}>Weekly Breakdown</Text>
+              {monthlyData.weeklyData.map((week, index) => (
+                <View key={index} style={styles.modalWeekItem}>
+                  <Text style={styles.modalWeekLabel}>{week.week}</Text>
+                  <View style={styles.modalWeekBarContainer}>
+                    <View 
+                      style={[
+                        styles.modalWeekBar, 
+                        { 
+                          width: `${(week.patients / 95) * 100}%`,
+                          backgroundColor: COLORS.primary 
+                        }
+                      ]} 
+                    />
+                  </View>
+                  <Text style={styles.modalWeekValue}>{week.patients}</Text>
+                </View>
+              ))}
+
+              <View style={styles.modalDivider} />
+
+              {/* Efficiency Trend */}
+              <Text style={styles.modalSubTitle}>Efficiency Trend</Text>
+              {monthlyData.weeklyData.map((week, index) => (
+                <View key={index} style={styles.modalWeekItem}>
+                  <Text style={styles.modalWeekLabel}>{week.week}</Text>
+                  <View style={styles.modalWeekBarContainer}>
+                    <View 
+                      style={[
+                        styles.modalWeekBar, 
+                        { 
+                          width: `${week.efficiency}%`,
+                          backgroundColor: week.efficiency >= 85 ? COLORS.success : COLORS.warning 
+                        }
+                      ]} 
+                    />
+                  </View>
+                  <Text style={styles.modalWeekValue}>{week.efficiency}%</Text>
+                </View>
+              ))}
+            </ScrollView>
+
+            <TouchableOpacity style={styles.modalCloseButton} onPress={closeMonthlyModal}>
+              <LinearGradient
+                colors={[COLORS.primary, COLORS.tealDark]}
+                style={styles.modalCloseGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+              >
+                <Text style={styles.modalCloseButtonText}>Close</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </Animated.View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -805,6 +981,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
+    backgroundColor: COLORS.primary,
   },
   headerAvatarImage: {
     width: 38,
@@ -1366,6 +1543,141 @@ const styles = StyleSheet.create({
   },
   statusNeedsWork: {
     color: COLORS.danger,
+  },
+
+  // ─── MODAL ──────────────────────────────────────────────────────────
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  modalContainer: {
+    width: width * 0.92,
+    maxHeight: height * 0.85,
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.white,
+  },
+  modalCloseBtn: {
+    padding: 4,
+  },
+  modalBody: {
+    padding: 20,
+  },
+  modalStatsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  modalStatItem: {
+    width: '48%',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    padding: 12,
+    alignItems: 'center',
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  modalStatNumber: {
+    fontSize: 22,
+    fontWeight: '800',
+  },
+  modalStatLabel: {
+    fontSize: 10,
+    color: COLORS.textLight,
+    marginTop: 2,
+  },
+  modalDivider: {
+    height: 1,
+    backgroundColor: COLORS.border,
+    marginVertical: 12,
+  },
+  modalGrowthContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  modalGrowthIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.success + '15',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalGrowthText: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+  },
+  modalGrowthValue: {
+    fontWeight: '700',
+  },
+  modalSubTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginBottom: 8,
+  },
+  modalWeekItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 4,
+    gap: 10,
+  },
+  modalWeekLabel: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+    width: 60,
+  },
+  modalWeekBarContainer: {
+    flex: 1,
+    height: 6,
+    backgroundColor: '#F0F0F0',
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  modalWeekBar: {
+    height: 6,
+    borderRadius: 3,
+  },
+  modalWeekValue: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: COLORS.text,
+    width: 35,
+    textAlign: 'right',
+  },
+  modalCloseButton: {
+    marginHorizontal: 20,
+    marginBottom: 16,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  modalCloseGradient: {
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalCloseButtonText: {
+    color: COLORS.white,
+    fontSize: 15,
+    fontWeight: '600',
   },
 });
 

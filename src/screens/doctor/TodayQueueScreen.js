@@ -10,7 +10,6 @@ import {
   Dimensions,
   Platform,
   StatusBar,
-  SafeAreaView,
   Image,
   Alert,
 } from 'react-native';
@@ -25,19 +24,67 @@ const hp = (p) => (height * p) / 100;
 
 const QUEUE_KEY = '@sehatline_queue';
 const COMPLETED_PATIENTS_KEY = '@sehatline_completed_patients';
-const APPOINTMENTS_KEY = '@sehatline_appointments';
+const CONSULTATION_QUEUE_KEY = '@sehatline_consultation_queue';
 
 const TodayQueueScreen = ({ navigation }) => {
   const [queue, setQueue] = useState([]);
+  const [consultationQueue, setConsultationQueue] = useState([]);
+  const [completedPatients, setCompletedPatients] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState('All');
-  const [stats, setStats] = useState({ total: 0, waiting: 0, completed: 0 });
+  const [stats, setStats] = useState({ total: 0, waiting: 0, consulting: 0, completed: 0 });
   const [currentDate, setCurrentDate] = useState('');
-  const [todayAppointments, setTodayAppointments] = useState([]);
+  const [usingMockData, setUsingMockData] = useState(true);
 
+  // ─── MOCK DATA ──────────────────────────────────────────────────────
+  // 41 patients total: 30 waiting, 5 in consult, 6 completed
+  const generateMockPatients = () => {
+    const firstNames = ['Muhammad', 'Ahmed', 'Ali', 'Usman', 'Hamza', 'Bilal', 'Raza', 'Imran', 'Faisal', 'Noman',
+      'Zainab', 'Fatima', 'Ayesha', 'Sana', 'Hina', 'Nadia', 'Sadia', 'Rabia', 'Mehwish', 'Kiran',
+      'Hassan', 'Hussain', 'Zahid', 'Kashif', 'Javed', 'Tariq', 'Saeed', 'Naeem', 'Shahid', 'Aslam',
+      'Amna', 'Hira', 'Mahnoor', 'Areeba', 'Eman', 'Iqra', 'Laiba', 'Aliza', 'Sara', 'Minal'];
+    const lastNames = ['Khan', 'Ali', 'Malik', 'Hussain', 'Ahmed', 'Bibi', 'Shah', 'Mirza', 'Abbasi', 'Hashmi'];
+    const reasons = ['Chest Pain', 'Palpitations', 'Hypertension', 'Diabetes', 'Follow Up', 'Breathing Issue', 
+      'High Cholesterol', 'Heart Failure', 'Arrhythmia', 'Routine Checkup', 'Post-surgery Follow-up', 
+      'Emergency Admission', 'Medication Review', 'Stress Test', 'ECG Review'];
+    
+    const patients = [];
+    const total = 41;
+    
+    for (let i = 0; i < total; i++) {
+      const firstName = firstNames[i % firstNames.length];
+      const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+      const age = 18 + Math.floor(Math.random() * 55);
+      
+      // ✅ 6 Completed, 5 In Consultation, 30 Waiting
+      let status = 'Waiting';
+      if (i < 6) status = 'Completed';
+      else if (i < 11) status = 'In Consultation';
+      
+      const reason = reasons[i % reasons.length];
+      const hour = 9 + Math.floor(i / 6);
+      const minute = (i * 12) % 60;
+      
+      patients.push({
+        id: `apt_${String(i + 1).padStart(3, '0')}`,
+        token: i + 1,
+        name: `${firstName} ${lastName}`,
+        age: age,
+        status: status,
+        reason: reason,
+        time: `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')} ${hour >= 12 ? 'PM' : 'AM'}`,
+      });
+    }
+    
+    return patients;
+  };
+
+  const MOCK_QUEUE = generateMockPatients();
+
+  // ─── LIFECYCLE ──────────────────────────────────────────────────────
   useEffect(() => {
-    loadData();
     getTodayDate();
+    loadData();
   }, []);
 
   const getTodayDate = () => {
@@ -52,32 +99,9 @@ const TodayQueueScreen = ({ navigation }) => {
     setCurrentDate(`${dayName}, ${dateStr}`);
   };
 
+  // ─── DATA LOADING ──────────────────────────────────────────────────
   const loadData = async () => {
     try {
-      const appointmentsData = await AsyncStorage.getItem(APPOINTMENTS_KEY);
-      let allAppointments = [];
-      if (appointmentsData) {
-        allAppointments = JSON.parse(appointmentsData);
-      }
-
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const todayStr = today.toDateString();
-
-      const todayApps = allAppointments.filter(app => {
-        const appDate = new Date(app.date || app.createdAt || app.appointmentDate);
-        appDate.setHours(0, 0, 0, 0);
-        return appDate.toDateString() === todayStr;
-      });
-
-      const sortedTodayApps = todayApps.sort((a, b) => {
-        const timeA = a.time || a.slot || '09:00';
-        const timeB = b.time || b.slot || '09:00';
-        return timeA.localeCompare(timeB);
-      });
-
-      setTodayAppointments(sortedTodayApps);
-
       const queueData = await AsyncStorage.getItem(QUEUE_KEY);
       let queueList = [];
       
@@ -85,81 +109,90 @@ const TodayQueueScreen = ({ navigation }) => {
         queueList = JSON.parse(queueData);
       }
 
-      const todayQueue = queueList.filter(item => {
-        const itemDate = new Date(item.date || item.createdAt || Date.now());
-        itemDate.setHours(0, 0, 0, 0);
-        return itemDate.toDateString() === todayStr;
-      });
-
-      if (todayQueue.length === 0 && todayApps.length === 0) {
-        const mockTuesdayQueue = [
-          { id: '1', name: 'Muhammad Usman', age: 45, token: 3, status: 'Waiting', reason: 'Chest Pain', time: '09:30 AM', date: today.toISOString(), phone: '0333-1234567' },
-          { id: '2', name: 'Saima Ahmed', age: 32, token: 2, status: 'Waiting', reason: 'Palpitations', time: '09:15 AM', date: today.toISOString(), phone: '0333-7654321' },
-          { id: '3', name: 'Ali Raza', age: 28, token: 1, status: 'In Consultation', reason: 'Breathing Issue', time: '09:00 AM', date: today.toISOString(), phone: '0333-9876543' },
-          { id: '4', name: 'Fatima Noor', age: 55, token: 4, status: 'Waiting', reason: 'Follow Up', time: '09:45 AM', date: today.toISOString(), phone: '0333-4567890' },
-          { id: '5', name: 'Usman Chaudhry', age: 38, token: 5, status: 'Waiting', reason: 'Diabetes Checkup', time: '10:00 AM', date: today.toISOString(), phone: '0333-7890123' },
-          { id: '6', name: 'Ayesha Khan', age: 29, token: 6, status: 'Waiting', reason: 'Palpitations', time: '10:30 AM', date: today.toISOString(), phone: '0333-2345678' },
-          { id: '7', name: 'Muhammad Bilal', age: 52, token: 7, status: 'Waiting', reason: 'Hypertension', time: '11:00 AM', date: today.toISOString(), phone: '0333-3456789' },
-          { id: '8', name: 'Zainab Ali', age: 41, token: 8, status: 'Waiting', reason: 'Chest Discomfort', time: '11:30 AM', date: today.toISOString(), phone: '0333-4567890' },
-          { id: '9', name: 'Hamza Ahmed', age: 35, token: 9, status: 'Waiting', reason: 'Routine Checkup', time: '12:00 PM', date: today.toISOString(), phone: '0333-5678901' },
-          { id: '10', name: 'Sadia Malik', age: 48, token: 10, status: 'Waiting', reason: 'High Cholesterol', time: '12:30 PM', date: today.toISOString(), phone: '0333-6789012' },
-          { id: '11', name: 'Rana Shahid', age: 62, token: 11, status: 'Waiting', reason: 'Heart Failure Follow-up', time: '01:00 PM', date: today.toISOString(), phone: '0333-7890123' },
-          { id: '12', name: 'Nadia Tariq', age: 39, token: 12, status: 'Waiting', reason: 'Palpitations', time: '01:30 PM', date: today.toISOString(), phone: '0333-8901234' },
-        ];
-        
-        const filteredMockQueue = mockTuesdayQueue.filter(item => {
-          const timeStr = item.time;
-          const hour = parseInt(timeStr.split(':')[0]);
-          const minute = parseInt(timeStr.split(':')[1].split(' ')[0]);
-          const isPM = timeStr.includes('PM');
-          let hour24 = hour;
-          if (isPM && hour !== 12) hour24 = hour + 12;
-          if (!isPM && hour === 12) hour24 = 0;
-          return hour24 < 14 || (hour24 === 14 && minute === 0);
-        });
-
-        setQueue(filteredMockQueue);
-        await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(filteredMockQueue));
-        
-        const waiting = filteredMockQueue.filter(q => q.status === 'Waiting' || q.status === 'In Consultation').length;
-        const completed = filteredMockQueue.filter(q => q.status === 'Completed').length;
-        setStats({
-          total: filteredMockQueue.length + completed,
-          waiting: waiting,
-          completed: completed,
-        });
-        
-        return;
+      const consultationData = await AsyncStorage.getItem(CONSULTATION_QUEUE_KEY);
+      let consultList = [];
+      if (consultationData) {
+        consultList = JSON.parse(consultationData);
       }
-
-      setQueue(todayQueue);
+      setConsultationQueue(consultList);
 
       const completedData = await AsyncStorage.getItem(COMPLETED_PATIENTS_KEY);
-      const completedList = completedData ? JSON.parse(completedData) : [];
-      
-      updateStats(todayQueue, completedList);
+      let completedList = [];
+      if (completedData) {
+        completedList = JSON.parse(completedData);
+      }
+      setCompletedPatients(completedList);
+
+      if (queueList.length === 0) {
+        queueList = MOCK_QUEUE;
+        await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(queueList));
+        setUsingMockData(true);
+      } else {
+        setUsingMockData(false);
+      }
+
+      setQueue(queueList);
+      updateStats(queueList, consultList, completedList);
 
     } catch (error) {
       console.error('Error loading data:', error);
+      setQueue(MOCK_QUEUE);
+      updateStats(MOCK_QUEUE, [], []);
     }
   };
 
-  const updateStats = (queueList, completedList) => {
-    const waiting = queueList.filter(q => q.status === 'Waiting' || q.status === 'In Consultation').length;
+  const updateStats = (queueList, consultList, completedList) => {
+    // ✅ Queue list mein se sirf Waiting wale count karo
+    const waiting = queueList.filter(q => q.status === 'Waiting').length;
+    
+    // ✅ Consultation queue se consult count
+    const inConsult = consultList.length || queueList.filter(q => q.status === 'In Consultation').length;
+    
+    // ✅ Completed patients count
     const completed = completedList.length || queueList.filter(q => q.status === 'Completed').length;
+    
+    // ✅ Total = Waiting + In Consult + Completed
+    const total = waiting + inConsult + completed;
+    
     setStats({
-      total: queueList.length + completed,
-      waiting: waiting,
-      completed: completed,
+      total,
+      waiting,
+      consulting: inConsult,
+      completed,
     });
   };
 
+  // ─── REFRESH ──────────────────────────────────────────────────────
   const onRefresh = async () => {
     setRefreshing(true);
     await loadData();
     setRefreshing(false);
   };
 
+  // ─── HANDLE PATIENT PRESS ──────────────────────────────────────────
+  const handlePatientPress = (item) => {
+    if (item.status === 'Waiting') {
+      Alert.alert(
+        'Call Patient',
+        `Call ${item.name} (Token #${item.token})?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Call Now',
+            onPress: () => {
+              navigation.navigate('CallNextPatientScreen', { patient: item });
+            }
+          }
+        ]
+      );
+    } else if (item.status === 'In Consultation') {
+      navigation.navigate('CallNextPatientScreen', { patient: item });
+    } else {
+      Alert.alert('Completed', `${item.name} has already been attended.`);
+    }
+  };
+
+  // ─── HELPERS ──────────────────────────────────────────────────────
   const getStatusColor = (status) => {
     switch(status) {
       case 'In Consultation': return COLORS.primary;
@@ -184,34 +217,16 @@ const TodayQueueScreen = ({ navigation }) => {
     }
   };
 
-  const handlePatientPress = (item) => {
-    if (item.status === 'Waiting') {
-      Alert.alert(
-        'Call Patient',
-        `Call ${item.name} (Token #${item.token}) for consultation?`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Call Now',
-            onPress: () => {
-              navigation.navigate('CallNextPatientScreen', { patient: item });
-            }
-          }
-        ]
-      );
-    } else if (item.status === 'In Consultation') {
-      navigation.navigate('CallNextPatientScreen', { patient: item });
-    } else {
-      Alert.alert('Patient Completed', `${item.name} has already been attended.`);
-    }
-  };
-
+  // ─── FILTER ──────────────────────────────────────────────────────
   const filteredQueue = filter === 'All' 
     ? queue 
     : filter === 'Completed' 
       ? queue.filter(q => q.status === 'Completed')
-      : queue.filter(q => q.status === filter || (filter === 'Waiting' && q.status === 'In Consultation'));
+      : filter === 'Waiting'
+        ? queue.filter(q => q.status === 'Waiting')
+        : queue.filter(q => q.status === 'In Consultation');
 
+  // ─── RENDER QUEUE ITEM ────────────────────────────────────────────
   const QueueItem = ({ item }) => {
     const statusColor = getStatusColor(item.status);
     const isCompleted = item.status === 'Completed';
@@ -236,16 +251,11 @@ const TodayQueueScreen = ({ navigation }) => {
               {item.name}
             </Text>
             <Text style={styles.queueItemDetail}>
-              {item.age || 'N/A'} yrs • Token #{item.token}
+              {item.age || 'N/A'} yrs • #{item.token}
             </Text>
             {item.reason && (
               <Text style={styles.queueItemReason}>
                 <Ionicons name="medical-outline" size={wp(2.8)} color={COLORS.textLight} /> {item.reason}
-              </Text>
-            )}
-            {item.phone && (
-              <Text style={styles.queueItemPhone}>
-                <Ionicons name="call-outline" size={wp(2.4)} color={COLORS.textLight} /> {item.phone}
               </Text>
             )}
           </View>
@@ -263,52 +273,75 @@ const TodayQueueScreen = ({ navigation }) => {
     );
   };
 
+  // ─── MAIN RENDER ──────────────────────────────────────────────────
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
+      <StatusBar barStyle="dark-content" backgroundColor="#F4F7FC" />
 
-      <SafeAreaView style={styles.safeArea}>
-        {/* ─── HEADER ───────────────────────────────────────────────────── */}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={onRefresh} 
+            colors={[COLORS.primary]} 
+            tintColor={COLORS.primary} 
+          />
+        }
+      >
+        {/* ─── HEADER - SCROLLABLE ───────────────────────────────────── */}
         <View style={styles.header}>
-          <TouchableOpacity style={styles.menuBtn} onPress={() => navigation.goBack()}>
-            <Ionicons name="arrow-back" size={wp(5.5)} color={COLORS.text} />
+          <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.goBack()} activeOpacity={0.6}>
+            <Ionicons name="arrow-back" size={26} color={COLORS.primary} />
           </TouchableOpacity>
 
-          <View style={styles.headerCenter}>
+          <View style={styles.brandWrap}>
             <View style={styles.logoCircle}>
               <Image 
-                source={require('../../../assets/logo.png')} 
-                style={styles.headerLogo} 
-                resizeMode="contain" 
+                source={require('../../../assets/logoo.png')} 
+                style={styles.logoImage} 
+                resizeMode="contain"
               />
             </View>
-            <View>
-              <Text style={styles.headerTitle}>Today's Queue</Text>
-              <Text style={styles.headerDate}>{currentDate}</Text>
-            </View>
+            <Text style={styles.brand}>
+              SEHAT<Text style={styles.brandAccent}>LINE</Text>
+            </Text>
+            <Text style={styles.tagline}>Today's Queue</Text>
           </View>
 
-          <TouchableOpacity style={styles.refreshBtn} onPress={onRefresh}>
-            <Ionicons name="refresh-outline" size={wp(5)} color={COLORS.primary} />
+          <TouchableOpacity style={styles.iconBtn} onPress={onRefresh} activeOpacity={0.6}>
+            <Ionicons name="refresh-outline" size={25} color={COLORS.primary} />
           </TouchableOpacity>
+        </View>
+
+        {/* ─── DATE ───────────────────────────────────────────────────── */}
+        <View style={styles.dateContainer}>
+          <Ionicons name="calendar-outline" size={wp(4)} color={COLORS.primary} />
+          <Text style={styles.dateText}>{currentDate}</Text>
+          {usingMockData && (
+            <View style={styles.mockBadge}>
+              <Text style={styles.mockBadgeText}>Demo</Text>
+            </View>
+          )}
         </View>
 
         {/* ─── STATS ───────────────────────────────────────────────────── */}
         <View style={styles.statsContainer}>
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>{stats.total}</Text>
-            <Text style={styles.statLabel}>Total</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={[styles.statNumber, { color: COLORS.warning }]}>{stats.waiting}</Text>
-            <Text style={styles.statLabel}>Waiting</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={[styles.statNumber, { color: COLORS.success }]}>{stats.completed}</Text>
-            <Text style={styles.statLabel}>Completed</Text>
-          </View>
+          {[
+            { label: 'Total', value: stats.total, color: COLORS.primary, icon: 'people-outline' },
+            { label: 'Waiting', value: stats.waiting, color: COLORS.warning, icon: 'time-outline' },
+            { label: 'In Consult', value: stats.consulting, color: COLORS.info, icon: 'medical-outline' },
+            { label: 'Completed', value: stats.completed, color: COLORS.success, icon: 'checkmark-done-outline' },
+          ].map((stat, index) => (
+            <View key={stat.label} style={[styles.statItem, index < 3 && styles.statItemBorder]}>
+              <View style={[styles.statIconBox, { backgroundColor: stat.color + '15' }]}>
+                <Ionicons name={stat.icon} size={wp(4)} color={stat.color} />
+              </View>
+              <Text style={[styles.statNumber, { color: stat.color }]}>{stat.value}</Text>
+              <Text style={styles.statLabel}>{stat.label}</Text>
+            </View>
+          ))}
         </View>
 
         {/* ─── FILTERS ─────────────────────────────────────────────────── */}
@@ -317,6 +350,10 @@ const TodayQueueScreen = ({ navigation }) => {
             {['All', 'Waiting', 'In Consultation', 'Completed'].map((status) => {
               const isActive = filter === status;
               const label = status === 'In Consultation' ? 'In Consult' : status;
+              const count = status === 'All' 
+                ? queue.length 
+                : queue.filter(q => q.status === status).length;
+              
               return (
                 <TouchableOpacity
                   key={status}
@@ -324,11 +361,8 @@ const TodayQueueScreen = ({ navigation }) => {
                   onPress={() => setFilter(status)}
                 >
                   <Text style={[styles.filterText, isActive && styles.filterTextActive]}>
-                    {label}
+                    {label} ({count})
                   </Text>
-                  {isActive && (
-                    <View style={styles.filterActiveDot} />
-                  )}
                 </TouchableOpacity>
               );
             })}
@@ -336,198 +370,197 @@ const TodayQueueScreen = ({ navigation }) => {
         </View>
 
         {/* ─── QUEUE LIST ─────────────────────────────────────────────── */}
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} tintColor={COLORS.primary} />
-          }
-          showsVerticalScrollIndicator={false}
-        >
+        <View style={styles.listWrapper}>
           {filteredQueue.length > 0 ? (
             filteredQueue.map((item) => <QueueItem key={item.id} item={item} />)
           ) : (
-            <View style={styles.emptyContainer}>
-              <View style={styles.emptyIconWrap}>
-                <Ionicons name="people-outline" size={wp(15)} color={COLORS.textLight} />
-              </View>
-              <Text style={styles.emptyText}>No patients in queue</Text>
-              <Text style={styles.emptySubText}>Queue is empty for this filter</Text>
+            <View style={styles.emptyState}>
+              <Ionicons name="people-outline" size={wp(12)} color={COLORS.textLight} />
+              <Text style={styles.emptyTitle}>No Patients</Text>
+              <Text style={styles.emptySub}>No patients in this filter</Text>
             </View>
           )}
-          
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>SehatLine v2.0.1</Text>
-            <Text style={styles.footerSub}>Today's Queue • {currentDate}</Text>
-          </View>
-        </ScrollView>
-      </SafeAreaView>
+        </View>
+
+        {/* ─── FOOTER ────────────────────────────────────────────────── */}
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>SehatLine v2.0.1</Text>
+          <View style={styles.footerDivider} />
+          <Text style={styles.footerSub}>{currentDate}</Text>
+        </View>
+      </ScrollView>
     </View>
   );
 };
 
+// ═══════════════════════════════════════════════════════════════════════
+// STYLES
+// ═══════════════════════════════════════════════════════════════════════
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#F4F7FC',
   },
-  safeArea: {
-    flex: 1,
+  scrollContent: {
+    paddingBottom: 20,
   },
 
-  // ── Header ────────────────────────────────────────────────────────
+  // ── HEADER - SCROLLABLE ──────────────────────────────────────────
   header: {
     flexDirection: 'row',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: wp(4),
-    paddingVertical: hp(1.2),
-    backgroundColor: COLORS.white,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === 'ios' ? 56 : (StatusBar.currentHeight || 28) + 14,
+    paddingBottom: 18,
+    backgroundColor: '#F4F7FC',
   },
-  menuBtn: {
-    width: wp(8),
-    height: wp(8),
-    justifyContent: 'center',
+  iconBtn: {
+    width: 30,
     alignItems: 'center',
+    paddingTop: 24,
   },
-  headerCenter: {
+  brandWrap: {
     flex: 1,
-    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: wp(2),
+    paddingTop: 16,
   },
   logoCircle: {
-    width: wp(9),
-    height: wp(9),
-    borderRadius: wp(4.5),
+    width: 62,
+    height: 62,
+    borderRadius: 31,
     borderWidth: 1.6,
     borderColor: COLORS.primary,
     backgroundColor: COLORS.white,
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 8,
     overflow: 'hidden',
   },
-  headerLogo: {
-    width: wp(7),
-    height: wp(7),
+  logoImage: {
+    width: 40,
+    height: 40,
     resizeMode: 'contain',
   },
-  headerTitle: {
-    fontSize: wp(4.2),
-    fontWeight: '700',
+  brand: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: COLORS.primary,
+    letterSpacing: 0.4,
+  },
+  brandAccent: {
     color: COLORS.text,
   },
-  headerDate: {
-    fontSize: wp(2.6),
+  tagline: {
+    fontSize: 11,
     color: COLORS.textLight,
-    fontWeight: '400',
-    marginTop: hp(0.05),
+    marginTop: 2,
   },
-  refreshBtn: {
-    width: wp(8),
-    height: wp(8),
-    justifyContent: 'center',
+
+  // ── Date ─────────────────────────────────────────────────────────
+  dateContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: wp(2),
+    justifyContent: 'center',
+    marginHorizontal: 20,
+    marginTop: 4,
+    paddingVertical: 8,
+    backgroundColor: COLORS.white,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: COLORS.border,
-    backgroundColor: COLORS.background,
+    gap: 8,
+  },
+  dateText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: COLORS.text,
+  },
+  mockBadge: {
+    backgroundColor: COLORS.warning + '20',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  mockBadgeText: {
+    fontSize: 9,
+    color: COLORS.warning,
+    fontWeight: '600',
   },
 
   // ── Stats ────────────────────────────────────────────────────────
   statsContainer: {
     flexDirection: 'row',
     backgroundColor: COLORS.white,
-    marginHorizontal: wp(4),
-    marginTop: hp(1.5),
-    borderRadius: wp(3),
+    marginHorizontal: 20,
+    marginTop: 10,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: COLORS.border,
     overflow: 'hidden',
-    ...Platform.select({
-      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8 },
-      android: { elevation: 2 },
-    }),
   },
   statItem: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: hp(1.2),
+    paddingVertical: 10,
+  },
+  statItemBorder: {
+    borderRightWidth: 1,
+    borderRightColor: COLORS.border,
+  },
+  statIconBox: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 2,
   },
   statNumber: {
-    fontSize: wp(5.5),
+    fontSize: 18,
     fontWeight: '800',
-    color: COLORS.text,
   },
   statLabel: {
-    fontSize: wp(2.4),
+    fontSize: 9,
     color: COLORS.textLight,
-    marginTop: hp(0.1),
+    marginTop: 1,
     fontWeight: '500',
-  },
-  statDivider: {
-    width: 1,
-    height: hp(3.5),
-    backgroundColor: COLORS.border,
-    alignSelf: 'center',
   },
 
   // ── Filters ──────────────────────────────────────────────────────
   filterContainer: {
-    backgroundColor: COLORS.white,
-    paddingVertical: hp(0.8),
-    marginTop: hp(1.2),
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-    ...Platform.select({
-      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4 },
-      android: { elevation: 1 },
-    }),
+    marginHorizontal: 20,
+    marginTop: 12,
   },
   filterScroll: {
-    paddingHorizontal: wp(4),
-    gap: wp(2),
+    gap: 8,
+    paddingVertical: 4,
   },
   filterChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: wp(3.5),
-    paddingVertical: hp(0.5),
-    borderRadius: wp(4),
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 20,
     backgroundColor: '#F1F5F9',
     borderWidth: 1,
     borderColor: COLORS.border,
-    gap: wp(1),
   },
   filterChipActive: {
     backgroundColor: COLORS.primary,
     borderColor: COLORS.primary,
   },
   filterText: {
+    fontSize: 11,
     color: COLORS.textSecondary,
-    fontSize: wp(3),
     fontWeight: '500',
   },
   filterTextActive: {
     color: COLORS.white,
   },
-  filterActiveDot: {
-    width: wp(1.2),
-    height: wp(1.2),
-    borderRadius: wp(0.6),
-    backgroundColor: COLORS.white,
-  },
 
-  // ── Scroll ────────────────────────────────────────────────────────
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: wp(4),
-    paddingBottom: hp(4),
+  // ── Queue List ──────────────────────────────────────────────────
+  listWrapper: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
   },
 
   // ── Queue Item ──────────────────────────────────────────────────
@@ -536,15 +569,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: COLORS.white,
-    borderRadius: wp(3),
-    padding: wp(3.5),
-    marginBottom: hp(1),
+    borderRadius: 14,
+    padding: 14,
+    marginTop: 10,
     borderWidth: 1,
     borderColor: COLORS.border,
-    ...Platform.select({
-      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 6 },
-      android: { elevation: 2 },
-    }),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
   },
   completedItem: {
     opacity: 0.6,
@@ -560,18 +594,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   tokenBadge: {
-    width: wp(8),
-    height: wp(8),
-    borderRadius: wp(4),
+    width: 32,
+    height: 32,
+    borderRadius: 10,
     backgroundColor: COLORS.primary + '15',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: wp(2.5),
+    marginRight: 12,
     borderWidth: 1,
     borderColor: COLORS.primary + '30',
   },
   tokenText: {
-    fontSize: wp(3.5),
+    fontSize: 14,
     fontWeight: '700',
     color: COLORS.primary,
   },
@@ -579,7 +613,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   queueItemName: {
-    fontSize: wp(4),
+    fontSize: 14,
     fontWeight: '600',
     color: COLORS.text,
   },
@@ -588,87 +622,79 @@ const styles = StyleSheet.create({
     color: COLORS.textLight,
   },
   queueItemDetail: {
-    fontSize: wp(2.6),
+    fontSize: 11,
     color: COLORS.textSecondary,
-    marginTop: hp(0.1),
+    marginTop: 1,
   },
   queueItemReason: {
-    fontSize: wp(2.6),
+    fontSize: 11,
     color: COLORS.textLight,
-    marginTop: hp(0.1),
-  },
-  queueItemPhone: {
-    fontSize: wp(2.4),
-    color: COLORS.textLight,
-    marginTop: hp(0.05),
+    marginTop: 1,
   },
   queueItemRight: {
     alignItems: 'flex-end',
-    gap: hp(0.2),
+    gap: 4,
   },
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: wp(2.5),
-    paddingVertical: hp(0.2),
-    borderRadius: wp(2.5),
-    gap: wp(0.8),
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 10,
+    gap: 4,
   },
   statusText: {
-    fontSize: wp(2.4),
+    fontSize: 10,
     fontWeight: '600',
   },
   queueItemTime: {
-    fontSize: wp(2.4),
+    fontSize: 10,
     color: COLORS.textLight,
     fontWeight: '500',
   },
 
   // ── Empty State ──────────────────────────────────────────────────
-  emptyContainer: {
+  emptyState: {
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: hp(10),
+    marginTop: 40,
+    paddingHorizontal: 20,
   },
-  emptyIconWrap: {
-    width: wp(20),
-    height: wp(20),
-    borderRadius: wp(10),
-    backgroundColor: '#F1F5F9',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: hp(1.5),
-  },
-  emptyText: {
-    fontSize: wp(4.5),
+  emptyTitle: {
+    fontSize: 16,
     fontWeight: '600',
     color: COLORS.text,
-    marginTop: hp(0.5),
+    marginTop: 12,
   },
-  emptySubText: {
-    fontSize: wp(3.2),
+  emptySub: {
+    fontSize: 12,
     color: COLORS.textLight,
-    marginTop: hp(0.2),
+    marginTop: 4,
   },
 
   // ── Footer ──────────────────────────────────────────────────────
   footer: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: hp(2),
-    paddingBottom: hp(1),
+    justifyContent: 'center',
+    marginTop: 16,
+    paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
-    marginTop: hp(1),
+    marginHorizontal: 20,
   },
   footerText: {
-    fontSize: wp(2.8),
-    fontWeight: '600',
-    color: COLORS.primary,
+    fontSize: 11,
+    color: COLORS.textLight,
+  },
+  footerDivider: {
+    width: 1,
+    height: 14,
+    backgroundColor: COLORS.border,
+    marginHorizontal: 8,
   },
   footerSub: {
-    fontSize: wp(2.4),
+    fontSize: 10,
     color: COLORS.textLight,
-    marginTop: hp(0.1),
   },
 });
 

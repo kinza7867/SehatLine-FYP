@@ -14,6 +14,7 @@ import {
   Image,
   Modal,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -47,6 +48,7 @@ const TEMPLATE_OPTIONS = ['General Checkup', 'Chronic Care', 'Follow-up', 'Emerg
 const DoctorSettingsScreen = ({ navigation }) => {
   // ─── State ──────────────────────────────────────────────────────────
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [appointmentReminders, setAppointmentReminders] = useState(true);
@@ -110,6 +112,12 @@ const DoctorSettingsScreen = ({ navigation }) => {
 
   useEffect(() => {
     loadAllSettings();
+  }, [loadAllSettings]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadAllSettings();
+    setRefreshing(false);
   }, [loadAllSettings]);
 
   // ─── SAVE HELPERS ──────────────────────────────────────────────────
@@ -270,42 +278,24 @@ const DoctorSettingsScreen = ({ navigation }) => {
   // ─── DYNAMIC COLORS ──────────────────────────────────────────────
   const colors = useMemo(() => {
     const isDark = isDarkMode;
-    const primaryColor = COLORS.primary; // Your app's primary color
+    const primaryColor = COLORS.primary;
     
     return {
-      // Backgrounds
       background: isDark ? '#121212' : '#F4F7FC',
       card: isDark ? '#1E1E1E' : '#FFFFFF',
-      
-      // Text colors
       text: isDark ? '#FFFFFF' : '#1A1A2E',
       textSecondary: isDark ? '#B0B0B0' : '#4A4A5A',
       textLight: isDark ? '#888888' : '#8A8A9A',
-      
-      // Borders
       border: isDark ? '#333333' : '#E8EEF4',
-      
-      // Icon backgrounds
       iconBg: isDark ? '#2A2A3A' : primaryColor + '12',
-      
-      // Primary color - USE YOUR APP'S PRIMARY COLOR
       primary: primaryColor,
       primaryLight: isDark ? primaryColor + '60' : primaryColor + '30',
-      primaryDark: isDark ? primaryColor : primaryColor,
-      
-      // Danger
       danger: isDark ? '#FF6B6B' : COLORS.danger,
-      
-      // Switch colors
       switchTrackOn: primaryColor,
       switchTrackOff: isDark ? '#444444' : '#E0E0E0',
       switchThumb: isDark ? '#FFFFFF' : '#FFFFFF',
       switchThumbOn: isDark ? '#FFFFFF' : '#FFFFFF',
-      
-      // Logo border
       logoBorder: isDark ? primaryColor : primaryColor,
-      
-      // SehatLine brand
       brandPrimary: isDark ? primaryColor : primaryColor,
       brandAccent: isDark ? '#FFFFFF' : '#1A1A2E',
     };
@@ -455,36 +445,45 @@ const DoctorSettingsScreen = ({ navigation }) => {
         backgroundColor={isDarkMode ? '#121212' : '#F4F7FC'} 
       />
 
-      {/* ─── HEADER ───────────────────────────────────────────────────── */}
-      <View style={[styles.header, { 
-        backgroundColor: colors.card,
-        borderBottomColor: colors.border,
-      }]}>
-        <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.goBack()} activeOpacity={0.6}>
-          <Ionicons name="arrow-back" size={25} color={colors.text} />
-        </TouchableOpacity>
-
-        <View style={styles.brandWrap}>
-          <View style={[styles.logoCircle, { borderColor: colors.logoBorder }]}>
-            <Image 
-              source={require('../../../assets/logoo.png')} 
-              style={styles.logoImage} 
-              resizeMode="contain"
-            />
-          </View>
-          <Text style={[styles.screenTitle, { color: colors.brandPrimary }]}>
-            SEHAT<Text style={[styles.brandAccent, { color: colors.brandAccent }]}>LINE</Text>
-          </Text>
-          <Text style={[styles.tagline, { color: colors.textLight }]}>Settings</Text>
-        </View>
-
-        <View style={styles.iconBtn} />
-      </View>
-
       <ScrollView 
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={onRefresh} 
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+          />
+        }
       >
+        {/* ─── HEADER - SCROLLABLE (like DoctorPortalScreen) ──────── */}
+        <View style={[styles.header, { backgroundColor: colors.background }]}>
+          <TouchableOpacity 
+            style={styles.iconBtn} 
+            onPress={() => navigation.goBack()} 
+            activeOpacity={0.6}
+          >
+            <Ionicons name="arrow-back" size={26} color={colors.primary} />
+          </TouchableOpacity>
+
+          <View style={styles.brandWrap}>
+            <View style={[styles.logoCircle, { borderColor: colors.logoBorder }]}>
+              <Image 
+                source={require('../../../assets/logoo.png')} 
+                style={styles.logoImage} 
+                resizeMode="contain"
+              />
+            </View>
+            <Text style={[styles.brand, { color: colors.brandPrimary }]}>
+              SEHAT<Text style={[styles.brandAccent, { color: colors.brandAccent }]}>LINE</Text>
+            </Text>
+            <Text style={[styles.tagline, { color: colors.textLight }]}>Settings</Text>
+          </View>
+
+          <View style={styles.iconBtn} />
+        </View>
+
         {/* ─── APPEARANCE ───────────────────────────────────────────── */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Appearance</Text>
@@ -647,7 +646,7 @@ const DoctorSettingsScreen = ({ navigation }) => {
               activeOpacity={0.7}
             >
               <LinearGradient
-                colors={[colors.primary, colors.primary]}
+                colors={[colors.primary, colors.tealDark || colors.primary]}
                 style={styles.saveGradient}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
@@ -695,7 +694,7 @@ const DoctorSettingsScreen = ({ navigation }) => {
               activeOpacity={0.7}
             >
               <LinearGradient
-                colors={[colors.primary, colors.primary]}
+                colors={[colors.primary, colors.tealDark || colors.primary]}
                 style={styles.saveGradient}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
@@ -779,7 +778,7 @@ const DoctorSettingsScreen = ({ navigation }) => {
 };
 
 // ═══════════════════════════════════════════════════════════════════════
-// STYLES - RESPONSIVE
+// STYLES
 // ═══════════════════════════════════════════════════════════════════════
 const styles = StyleSheet.create({
   container: {
@@ -795,15 +794,14 @@ const styles = StyleSheet.create({
     fontSize: wp(3.5),
   },
 
-  // ── Header ──────────────────────────────────────────────────────
+  // ── Header - SCROLLABLE (like DoctorPortalScreen) ──────────────
   header: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
-    paddingHorizontal: wp(5),
+    paddingHorizontal: 20,
     paddingTop: Platform.OS === 'ios' ? 56 : (StatusBar.currentHeight || 28) + 14,
     paddingBottom: 18,
-    backgroundColor: '#F4F7FC',
   },
   iconBtn: {
     width: 30,
@@ -816,9 +814,9 @@ const styles = StyleSheet.create({
     paddingTop: 16,
   },
   logoCircle: {
-    width: wp(15.5),
-    height: wp(15.5),
-    borderRadius: wp(7.75),
+    width: 62,
+    height: 62,
+    borderRadius: 31,
     borderWidth: 1.6,
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
@@ -827,12 +825,12 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   logoImage: {
-    width: wp(10),
-    height: wp(10),
+    width: 40,
+    height: 40,
     resizeMode: 'contain',
   },
-  screenTitle: {
-    fontSize: wp(5),
+  brand: {
+    fontSize: 20,
     fontWeight: '800',
     letterSpacing: 0.4,
   },
@@ -840,29 +838,29 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   tagline: {
-    fontSize: wp(2.8),
+    fontSize: 11,
     marginTop: 2,
   },
 
   // ── Scroll ──────────────────────────────────────────────────────
   scrollContent: {
-    paddingBottom: hp(2),
+    paddingBottom: 20,
   },
 
   // ── Section ────────────────────────────────────────────────────
   section: {
-    paddingHorizontal: wp(5),
-    marginTop: hp(2),
+    paddingHorizontal: 20,
+    marginTop: 20,
   },
   sectionTitle: {
-    fontSize: wp(3),
+    fontSize: 11,
     fontWeight: '700',
-    marginBottom: hp(1),
+    marginBottom: 8,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
   card: {
-    borderRadius: wp(3.5),
+    borderRadius: 14,
     borderWidth: 1,
     overflow: 'hidden',
   },
@@ -872,8 +870,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: hp(1.2),
-    paddingHorizontal: wp(3.5),
+    paddingVertical: 10,
+    paddingHorizontal: 14,
   },
   rowDisabled: {
     opacity: 0.5,
@@ -884,46 +882,46 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   rowIcon: {
-    width: wp(9),
-    height: wp(9),
-    borderRadius: wp(2.5),
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: wp(3),
+    marginRight: 12,
   },
   rowContent: {
     flex: 1,
   },
   rowLabel: {
-    fontSize: wp(3.2),
+    fontSize: 13,
     fontWeight: '600',
   },
   rowDesc: {
-    fontSize: wp(2.4),
-    marginTop: hp(0.1),
+    fontSize: 10,
+    marginTop: 1,
   },
   divider: {
     height: 1,
-    marginHorizontal: wp(3.5),
+    marginHorizontal: 14,
   },
 
   // ── Save Button ────────────────────────────────────────────────
   saveButton: {
-    marginHorizontal: wp(3.5),
-    marginVertical: hp(0.8),
-    borderRadius: wp(2.5),
+    marginHorizontal: 14,
+    marginVertical: 6,
+    borderRadius: 10,
     overflow: 'hidden',
   },
   saveGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: hp(0.8),
-    gap: wp(1.5),
+    paddingVertical: 10,
+    gap: 8,
   },
   saveButtonText: {
     color: COLORS.white,
-    fontSize: wp(3),
+    fontSize: 13,
     fontWeight: '600',
   },
 
@@ -932,15 +930,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginHorizontal: wp(5),
-    marginTop: hp(3),
-    paddingVertical: hp(1.8),
-    borderRadius: wp(3),
+    marginHorizontal: 20,
+    marginTop: 24,
+    paddingVertical: 14,
+    borderRadius: 12,
     borderWidth: 1,
-    gap: wp(2),
+    gap: 10,
   },
   logoutText: {
-    fontSize: wp(3.6),
+    fontSize: 14,
     fontWeight: '600',
     color: COLORS.danger,
   },
@@ -948,14 +946,14 @@ const styles = StyleSheet.create({
   // ── Footer ──────────────────────────────────────────────────────
   footer: {
     alignItems: 'center',
-    marginTop: hp(3),
-    paddingTop: hp(1.5),
-    paddingBottom: hp(1),
+    marginTop: 20,
+    paddingTop: 12,
+    paddingBottom: 8,
     borderTopWidth: 1,
-    marginHorizontal: wp(5),
+    marginHorizontal: 20,
   },
   footerText: {
-    fontSize: wp(2.8),
+    fontSize: 11,
     fontWeight: '500',
   },
 
@@ -968,27 +966,27 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     width: width * 0.92,
-    borderRadius: wp(4),
+    borderRadius: 16,
     overflow: 'hidden',
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: wp(4),
+    padding: 16,
     borderBottomWidth: 1,
   },
   modalTitle: {
-    fontSize: wp(4.2),
+    fontSize: 16,
     fontWeight: '700',
   },
   modalBody: {
-    padding: wp(4),
+    padding: 16,
   },
   modalSubmitBtn: {
-    borderRadius: wp(2.5),
+    borderRadius: 10,
     overflow: 'hidden',
-    marginTop: hp(1),
+    marginTop: 8,
   },
   modalSubmitDisabled: {
     opacity: 0.6,
@@ -997,44 +995,44 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: hp(1.4),
-    gap: wp(2),
+    paddingVertical: 12,
+    gap: 8,
   },
   modalSubmitText: {
     color: COLORS.white,
-    fontSize: wp(3.5),
+    fontSize: 14,
     fontWeight: '600',
   },
 
   // ─── Biometric ──────────────────────────────────────────────────
   biometricIconContainer: {
     alignItems: 'center',
-    marginBottom: hp(2),
+    marginBottom: 16,
   },
   biometricIconCircle: {
-    width: wp(20),
-    height: wp(20),
-    borderRadius: wp(10),
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     justifyContent: 'center',
     alignItems: 'center',
   },
   biometricTitle: {
-    fontSize: wp(4.2),
+    fontSize: 16,
     fontWeight: '700',
     textAlign: 'center',
-    marginBottom: hp(0.5),
+    marginBottom: 4,
   },
   biometricDesc: {
-    fontSize: wp(3),
+    fontSize: 12,
     textAlign: 'center',
-    lineHeight: wp(4.5),
-    marginBottom: hp(2),
+    lineHeight: 18,
+    marginBottom: 16,
   },
 
   // ─── Picker Modal ──────────────────────────────────────────────
   pickerModal: {
     width: width * 0.88,
-    borderRadius: wp(4),
+    borderRadius: 16,
     overflow: 'hidden',
     maxHeight: height * 0.6,
   },
@@ -1042,29 +1040,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: wp(4),
+    padding: 16,
     borderBottomWidth: 1,
   },
   pickerTitle: {
-    fontSize: wp(3.8),
+    fontSize: 15,
     fontWeight: '700',
   },
   pickerOptions: {
-    paddingVertical: hp(0.5),
+    paddingVertical: 4,
   },
   pickerOption: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: hp(1.2),
-    paddingHorizontal: wp(4),
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     borderBottomWidth: 0.5,
   },
   pickerOptionActive: {
     backgroundColor: COLORS.primary + '05',
   },
   pickerOptionText: {
-    fontSize: wp(3.2),
+    fontSize: 13,
   },
   pickerOptionTextActive: {
     color: COLORS.primary,
