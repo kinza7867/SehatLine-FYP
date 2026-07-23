@@ -79,7 +79,7 @@ const PERFORMANCE_STATS = [
   { label: 'Today\'s Patients', value: 32, icon: 'people-outline', color: COLORS.primary },
   { label: 'Patients Waiting', value: 5, icon: 'time-outline', color: COLORS.warning },
   { label: 'Completed Consultations', value: 28, icon: 'checkmark-circle-outline', color: COLORS.success },
-  { label: 'Patient Rating', value: 4.8, icon: 'star-outline', color: '#FFB800' },
+  { label: 'Pending Patients', value: 12, icon: 'hourglass-outline', color: '#9B59B6' },
 ];
 
 // ── Performance Metrics ──────────────────────────────────────────────
@@ -111,11 +111,11 @@ const MONTHLY_PERFORMANCE = {
 
 // ─── FEEDBACK DATA ────────────────────────────────────────────────────
 const FEEDBACK_DATA = [
-  { id: 1, rating: 5, text: 'The doctor explained my treatment very clearly.' },
-  { id: 2, rating: 4, text: 'Very satisfied with today\'s consultation.' },
-  { id: 3, rating: 5, text: 'Excellent care and attention to detail.' },
-  { id: 4, rating: 4, text: 'Professional and thorough examination.' },
-  { id: 5, rating: 5, text: 'Great experience, would recommend to others.' },
+  { id: 1, rating: 5, text: 'Very satisfied with consultation. Appointment completed on time.' },
+  { id: 2, rating: 4, text: 'Doctor explained treatment clearly. Easy prescription process.' },
+  { id: 3, rating: 5, text: 'Waiting time was reasonable. Very professional behaviour.' },
+  { id: 4, rating: 5, text: 'Excellent care and attention to detail throughout the visit.' },
+  { id: 5, rating: 4, text: 'Professional and thorough examination with clear next steps.' },
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -517,6 +517,16 @@ const DoctorPortalScreen = ({ navigation }) => {
                   <Text style={styles.doctorDetailText}>PMC ID: {doctor.id || 'DOC-001'}</Text>
                 </View>
               </View>
+              
+              {/* Current Consultation Status */}
+              <View style={[styles.doctorDetailsRow, { marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: COLORS.border }]}>
+                <View style={styles.consultationStatusContainer}>
+                  <View style={styles.statusDot} />
+                  <Text style={styles.consultationStatusText}>
+                    {sessionStarted ? '● Session Active' : '● Waiting to Start'}
+                  </Text>
+                </View>
+              </View>
             </View>
           </LinearGradient>
         </Animated.View>
@@ -579,7 +589,7 @@ const DoctorPortalScreen = ({ navigation }) => {
 
           {!sessionStarted ? (
             <TouchableOpacity 
-              style={[styles.consultationCard, styles.shadow, { backgroundColor: COLORS.primary + '04', borderColor: COLORS.primary + '20', borderWidth: 2 }]}
+              style={[styles.consultationCard, styles.shadow, { backgroundColor: COLORS.primary + '06', borderColor: COLORS.primary + '25', borderWidth: 2 }]}
               onPress={handleCardTap}
               activeOpacity={0.8}
             >
@@ -623,7 +633,7 @@ const DoctorPortalScreen = ({ navigation }) => {
               </Animated.View>
             </TouchableOpacity>
           ) : (
-            <View style={[styles.consultationCardActive, styles.shadow, { backgroundColor: COLORS.success + '04', borderColor: COLORS.success + '30', borderWidth: 2 }]}>
+            <View style={[styles.consultationCardActive, styles.shadow, { backgroundColor: COLORS.success + '06', borderColor: COLORS.success + '35', borderWidth: 2 }]}>
               <View style={styles.sessionHeader}>
                 <Ionicons name="checkmark-circle" size={20} color={COLORS.success} />
                 <Text style={styles.sessionHeaderText}>Session Active</Text>
@@ -680,7 +690,7 @@ const DoctorPortalScreen = ({ navigation }) => {
                 ]}>
                   <View style={styles.queueTokenBox}>
                     <Text style={[styles.queueToken, index === 0 && styles.queueTokenHighlight]}>
-                      #{patient.token}
+                      Token {patient.token}
                     </Text>
                     {index === 0 && (
                       <View style={styles.nextIndicator}>
@@ -693,11 +703,8 @@ const DoctorPortalScreen = ({ navigation }) => {
                       {patient.name}
                     </Text>
                     <Text style={styles.queueDetails}>
-                      {patient.age} yrs | {patient.gender || 'Male'} • {patient.reason}
+                      {patient.age} yrs | {patient.gender || 'Male'}
                     </Text>
-                  </View>
-                  <View style={styles.queuePosition}>
-                    <Text style={styles.queuePositionText}>#{index + 1}</Text>
                   </View>
                 </View>
               ))}
@@ -750,65 +757,7 @@ const DoctorPortalScreen = ({ navigation }) => {
           </View>
         </Animated.View>
 
-        {/* ═══ 7. PERFORMANCE METRICS ════════════════════════════════════ */}
-        <Animated.View style={[styles.section, styles.lastSection, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Performance Metrics</Text>
-            <Text style={styles.performancePeriodText}>Updated for July 2026</Text>
-          </View>
-
-          <View style={[styles.performanceCard, { backgroundColor: COLORS.primary + '04' }]}>
-            {PERFORMANCE_METRICS.map((metric, index) => (
-              <TouchableOpacity
-                key={index}
-                style={styles.metricItem}
-                activeOpacity={0.7}
-                onPress={() => toggleMetric(index)}
-              >
-                <View style={styles.metricHeader}>
-                  <View style={styles.metricLeft}>
-                    <View style={[styles.metricIconBox, { backgroundColor: metric.color + '15' }]}>
-                      <Ionicons name={metric.icon} size={18} color={metric.color} />
-                    </View>
-                    <Text style={styles.metricLabel}>{metric.label}</Text>
-                  </View>
-                  <View style={styles.metricRight}>
-                    <Text style={[styles.metricValue, { color: metric.color }]}>{metric.value}%</Text>
-                    <Ionicons 
-                      name={expandedMetric === index ? 'chevron-up' : 'chevron-down'} 
-                      size={16} 
-                      color={COLORS.textLight} 
-                    />
-                  </View>
-                </View>
-                
-                <View style={styles.progressBarContainer}>
-                  <View style={[styles.progressBar, { width: `${metric.value}%`, backgroundColor: metric.color }]} />
-                </View>
-                
-                {expandedMetric === index && (
-                  <View style={styles.metricDetail}>
-                    <View style={styles.metricDetailRow}>
-                      <Text style={styles.metricDetailLabel}>Target</Text>
-                      <Text style={styles.metricDetailValue}>90%</Text>
-                    </View>
-                    <View style={styles.metricDetailRow}>
-                      <Text style={styles.metricDetailLabel}>Status</Text>
-                      <Text style={[
-                        styles.metricDetailStatus,
-                        metric.value >= 80 ? styles.statusGood : styles.statusNeedsWork
-                      ]}>
-                        {metric.value >= 80 ? 'Good' : 'Needs Improvement'}
-                      </Text>
-                    </View>
-                  </View>
-                )}
-              </TouchableOpacity>
-            ))}
-          </View>
-        </Animated.View>
-
-        {/* ═══ 8. PATIENT FEEDBACK SLIDER ═══════════════════════════════ */}
+        {/* ═══ 7. PATIENT FEEDBACK SLIDER ═══════════════════════════════ */}
         <Animated.View style={[styles.section, styles.lastSection, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
           <Text style={styles.sectionTitle}>Patient Feedback</Text>
           
@@ -1054,7 +1003,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: COLORS.primary + '40',
+    borderColor: COLORS.primary,
     padding: 2,
   },
 
@@ -1212,6 +1161,26 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: COLORS.textSecondary,
     fontWeight: '500',
+  },
+  consultationStatusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 4,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: COLORS.primary + '08',
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.success,
+  },
+  consultationStatusText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.text,
   },
 
   // ── 3. Performance Stats ───────────────────────────────────────────
@@ -1540,103 +1509,7 @@ const styles = StyleSheet.create({
     marginVertical: 8,
   },
 
-  // ── 7. Performance Metrics ──────────────────────────────────────────
-  performancePeriodText: {
-    fontSize: 11,
-    color: COLORS.textLight,
-    fontWeight: '500',
-  },
-
-  performanceCard: {
-    backgroundColor: COLORS.white,
-    borderRadius: 14,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-
-  metricItem: {
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
-  },
-  metricHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  metricLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  metricIconBox: {
-    width: 34,
-    height: 34,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  metricLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: COLORS.text,
-  },
-  metricRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  metricValue: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
-
-  progressBarContainer: {
-    height: 6,
-    backgroundColor: '#F0F0F0',
-    borderRadius: 3,
-    marginTop: 8,
-    overflow: 'hidden',
-  },
-  progressBar: {
-    height: 6,
-    borderRadius: 3,
-  },
-
-  metricDetail: {
-    marginTop: 10,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
-  },
-  metricDetailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 3,
-  },
-  metricDetailLabel: {
-    fontSize: 12,
-    color: COLORS.textLight,
-  },
-  metricDetailValue: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: COLORS.text,
-  },
-  metricDetailStatus: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  statusGood: {
-    color: COLORS.success,
-  },
-  statusNeedsWork: {
-    color: COLORS.danger,
-  },
-
-  // ── 8. Feedback Slider ──────────────────────────────────────────────
+  // ── 7. Feedback Slider ──────────────────────────────────────────────
   feedbackCard: {
     borderRadius: 14,
     padding: 16,
