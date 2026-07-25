@@ -1,5 +1,5 @@
 // src/screens/doctor/DoctorNotificationScreen.js
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -16,6 +16,7 @@ import {
   TextInput,
   ActivityIndicator,
   ScrollView,
+  Animated,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -38,100 +39,113 @@ const getInitials = (name) => {
   return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
 };
 
-// ─── SAMPLE NOTIFICATIONS ──────────────────────────────────────────
-const SAMPLE_NOTIFICATIONS = [
-  // Patient - 1 Unread, 2 Read
-  {
-    id: 'p1',
-    title: 'Patient Arrived',
-    message: 'Muhammad Ali (Token: 17)\nFollow Up - Chest Pain',
-    timestamp: new Date(Date.now() - 2 * 60000).toISOString(),
-    read: false,
-    icon: 'person-add-outline',
-    category: 'Patient',
-  },
-  {
-    id: 'p2',
-    title: 'Patient Checked In',
-    message: 'Ahmed Khan (Token: 18)\nNew Patient - Hypertension',
-    timestamp: new Date(Date.now() - 25 * 60000).toISOString(),
-    read: true,
-    icon: 'person-add-outline',
-    category: 'Patient',
-  },
-  {
-    id: 'p3',
-    title: 'Patient Arrived',
-    message: 'Aslam Malik (Token: 19)\nFollow Up - Post Surgery',
-    timestamp: new Date(Date.now() - 60 * 60000).toISOString(),
-    read: true,
-    icon: 'person-add-outline',
-    category: 'Patient',
-  },
-  // Appointment - 1 Unread, 2 Read
-  {
-    id: 'a1',
-    title: 'Appointment Reminder',
-    message: 'Zainab Bibi at 11:30 AM\nFollow Up - Diabetes',
-    timestamp: new Date(Date.now() - 5 * 60000).toISOString(),
-    read: false,
-    icon: 'calendar-outline',
-    category: 'Appointment',
-  },
-  {
-    id: 'a2',
-    title: 'New Appointment',
-    message: 'Muhammad Ali at 2:00 PM\nFollow Up - Chest Pain',
-    timestamp: new Date(Date.now() - 40 * 60000).toISOString(),
-    read: true,
-    icon: 'calendar-outline',
-    category: 'Appointment',
-  },
-  {
-    id: 'a3',
-    title: 'Appointment Rescheduled',
-    message: 'Ahmed Khan\nNew time: 3:30 PM',
-    timestamp: new Date(Date.now() - 90 * 60000).toISOString(),
-    read: true,
-    icon: 'calendar-outline',
-    category: 'Appointment',
-  },
-  // Admin - 1 Unread, 2 Read
-  {
-    id: 'ad1',
-    title: 'Department Meeting',
-    message: 'Cardiology meeting at 2:00 PM\nConference Room A',
-    timestamp: new Date(Date.now() - 15 * 60000).toISOString(),
-    read: false,
-    icon: 'business-outline',
-    category: 'Admin',
-  },
-  {
-    id: 'ad2',
-    title: 'System Maintenance',
-    message: 'EMR update tonight 10:00 PM to 2:00 AM',
-    timestamp: new Date(Date.now() - 50 * 60000).toISOString(),
-    read: true,
-    icon: 'construct-outline',
-    category: 'Admin',
-  },
-  {
-    id: 'ad3',
-    title: 'Staff Announcement',
-    message: 'New nurses assigned to Cardiology Department',
-    timestamp: new Date(Date.now() - 2 * 3600000).toISOString(),
-    read: true,
-    icon: 'people-outline',
-    category: 'Admin',
-  },
-];
+// ─── GENERATE TODAY'S NOTIFICATIONS ──────────────────────────────────
+const generateTodayNotifications = () => {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  
+  return [
+    // ─── APPOINTMENT NOTIFICATIONS ──────────────────────────────
+    {
+      id: 'n1_' + Date.now(),
+      title: 'Patient Checked In',
+      message: 'Muhammad Ali (Token: 17) - Follow Up - Chest Pain',
+      timestamp: new Date(today.getTime() + 2 * 60000).toISOString(),
+      read: false,
+      icon: 'person-add-outline',
+      category: 'Appointment',
+      type: 'checkin',
+    },
+    {
+      id: 'n2_' + Date.now() + 1,
+      title: 'Patient Checked In',
+      message: 'Ahmed Khan (Token: 18) - New Patient - Hypertension',
+      timestamp: new Date(today.getTime() + 25 * 60000).toISOString(),
+      read: true,
+      icon: 'person-add-outline',
+      category: 'Appointment',
+      type: 'checkin',
+    },
+    {
+      id: 'n3_' + Date.now() + 2,
+      title: 'Appointment Reminder',
+      message: 'Zainab Bibi - Follow Up - Diabetes at 11:30 AM',
+      timestamp: new Date(today.getTime() + 5 * 60000).toISOString(),
+      read: false,
+      icon: 'calendar-outline',
+      category: 'Appointment',
+      type: 'reminder',
+    },
+    {
+      id: 'n4_' + Date.now() + 3,
+      title: 'New Appointment Booked',
+      message: 'Muhammad Ali - Follow Up - Chest Pain at 2:00 PM',
+      timestamp: new Date(today.getTime() + 40 * 60000).toISOString(),
+      read: true,
+      icon: 'calendar-outline',
+      category: 'Appointment',
+      type: 'new',
+    },
+    {
+      id: 'n5_' + Date.now() + 6,
+      title: 'Patient Checked In',
+      message: 'Aslam Malik (Token: 19) - Follow Up - Post Surgery',
+      timestamp: new Date(today.getTime() + 60 * 60000).toISOString(),
+      read: true,
+      icon: 'person-add-outline',
+      category: 'Appointment',
+      type: 'checkin',
+    },
+    {
+      id: 'n6_' + Date.now() + 7,
+      title: 'Appointment Rescheduled',
+      message: 'Ahmed Khan - New time: 3:30 PM',
+      timestamp: new Date(today.getTime() + 90 * 60000).toISOString(),
+      read: true,
+      icon: 'calendar-outline',
+      category: 'Appointment',
+      type: 'rescheduled',
+    },
+
+    // ─── ADMIN NOTIFICATIONS ──────────────────────────────────────
+    {
+      id: 'n7_' + Date.now() + 4,
+      title: 'Department Meeting',
+      message: 'Cardiology meeting at 2:00 PM in Conference Room A',
+      timestamp: new Date(today.getTime() + 15 * 60000).toISOString(),
+      read: false,
+      icon: 'business-outline',
+      category: 'Admin',
+      type: 'meeting',
+    },
+    {
+      id: 'n8_' + Date.now() + 5,
+      title: 'System Update',
+      message: 'EMR update scheduled for tonight 10:00 PM to 2:00 AM',
+      timestamp: new Date(today.getTime() + 50 * 60000).toISOString(),
+      read: true,
+      icon: 'construct-outline',
+      category: 'Admin',
+      type: 'system',
+    },
+  ];
+};
 
 // ─── CATEGORY COLORS ──────────────────────────────────────────────
 const CATEGORY_COLORS = {
-  Patient: { bg: '#E3F2FD', text: '#1565C0' },
-  Appointment: { bg: '#E8F5E9', text: '#2E7D32' },
+  Appointment: { bg: '#E3F2FD', text: '#1565C0' },
   Admin: { bg: '#FFF3E0', text: '#E65100' },
   Default: { bg: '#F5F5F5', text: '#757575' },
+};
+
+// ─── TYPE LABELS ──────────────────────────────────────────────────
+const TYPE_LABELS = {
+  checkin: 'Checked In',
+  reminder: 'Reminder',
+  new: 'New Booking',
+  rescheduled: 'Rescheduled',
+  meeting: 'Meeting',
+  system: 'System Update',
 };
 
 const DoctorNotificationScreen = ({ navigation }) => {
@@ -146,8 +160,49 @@ const DoctorNotificationScreen = ({ navigation }) => {
   // Modal State
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedNotification, setSelectedNotification] = useState(null);
+  
+  // Animation for modal
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.9)).current;
 
-  const filters = ['All', 'Patient', 'Appointment', 'Admin', 'Unread'];
+  // Simple logical filters
+  const filters = ['All', 'Appointment', 'Admin', 'Unread'];
+
+  // ─── MODAL ANIMATION ──────────────────────────────────────────────
+  const animateModalIn = () => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 250,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        friction: 8,
+        tension: 40,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const animateModalOut = () => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 0.9,
+        friction: 8,
+        tension: 40,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setModalVisible(false);
+      setSelectedNotification(null);
+    });
+  };
 
   // ─── LOAD DOCTOR DATA ──────────────────────────────────────────────
   const loadDoctorData = async () => {
@@ -172,8 +227,10 @@ const DoctorNotificationScreen = ({ navigation }) => {
       }
 
       doctorData.avatar = getInitials(doctorData.name);
+      return doctorData;
     } catch (error) {
       console.error('Error loading doctor data:', error);
+      return null;
     }
   };
 
@@ -189,6 +246,14 @@ const DoctorNotificationScreen = ({ navigation }) => {
     }
   };
 
+  // ─── IS TODAY ────────────────────────────────────────────────────
+  const isToday = (date) => {
+    const today = new Date();
+    return date.getDate() === today.getDate() &&
+           date.getMonth() === today.getMonth() &&
+           date.getFullYear() === today.getFullYear();
+  };
+
   // ─── LOAD NOTIFICATIONS ──────────────────────────────────────────
   const loadNotifications = useCallback(async () => {
     try {
@@ -202,7 +267,13 @@ const DoctorNotificationScreen = ({ navigation }) => {
         try {
           const parsed = JSON.parse(stored);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            allNotifs = parsed;
+            const firstNotif = parsed[0];
+            if (firstNotif && firstNotif.timestamp) {
+              const notifDate = safeParseDate(firstNotif.timestamp);
+              if (isToday(notifDate)) {
+                allNotifs = parsed;
+              }
+            }
           }
         } catch (e) {
           allNotifs = [];
@@ -210,18 +281,18 @@ const DoctorNotificationScreen = ({ navigation }) => {
       }
 
       if (allNotifs.length === 0) {
-        allNotifs = SAMPLE_NOTIFICATIONS.map(n => ({
-          ...n,
-          id: n.id + '_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
-          timestamp: n.timestamp || new Date().toISOString(),
-        }));
+        allNotifs = generateTodayNotifications();
         await AsyncStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(allNotifs));
       }
 
-      // Sort: Unread first
-      const unread = allNotifs.filter(n => !n.read);
-      const read = allNotifs.filter(n => n.read);
-      const sorted = [...unread, ...read];
+      const sorted = [...allNotifs].sort((a, b) => {
+        if (a.read !== b.read) {
+          return a.read ? 1 : -1;
+        }
+        const dateA = safeParseDate(a.timestamp);
+        const dateB = safeParseDate(b.timestamp);
+        return dateB - dateA;
+      });
 
       setNotifications(sorted);
       applyFilters(sorted, selectedFilter, searchQuery);
@@ -267,9 +338,14 @@ const DoctorNotificationScreen = ({ navigation }) => {
     const updated = notifications.map(n =>
       n.id === id ? { ...n, read: true } : n
     );
-    const unread = updated.filter(n => !n.read);
-    const read = updated.filter(n => n.read);
-    const sorted = [...unread, ...read];
+    const sorted = [...updated].sort((a, b) => {
+      if (a.read !== b.read) {
+        return a.read ? 1 : -1;
+      }
+      const dateA = safeParseDate(a.timestamp);
+      const dateB = safeParseDate(b.timestamp);
+      return dateB - dateA;
+    });
     
     setNotifications(sorted);
     await AsyncStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(sorted));
@@ -284,15 +360,21 @@ const DoctorNotificationScreen = ({ navigation }) => {
         text: 'Yes',
         onPress: async () => {
           const updated = notifications.map(n => ({ ...n, read: true }));
-          setNotifications(updated);
-          await AsyncStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(updated));
-          applyFilters(updated, selectedFilter, searchQuery);
+          const sorted = [...updated].sort((a, b) => {
+            const dateA = safeParseDate(a.timestamp);
+            const dateB = safeParseDate(b.timestamp);
+            return dateB - dateA;
+          });
+          setNotifications(sorted);
+          await AsyncStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(sorted));
+          applyFilters(sorted, selectedFilter, searchQuery);
           setUnreadCount(0);
         },
       },
     ]);
   };
 
+  // ─── DELETE NOTIFICATION ──────────────────────────────────────────
   const deleteNotification = async (id) => {
     Alert.alert('Delete', 'Delete this notification?', [
       { text: 'Cancel', style: 'cancel' },
@@ -301,10 +383,18 @@ const DoctorNotificationScreen = ({ navigation }) => {
         style: 'destructive',
         onPress: async () => {
           const updated = notifications.filter(n => n.id !== id);
-          setNotifications(updated);
-          await AsyncStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(updated));
-          applyFilters(updated, selectedFilter, searchQuery);
-          setUnreadCount(updated.filter(n => !n.read).length);
+          const sorted = [...updated].sort((a, b) => {
+            if (a.read !== b.read) {
+              return a.read ? 1 : -1;
+            }
+            const dateA = safeParseDate(a.timestamp);
+            const dateB = safeParseDate(b.timestamp);
+            return dateB - dateA;
+          });
+          setNotifications(sorted);
+          await AsyncStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(sorted));
+          applyFilters(sorted, selectedFilter, searchQuery);
+          setUnreadCount(sorted.filter(n => !n.read).length);
         },
       },
     ]);
@@ -312,13 +402,17 @@ const DoctorNotificationScreen = ({ navigation }) => {
 
   // ─── HANDLE NOTIFICATION PRESS ──────────────────────────────────
   const handleNotificationPress = (notif) => {
-    // Mark as read
     if (!notif.read) {
       markAsRead(notif.id);
     }
-    // Open modal with notification details
     setSelectedNotification(notif);
     setModalVisible(true);
+    animateModalIn();
+  };
+
+  // ─── CLOSE MODAL ──────────────────────────────────────────────────
+  const closeModal = () => {
+    animateModalOut();
   };
 
   // ─── FORMAT DATE ──────────────────────────────────────────────────
@@ -353,6 +447,7 @@ const DoctorNotificationScreen = ({ navigation }) => {
     const isUnread = !item.read;
     const categoryColors = CATEGORY_COLORS[item.category] || CATEGORY_COLORS.Default;
     const iconName = item.icon || 'notifications-outline';
+    const typeLabel = TYPE_LABELS[item.type] || item.category;
 
     return (
       <TouchableOpacity
@@ -379,9 +474,14 @@ const DoctorNotificationScreen = ({ navigation }) => {
           <View style={styles.footerRow}>
             <View style={[styles.categoryBadge, { backgroundColor: categoryColors.bg }]}>
               <Text style={[styles.categoryText, { color: categoryColors.text }]}>
-                {item.category || 'General'}
+                {item.category}
               </Text>
             </View>
+            {item.type && (
+              <View style={styles.typeBadge}>
+                <Text style={styles.typeText}>{typeLabel}</Text>
+              </View>
+            )}
             {isUnread && (
               <View style={styles.unreadBadge}>
                 <Text style={styles.unreadBadgeText}>New</Text>
@@ -407,16 +507,36 @@ const DoctorNotificationScreen = ({ navigation }) => {
 
     const categoryColors = CATEGORY_COLORS[selectedNotification.category] || CATEGORY_COLORS.Default;
     const iconName = selectedNotification.icon || 'notifications-outline';
+    const typeLabel = TYPE_LABELS[selectedNotification.type] || selectedNotification.category;
 
     return (
       <Modal
         visible={modalVisible}
         transparent={true}
-        animationType="slide"
-        onRequestClose={() => setModalVisible(false)}
+        animationType="none"
+        onRequestClose={closeModal}
+        statusBarTranslucent={true}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
+        <Animated.View 
+          style={[
+            styles.modalOverlay,
+            {
+              opacity: fadeAnim,
+              backgroundColor: fadeAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: ['rgba(0,0,0,0)', 'rgba(0,0,0,0.5)'],
+              }),
+            }
+          ]}
+        >
+          <Animated.View 
+            style={[
+              styles.modalContainer,
+              {
+                transform: [{ scale: scaleAnim }],
+              }
+            ]}
+          >
             {/* Modal Header */}
             <LinearGradient
               colors={[COLORS.primary, COLORS.tealDark]}
@@ -424,10 +544,12 @@ const DoctorNotificationScreen = ({ navigation }) => {
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
             >
-              <Text style={styles.modalHeaderTitle}>{selectedNotification.title}</Text>
+              <Text style={styles.modalHeaderTitle} numberOfLines={1}>
+                {selectedNotification.title}
+              </Text>
               <TouchableOpacity 
                 style={styles.modalCloseBtn} 
-                onPress={() => setModalVisible(false)}
+                onPress={closeModal}
                 activeOpacity={0.7}
               >
                 <Ionicons name="close" size={24} color={COLORS.white} />
@@ -435,7 +557,11 @@ const DoctorNotificationScreen = ({ navigation }) => {
             </LinearGradient>
 
             {/* Modal Body */}
-            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+            <ScrollView 
+              style={styles.modalBody} 
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.modalBodyContent}
+            >
               <View style={styles.modalIconWrapper}>
                 <View style={[styles.modalIconCircle, { backgroundColor: categoryColors.bg }]}>
                   <Ionicons name={iconName} size={32} color={categoryColors.text} />
@@ -455,6 +581,16 @@ const DoctorNotificationScreen = ({ navigation }) => {
                     {selectedNotification.category}
                   </Text>
                 </View>
+                {selectedNotification.type && (
+                  <>
+                    <View style={styles.modalMetaDot} />
+                    <View style={styles.modalMetaItem}>
+                      <Text style={[styles.modalMetaText, { fontWeight: '500', color: COLORS.primary }]}>
+                        {typeLabel}
+                      </Text>
+                    </View>
+                  </>
+                )}
               </View>
 
               <View style={styles.modalDivider} />
@@ -463,7 +599,7 @@ const DoctorNotificationScreen = ({ navigation }) => {
 
               <TouchableOpacity 
                 style={styles.modalCloseButton} 
-                onPress={() => setModalVisible(false)}
+                onPress={closeModal}
                 activeOpacity={0.8}
               >
                 <LinearGradient
@@ -476,8 +612,8 @@ const DoctorNotificationScreen = ({ navigation }) => {
                 </LinearGradient>
               </TouchableOpacity>
             </ScrollView>
-          </View>
-        </View>
+          </Animated.View>
+        </Animated.View>
       </Modal>
     );
   };
@@ -506,7 +642,6 @@ const DoctorNotificationScreen = ({ navigation }) => {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#F4F7FC" />
 
-      {/* ─── MAIN SCROLL VIEW ───────────────────────────────────────── */}
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
@@ -543,17 +678,19 @@ const DoctorNotificationScreen = ({ navigation }) => {
             <Text style={styles.tagline}>Notifications</Text>
           </View>
 
-          {unreadCount > 0 && (
-            <TouchableOpacity 
-              style={styles.iconBtn} 
-              onPress={markAllRead} 
-              activeOpacity={0.6}
-            >
-              <View style={styles.markAllBadge}>
-                <Text style={styles.markAllText}>{unreadCount}</Text>
-              </View>
-            </TouchableOpacity>
-          )}
+          <View style={styles.headerActions}>
+            {unreadCount > 0 && (
+              <TouchableOpacity 
+                style={styles.iconBtn} 
+                onPress={markAllRead} 
+                activeOpacity={0.6}
+              >
+                <View style={styles.markAllBadge}>
+                  <Text style={styles.markAllText}>{unreadCount}</Text>
+                </View>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
 
         {/* ─── SEARCH BAR ─────────────────────────────────────────────── */}
@@ -600,7 +737,7 @@ const DoctorNotificationScreen = ({ navigation }) => {
                   styles.filterText,
                   selectedFilter === filter && styles.filterTextActive
                 ]}>
-                  {filter}
+                  {filter} ({getFilterCount(filter)})
                 </Text>
               </TouchableOpacity>
             ))}
@@ -669,6 +806,11 @@ const styles = StyleSheet.create({
     width: 30,
     alignItems: 'center',
     paddingTop: 24,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   brandWrap: {
     flex: 1,
@@ -745,7 +887,7 @@ const styles = StyleSheet.create({
   // ── Filters ────────────────────────────────────────────────────
   filterContainer: {
     paddingHorizontal: 20,
-    paddingBottom: 12,
+    paddingBottom: 8,
   },
   filterScroll: {
     gap: 8,
@@ -832,6 +974,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     marginTop: 4,
+    flexWrap: 'wrap',
   },
   categoryBadge: {
     paddingHorizontal: 10,
@@ -841,6 +984,17 @@ const styles = StyleSheet.create({
   categoryText: {
     fontSize: 10,
     fontWeight: '600',
+  },
+  typeBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+    backgroundColor: COLORS.primary + '10',
+  },
+  typeText: {
+    fontSize: 9,
+    fontWeight: '500',
+    color: COLORS.primary,
   },
   unreadBadge: {
     backgroundColor: COLORS.primary,
@@ -879,7 +1033,6 @@ const styles = StyleSheet.create({
   // ─── Modal ──────────────────────────────────────────────────────
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 16,
@@ -903,12 +1056,17 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.white,
     flex: 1,
+    marginRight: 12,
   },
   modalCloseBtn: {
     padding: 4,
   },
   modalBody: {
+    flexGrow: 0,
+  },
+  modalBodyContent: {
     padding: 20,
+    paddingBottom: 24,
   },
   modalIconWrapper: {
     alignItems: 'center',
@@ -934,6 +1092,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
     marginBottom: 12,
+    flexWrap: 'wrap',
   },
   modalMetaItem: {
     flexDirection: 'row',

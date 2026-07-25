@@ -18,14 +18,13 @@ import {
   Image,
   Animated,
   Modal,
-  height
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { COLORS } from '../../theme';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 const wp = (p) => (width * p) / 100;
 
 // ── Storage Keys ──────────────────────────────────────────────────────
@@ -67,27 +66,19 @@ const MOCK_DOCTOR = {
 };
 
 const MOCK_QUEUE = [
-  { id: 'p_001', name: 'Muhammad Ali', token: 17, age: 58, reason: 'Follow Up - Chest Pain', gender: 'Male' },
-  { id: 'p_002', name: 'Ahmed Khan', token: 18, age: 45, reason: 'New Patient - Hypertension', gender: 'Male' },
-  { id: 'p_003', name: 'Aslam Malik', token: 19, age: 52, reason: 'Follow Up - Post Surgery', gender: 'Male' },
-  { id: 'p_004', name: 'Bilal Hussain', token: 20, age: 38, reason: 'New Patient - Palpitations', gender: 'Male' },
-  { id: 'p_005', name: 'Zainab Bibi', token: 21, age: 60, reason: 'Follow Up - Diabetes', gender: 'Female' },
+  { id: 'p_001', name: 'Muhammad Ali', token: 17, age: 58, reason: 'Follow Up - Chest Pain', gender: 'Male', time: '09:30 AM' },
+  { id: 'p_002', name: 'Ahmed Khan', token: 18, age: 45, reason: 'New Patient - Hypertension', gender: 'Male', time: '10:00 AM' },
+  { id: 'p_003', name: 'Aslam Malik', token: 19, age: 52, reason: 'Follow Up - Post Surgery', gender: 'Male', time: '10:30 AM' },
+  { id: 'p_004', name: 'Bilal Hussain', token: 20, age: 38, reason: 'New Patient - Palpitations', gender: 'Male', time: '11:00 AM' },
+  { id: 'p_005', name: 'Zainab Bibi', token: 21, age: 60, reason: 'Follow Up - Diabetes', gender: 'Female', time: '11:30 AM' },
 ];
 
 // ── Performance Stats ─────────────────────────────────────────────────
 const PERFORMANCE_STATS = [
-  { label: 'Today\'s Patients', value: 32, icon: 'people-outline', color: COLORS.primary },
-  { label: 'Patients Waiting', value: 5, icon: 'time-outline', color: COLORS.warning },
-  { label: 'Completed Consultations', value: 28, icon: 'checkmark-circle-outline', color: COLORS.success },
-  { label: 'Pending Patients', value: 12, icon: 'hourglass-outline', color: '#9B59B6' },
-];
-
-// ── Performance Metrics ──────────────────────────────────────────────
-const PERFORMANCE_METRICS = [
-  { label: 'Consultation Efficiency', value: 85, icon: 'speedometer-outline', color: COLORS.primary },
-  { label: 'Patient Satisfaction', value: 92, icon: 'happy-outline', color: COLORS.success },
-  { label: 'On-Time Schedule', value: 78, icon: 'alarm-outline', color: COLORS.warning },
-  { label: 'Treatment Success', value: 95, icon: 'medal-outline', color: '#9B59B6' },
+  { label: 'Total Patients', value: 32, icon: 'people-outline', color: COLORS.primary },
+  { label: 'In Queue', value: 5, icon: 'hourglass-outline', color: COLORS.warning },
+  { label: 'Consulted Today', value: 28, icon: 'checkmark-circle-outline', color: COLORS.success },
+  { label: 'Avg. Time (mins)', value: 12, icon: 'time-outline', color: '#9B59B6' },
 ];
 
 // ─── MONTHLY PERFORMANCE DATA ────────────────────────────────────────
@@ -109,14 +100,56 @@ const MONTHLY_PERFORMANCE = {
   ],
 };
 
-// ─── FEEDBACK DATA ────────────────────────────────────────────────────
+// ─── FEEDBACK DATA (UPDATED - REMOVED PATIENT NAMES) ──────────────────
 const FEEDBACK_DATA = [
-  { id: 1, rating: 5, text: 'Very satisfied with consultation. Appointment completed on time.' },
-  { id: 2, rating: 4, text: 'Doctor explained treatment clearly. Easy prescription process.' },
-  { id: 3, rating: 5, text: 'Waiting time was reasonable. Very professional behaviour.' },
-  { id: 4, rating: 5, text: 'Excellent care and attention to detail throughout the visit.' },
-  { id: 5, rating: 4, text: 'Professional and thorough examination with clear next steps.' },
+  { 
+    id: 1, 
+    rating: 5, 
+    text: 'Excellent care! The doctor listened carefully to all my concerns and explained everything clearly. Very satisfied with the consultation.',
+  },
+  { 
+    id: 2, 
+    rating: 4, 
+    text: 'Doctor was very professional and thorough. Prescription process was smooth. Waiting time could be improved.',
+  },
+  { 
+    id: 3, 
+    rating: 5, 
+    text: 'Amazing experience! Very knowledgeable doctor. Took time to understand my condition and provided detailed treatment plan.',
+  },
+  { 
+    id: 4, 
+    rating: 5, 
+    text: 'Excellent service! The doctor was very kind and patient. Explained all medications and side effects thoroughly.',
+  },
+  { 
+    id: 5, 
+    rating: 4, 
+    text: 'Good consultation overall. Doctor was professional and gave clear guidance for follow-up care.',
+  },
+  { 
+    id: 6, 
+    rating: 5, 
+    text: 'Very satisfied with the treatment. Doctor showed genuine care and concern for my health issues.',
+  },
+  { 
+    id: 7, 
+    rating: 5, 
+    text: 'One of the best doctors I\'ve visited! Extremely knowledgeable and explained everything in simple terms.',
+  },
 ];
+
+// ─── Get Today's Date ─────────────────────────────────────────────────
+const getTodayDate = () => {
+  const today = new Date();
+  const options = { 
+    weekday: 'long', 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  };
+  return today.toLocaleDateString('en-US', options);
+};
 
 // ═══════════════════════════════════════════════════════════════════════════
 // MAIN SCREEN
@@ -147,7 +180,8 @@ const DoctorPortalScreen = ({ navigation }) => {
 
   // ─── Feedback Slider ─────────────────────────────────────────────────
   const [currentFeedbackIndex, setCurrentFeedbackIndex] = useState(0);
-  const scrollViewRef = useRef(null);
+  const feedbackScrollRef = useRef(null);
+  const [feedbackWidth, setFeedbackWidth] = useState(width - 40);
 
   // ── LIFECYCLE ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -360,8 +394,17 @@ const DoctorPortalScreen = ({ navigation }) => {
   // ─── FEEDBACK SLIDER ──────────────────────────────────────────────────
   const onFeedbackScroll = (event) => {
     const x = event.nativeEvent.contentOffset.x;
-    const index = Math.round(x / (width - 40));
+    const slideWidth = width - 40;
+    const index = Math.round(x / slideWidth);
     if (index >= 0 && index < FEEDBACK_DATA.length) {
+      setCurrentFeedbackIndex(index);
+    }
+  };
+
+  const scrollToFeedback = (index) => {
+    if (feedbackScrollRef.current) {
+      const slideWidth = width - 40;
+      feedbackScrollRef.current.scrollTo({ x: index * slideWidth, animated: true });
       setCurrentFeedbackIndex(index);
     }
   };
@@ -403,6 +446,8 @@ const DoctorPortalScreen = ({ navigation }) => {
     outputRange: [20, 0],
   });
 
+  const todayDate = getTodayDate();
+
   if (!doctor) {
     return (
       <View style={styles.loadingContainer}>
@@ -421,7 +466,7 @@ const DoctorPortalScreen = ({ navigation }) => {
         contentContainerStyle={styles.scroll}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} tintColor={COLORS.primary} />}
       >
-        {/* ═══ 1. HEADER - SHOW PROFILE IMAGE OR INITIALS ═══════════════ */}
+        {/* ═══ 1. HEADER ═══════════════════════════════════════════════════ */}
         <Animated.View style={[styles.header, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
           <TouchableOpacity 
             style={styles.iconBtn} 
@@ -479,7 +524,7 @@ const DoctorPortalScreen = ({ navigation }) => {
         </Animated.View>
 
         {/* ═══ 2. DOCTOR INFORMATION CARD ════════════════════════════════ */}
-        <Animated.View style={[styles.doctorCard, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+        <Animated.View style={[styles.doctorCard, styles.shadow, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
           <LinearGradient
             colors={[COLORS.primary + '08', '#FFFFFF']}
             style={styles.doctorCardGradient}
@@ -510,23 +555,17 @@ const DoctorPortalScreen = ({ navigation }) => {
                   <Text style={styles.doctorDetailText}>{doctor.hospital || 'Capital Hospital CDA'}</Text>
                 </View>
               </View>
-              
-              <View style={styles.doctorDetailsRow}>
-                <View style={styles.doctorDetailItem}>
-                  <Ionicons name="id-card-outline" size={14} color={COLORS.textLight} />
-                  <Text style={styles.doctorDetailText}>PMC ID: {doctor.id || 'DOC-001'}</Text>
+
+              {sessionStarted && (
+                <View style={[styles.doctorDetailsRow, { marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: COLORS.border }]}>
+                  <View style={styles.consultationStatusContainer}>
+                    <View style={styles.statusDot} />
+                    <Text style={styles.consultationStatusText}>
+                      ● Session Active — {queuePatients.length} patients in queue
+                    </Text>
+                  </View>
                 </View>
-              </View>
-              
-              {/* Current Consultation Status */}
-              <View style={[styles.doctorDetailsRow, { marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: COLORS.border }]}>
-                <View style={styles.consultationStatusContainer}>
-                  <View style={styles.statusDot} />
-                  <Text style={styles.consultationStatusText}>
-                    {sessionStarted ? '● Session Active' : '● Waiting to Start'}
-                  </Text>
-                </View>
-              </View>
+              )}
             </View>
           </LinearGradient>
         </Animated.View>
@@ -541,12 +580,12 @@ const DoctorPortalScreen = ({ navigation }) => {
             contentContainerStyle={styles.statStrip}
           >
             {PERFORMANCE_STATS.map((stat) => (
-              <View key={stat.label} style={[styles.statCard, { borderTopColor: stat.color, borderTopWidth: 3 }]}>
+              <View key={stat.label} style={[styles.statCard, styles.shadowSmall, { borderTopColor: stat.color, borderTopWidth: 3 }]}>
                 <View style={[styles.statIconBox, { backgroundColor: stat.color + '15' }]}>
                   <Ionicons name={stat.icon} size={22} color={stat.color} />
                 </View>
                 <Text style={styles.statValue}>
-                  {stat.label === 'Patient Rating' ? stat.value : stat.value}
+                  {stat.value}
                 </Text>
                 <Text style={styles.statLabel}>{stat.label}</Text>
               </View>
@@ -672,7 +711,7 @@ const DoctorPortalScreen = ({ navigation }) => {
         </Animated.View>
 
         {/* ═══ 5. LIVE OPD QUEUE ══════════════════════════════════════════ */}
-        <Animated.View style={[styles.section, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+        <Animated.View style={[styles.section, styles.sectionProminent, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Live OPD Queue</Text>
             <TouchableOpacity onPress={() => navigateToScreen('TodayQueue')}>
@@ -685,6 +724,7 @@ const DoctorPortalScreen = ({ navigation }) => {
               {upcomingPatients.slice(0, 3).map((patient, index) => (
                 <View key={patient.id} style={[
                   styles.queueItem,
+                  styles.shadowSmall,
                   index % 2 === 0 ? styles.queueItemEven : styles.queueItemOdd,
                   index === 0 && styles.queueItemFirst
                 ]}>
@@ -703,52 +743,53 @@ const DoctorPortalScreen = ({ navigation }) => {
                       {patient.name}
                     </Text>
                     <Text style={styles.queueDetails}>
-                      {patient.age} yrs | {patient.gender || 'Male'}
+                      {patient.age} yrs | {patient.gender || 'Male'} | {patient.time || '10:00 AM'}
                     </Text>
                   </View>
                 </View>
               ))}
             </>
           ) : (
-            <View style={styles.emptyQueue}>
+            <View style={[styles.emptyQueue, styles.shadowSmall]}>
               <Ionicons name="people-outline" size={wp(7)} color={COLORS.textLight} />
               <Text style={styles.emptyQueueText}>No patients in queue</Text>
             </View>
           )}
         </Animated.View>
 
-        {/* ═══ 6. TODAY'S SCHEDULE (INFORMATION ONLY - NO NAVIGATION) ═════ */}
-        <Animated.View style={[styles.section, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-          <Text style={styles.sectionTitle}>Today's Schedule</Text>
+        {/* ═══ 6. TODAY'S SCHEDULE ═════════════════════════════════════════ */}
+        <Animated.View style={[styles.section, styles.sectionProminent, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+          <View style={styles.scheduleHeader}>
+            <Text style={styles.sectionTitle}>Today's Schedule</Text>
+            <Text style={styles.scheduleDate}>{todayDate}</Text>
+          </View>
           <View 
-            style={[styles.scheduleCard, styles.shadowSmall, { backgroundColor: '#F8FAFE', borderWidth: 2, borderColor: COLORS.primary + '25' }]}
+            style={[styles.scheduleCard, styles.shadow, { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: COLORS.primary + '20' }]}
           >
             <View style={styles.scheduleRow}>
-              <Ionicons name="time-outline" size={22} color={COLORS.primary} />
+              <View style={styles.scheduleIconContainer}>
+                <Ionicons name="time-outline" size={22} color={COLORS.primary} />
+              </View>
               <View style={styles.scheduleTimeInfo}>
                 <Text style={styles.scheduleLabel}>Working Hours</Text>
-                <Text style={styles.scheduleValue}>09:00 AM – 01:00 PM</Text>
+                <Text style={styles.scheduleValue}>09:00 AM – 02:00 PM</Text>
               </View>
             </View>
             <View style={styles.scheduleDivider} />
             <View style={styles.scheduleRow}>
-              <Ionicons name="restaurant-outline" size={22} color={COLORS.primary} />
+              <View style={styles.scheduleIconContainer}>
+                <Ionicons name="restaurant-outline" size={22} color={COLORS.primary} />
+              </View>
               <View style={styles.scheduleTimeInfo}>
                 <Text style={styles.scheduleLabel}>Break Time</Text>
-                <Text style={styles.scheduleValue}>01:00 PM – 02:00 PM</Text>
+                <Text style={styles.scheduleValue}>12:30 PM – 01:00 PM</Text>
               </View>
             </View>
             <View style={styles.scheduleDivider} />
             <View style={styles.scheduleRow}>
-              <Ionicons name="location-outline" size={22} color={COLORS.primary} />
-              <View style={styles.scheduleTimeInfo}>
-                <Text style={styles.scheduleLabel}>Consultation Room</Text>
-                <Text style={styles.scheduleValue}>Room {doctor?.room || '12'}</Text>
+              <View style={styles.scheduleIconContainer}>
+                <Ionicons name="medical-outline" size={22} color={COLORS.primary} />
               </View>
-            </View>
-            <View style={styles.scheduleDivider} />
-            <View style={styles.scheduleRow}>
-              <Ionicons name="medical-outline" size={22} color={COLORS.primary} />
               <View style={styles.scheduleTimeInfo}>
                 <Text style={styles.scheduleLabel}>Department</Text>
                 <Text style={styles.scheduleValue}>{doctor?.department || 'Cardiology OPD'}</Text>
@@ -756,23 +797,29 @@ const DoctorPortalScreen = ({ navigation }) => {
             </View>
           </View>
         </Animated.View>
-
-        {/* ═══ 7. PATIENT FEEDBACK SLIDER ═══════════════════════════════ */}
-        <Animated.View style={[styles.section, styles.lastSection, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+        
+        {/* ═══ 7. PATIENT FEEDBACK (FIXED SCROLLING - SMOOTH & FULL FEEDBACK) ═══════════════════════════════ */}
+        <Animated.View style={[styles.section, styles.lastSection, styles.sectionProminent, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
           <Text style={styles.sectionTitle}>Patient Feedback</Text>
+          <Text style={styles.feedbackSubtitle}>What patients are saying</Text>
           
-          <View style={[styles.feedbackCard, { backgroundColor: COLORS.white + 'F0', borderWidth: 1, borderColor: COLORS.primary + '15' }]}>
+          <View style={[styles.feedbackCard, styles.shadow, { backgroundColor: COLORS.white, borderWidth: 1, borderColor: COLORS.primary + '12' }]}>
             <ScrollView
-              ref={scrollViewRef}
+              ref={feedbackScrollRef}
               horizontal
               pagingEnabled
               showsHorizontalScrollIndicator={false}
               onScroll={onFeedbackScroll}
               scrollEventThrottle={16}
               style={styles.feedbackScrollView}
+              decelerationRate="fast"
+              snapToInterval={width - 40}
+              snapToAlignment="center"
+              contentContainerStyle={styles.feedbackContentContainer}
             >
               {FEEDBACK_DATA.map((feedback) => (
-                <View key={feedback.id} style={styles.feedbackSlide}>
+                <View key={feedback.id} style={[styles.feedbackSlide, { width: feedbackWidth }]}>
+                  {/* Rating */}
                   <View style={styles.feedbackRating}>
                     {[1, 2, 3, 4, 5].map((star) => (
                       <Ionicons
@@ -783,19 +830,29 @@ const DoctorPortalScreen = ({ navigation }) => {
                       />
                     ))}
                   </View>
+                  
+                  {/* Feedback Text - Now takes full width */}
                   <Text style={styles.feedbackText}>"{feedback.text}"</Text>
+                  
+                  {/* Feedback counter */}
+                  <Text style={styles.feedbackCounter}>
+                    {FEEDBACK_DATA.indexOf(feedback) + 1} / {FEEDBACK_DATA.length}
+                  </Text>
                 </View>
               ))}
             </ScrollView>
             
+            {/* Dots */}
             <View style={styles.feedbackDots}>
               {FEEDBACK_DATA.map((_, index) => (
-                <View
+                <TouchableOpacity
                   key={index}
                   style={[
                     styles.feedbackDot,
                     currentFeedbackIndex === index && styles.feedbackDotActive,
                   ]}
+                  onPress={() => scrollToFeedback(index)}
+                  activeOpacity={0.7}
                 />
               ))}
             </View>
@@ -827,27 +884,26 @@ const DoctorPortalScreen = ({ navigation }) => {
             </LinearGradient>
 
             <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
-              {/* Summary Stats */}
               <View style={styles.modalStatsGrid}>
-                <View style={styles.modalStatItem}>
+                <View style={[styles.modalStatItem, styles.shadowSmall]}>
                   <Text style={[styles.modalStatNumber, { color: COLORS.primary }]}>
                     {monthlyData.totalPatients}
                   </Text>
                   <Text style={styles.modalStatLabel}>Total Patients</Text>
                 </View>
-                <View style={styles.modalStatItem}>
+                <View style={[styles.modalStatItem, styles.shadowSmall]}>
                   <Text style={[styles.modalStatNumber, { color: '#FFB800' }]}>
                     {monthlyData.avgRating}
                   </Text>
                   <Text style={styles.modalStatLabel}>Avg Rating</Text>
                 </View>
-                <View style={styles.modalStatItem}>
+                <View style={[styles.modalStatItem, styles.shadowSmall]}>
                   <Text style={[styles.modalStatNumber, { color: COLORS.success }]}>
                     {monthlyData.totalAppointments}
                   </Text>
                   <Text style={styles.modalStatLabel}>Appointments</Text>
                 </View>
-                <View style={styles.modalStatItem}>
+                <View style={[styles.modalStatItem, styles.shadowSmall]}>
                   <Text style={[styles.modalStatNumber, { color: COLORS.info }]}>
                     {monthlyData.completedConsultations}
                   </Text>
@@ -857,7 +913,6 @@ const DoctorPortalScreen = ({ navigation }) => {
 
               <View style={styles.modalDivider} />
 
-              {/* Growth Indicator */}
               <View style={styles.modalGrowthContainer}>
                 <View style={styles.modalGrowthIcon}>
                   <Ionicons name="arrow-up-circle" size={24} color={COLORS.success} />
@@ -872,7 +927,6 @@ const DoctorPortalScreen = ({ navigation }) => {
 
               <View style={styles.modalDivider} />
 
-              {/* Weekly Breakdown */}
               <Text style={styles.modalSubTitle}>Weekly Breakdown</Text>
               {monthlyData.weeklyData.map((week, index) => (
                 <View key={index} style={styles.modalWeekItem}>
@@ -894,7 +948,6 @@ const DoctorPortalScreen = ({ navigation }) => {
 
               <View style={styles.modalDivider} />
 
-              {/* Efficiency Trend */}
               <Text style={styles.modalSubTitle}>Efficiency Trend</Text>
               {monthlyData.weeklyData.map((week, index) => (
                 <View key={index} style={styles.modalWeekItem}>
@@ -1188,8 +1241,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     marginTop: 20,
   },
+  sectionProminent: {
+    paddingTop: 16,
+    paddingBottom: 8,
+    backgroundColor: COLORS.white,
+    marginHorizontal: 0,
+    paddingHorizontal: 20,
+    borderRadius: 0,
+  },
   lastSection: {
     marginBottom: 10,
+    paddingBottom: 16,
   },
   sectionTitle: {
     fontSize: 18,
@@ -1223,15 +1285,6 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     paddingVertical: 14,
     alignItems: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.06,
-        shadowRadius: 8,
-      },
-      android: { elevation: 1 },
-    }),
   },
   statIconBox: {
     width: 40,
@@ -1437,17 +1490,6 @@ const styles = StyleSheet.create({
     color: COLORS.textLight,
     marginTop: 1,
   },
-  queuePosition: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
-    backgroundColor: COLORS.border + '30',
-  },
-  queuePositionText: {
-    fontSize: 12,
-    color: COLORS.textLight,
-    fontWeight: '500',
-  },
   nextIndicator: {
     marginTop: 2,
     paddingHorizontal: 6,
@@ -1476,8 +1518,19 @@ const styles = StyleSheet.create({
   },
 
   // ── 6. Today's Schedule ─────────────────────────────────────────────
+  scheduleHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  scheduleDate: {
+    fontSize: 13,
+    color: COLORS.textLight,
+    fontWeight: '500',
+  },
   scheduleCard: {
-    backgroundColor: COLORS.white,
+    backgroundColor: '#FFFFFF',
     borderRadius: 14,
     padding: 16,
     borderWidth: 1,
@@ -1488,6 +1541,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 4,
     gap: 14,
+  },
+  scheduleIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.primary + '08',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   scheduleTimeInfo: {
     flex: 1,
@@ -1509,28 +1570,29 @@ const styles = StyleSheet.create({
     marginVertical: 8,
   },
 
-  // ── 7. Feedback Slider ──────────────────────────────────────────────
+  // ── 7. Feedback (FIXED SCROLLING) ──────────────────────────────────
+  feedbackSubtitle: {
+    fontSize: 13,
+    color: COLORS.textLight,
+    marginBottom: 12,
+    marginTop: -6,
+  },
   feedbackCard: {
     borderRadius: 14,
     padding: 16,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.06,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
+    backgroundColor: COLORS.white,
   },
   feedbackScrollView: {
     flexGrow: 0,
+    width: '100%',
+  },
+  feedbackContentContainer: {
+    flexGrow: 0,
+    alignItems: 'center',
   },
   feedbackSlide: {
-    width: width - 40,
-    paddingVertical: 16,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1546,6 +1608,13 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     paddingHorizontal: 8,
     fontStyle: 'italic',
+    width: '100%',
+  },
+  feedbackCounter: {
+    fontSize: 12,
+    color: COLORS.textLight,
+    marginTop: 12,
+    fontWeight: '500',
   },
   feedbackDots: {
     flexDirection: 'row',
@@ -1554,16 +1623,16 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   feedbackDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
     backgroundColor: '#D1D5DB',
   },
   feedbackDotActive: {
     backgroundColor: COLORS.primary,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
 
   // ─── MODAL ──────────────────────────────────────────────────────────
