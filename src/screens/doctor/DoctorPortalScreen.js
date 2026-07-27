@@ -78,7 +78,7 @@ const PERFORMANCE_STATS = [
   { label: 'Total Patients', value: 32, icon: 'people-outline', color: COLORS.primary },
   { label: 'In Queue', value: 5, icon: 'hourglass-outline', color: COLORS.warning },
   { label: 'Consulted Today', value: 28, icon: 'checkmark-circle-outline', color: COLORS.success },
-  { label: 'Avg. Time (mins)', value: 12, icon: 'time-outline', color: '#9B59B6' },
+  { label: 'Progress', value: '87%', icon: 'trending-up-outline', color: '#9B59B6' },
 ];
 
 // ─── MONTHLY PERFORMANCE DATA ────────────────────────────────────────

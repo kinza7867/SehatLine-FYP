@@ -58,7 +58,7 @@ const DoctorProfileScreen = ({ navigation }) => {
         qualification: 'MBBS, FCPS (Cardiology)',
         experience: '15 Years',
         pmdcRegistration: 'PMC-123456',
-        workingHours: '09:00 AM – 01:00 PM',
+        workingHours: '09:00 AM – 02:00 PM',
         isOnline: true,
         color: COLORS.primary,
         color2: COLORS.secondary,

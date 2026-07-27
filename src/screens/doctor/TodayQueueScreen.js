@@ -13,81 +13,62 @@ import {
   Image,
   Alert,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { COLORS } from '../../theme';
 
 const { width, height } = Dimensions.get('window');
 const wp = (p) => (width * p) / 100;
-const hp = (p) => (height * p) / 100;
 
 const QUEUE_KEY = '@sehatline_queue';
-const COMPLETED_PATIENTS_KEY = '@sehatline_completed_patients';
-const CONSULTATION_QUEUE_KEY = '@sehatline_consultation_queue';
+
+// ─── Check if Break Time ─────────────────────────────────────────────
+const isBreakTime = () => {
+  const now = new Date();
+  const currentMinute = now.getHours() * 60 + now.getMinutes();
+  const breakStart = 12 * 60 + 30;
+  const breakEnd = 13 * 60;
+  return currentMinute >= breakStart && currentMinute < breakEnd;
+};
+
+// ─── MOCK QUEUE (10-15 Patients) ──────────────────────────────────
+const MOCK_QUEUE = [
+  { id: 'p_001', name: 'Muhammad Ali', token: 17, age: 58, gender: 'Male', disease: 'Chest Pain' },
+  { id: 'p_002', name: 'Ahmed Khan', token: 18, age: 45, gender: 'Male', disease: 'Hypertension' },
+  { id: 'p_003', name: 'Aslam Malik', token: 19, age: 52, gender: 'Male', disease: 'Post Surgery' },
+  { id: 'p_004', name: 'Bilal Hussain', token: 20, age: 38, gender: 'Male', disease: 'Palpitations' },
+  { id: 'p_005', name: 'Zainab Bibi', token: 21, age: 60, gender: 'Female', disease: 'Diabetes' },
+  { id: 'p_006', name: 'Fatima Ahmed', token: 22, age: 42, gender: 'Female', disease: 'Chest Pain' },
+  { id: 'p_007', name: 'Usman Shah', token: 23, age: 55, gender: 'Male', disease: 'Heart Failure' },
+  { id: 'p_008', name: 'Sana Mirza', token: 24, age: 35, gender: 'Female', disease: 'Arrhythmia' },
+  { id: 'p_009', name: 'Hamza Ali', token: 25, age: 48, gender: 'Male', disease: 'Hypertension' },
+  { id: 'p_010', name: 'Ayesha Khan', token: 26, age: 29, gender: 'Female', disease: 'High Cholesterol' },
+  { id: 'p_011', name: 'Imran Malik', token: 27, age: 62, gender: 'Male', disease: 'Post Surgery' },
+  { id: 'p_012', name: 'Hina Bibi', token: 28, age: 39, gender: 'Female', disease: 'Breathing Issue' },
+  { id: 'p_013', name: 'Raza Hussain', token: 29, age: 51, gender: 'Male', disease: 'Diabetes' },
+  { id: 'p_014', name: 'Nadia Shah', token: 30, age: 44, gender: 'Female', disease: 'Chest Pain' },
+  { id: 'p_015', name: 'Faisal Ahmed', token: 31, age: 56, gender: 'Male', disease: 'Heart Failure' },
+];
 
 const TodayQueueScreen = ({ navigation }) => {
   const [queue, setQueue] = useState([]);
-  const [consultationQueue, setConsultationQueue] = useState([]);
-  const [completedPatients, setCompletedPatients] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
-  const [filter, setFilter] = useState('All');
   const [currentDate, setCurrentDate] = useState('');
-  const [currentTime, setCurrentTime] = useState('');
   const [usingMockData, setUsingMockData] = useState(true);
+  const [isBreak, setIsBreak] = useState(false);
 
-  // ─── GENERATE MOCK DATA (15 Patients - Clean & Simple) ────────────
-  const generateMockPatients = () => {
-    const patients = [
-      { name: 'Muhammad Ali', age: 58, gender: 'Male', reason: 'Follow Up - Chest Pain', priority: 'Normal' },
-      { name: 'Ahmed Khan', age: 45, gender: 'Male', reason: 'New Patient - Hypertension', priority: 'Normal' },
-      { name: 'Aslam Malik', age: 52, gender: 'Male', reason: 'Follow Up - Post Surgery', priority: 'Normal' },
-      { name: 'Bilal Hussain', age: 38, gender: 'Male', reason: 'New Patient - Palpitations', priority: 'Urgent' },
-      { name: 'Zainab Bibi', age: 60, gender: 'Female', reason: 'Follow Up - Diabetes', priority: 'Normal' },
-      { name: 'Fatima Ahmed', age: 42, gender: 'Female', reason: 'New Patient - Chest Pain', priority: 'Normal' },
-      { name: 'Usman Shah', age: 55, gender: 'Male', reason: 'Follow Up - Heart Failure', priority: 'Normal' },
-      { name: 'Sana Mirza', age: 35, gender: 'Female', reason: 'New Patient - Arrhythmia', priority: 'Urgent' },
-      { name: 'Hamza Ali', age: 48, gender: 'Male', reason: 'Follow Up - Hypertension', priority: 'Normal' },
-      { name: 'Ayesha Khan', age: 29, gender: 'Female', reason: 'New Patient - High Cholesterol', priority: 'Normal' },
-      { name: 'Imran Malik', age: 62, gender: 'Male', reason: 'Post-surgery Follow-up', priority: 'Normal' },
-      { name: 'Hina Bibi', age: 39, gender: 'Female', reason: 'New Patient - Breathing Issue', priority: 'Normal' },
-      { name: 'Raza Hussain', age: 51, gender: 'Male', reason: 'Follow Up - Diabetes', priority: 'Normal' },
-      { name: 'Nadia Shah', age: 44, gender: 'Female', reason: 'New Patient - Chest Pain', priority: 'Normal' },
-      { name: 'Faisal Ahmed', age: 56, gender: 'Male', reason: 'Follow Up - Heart Failure', priority: 'Normal' },
-    ];
-
-    const timeSlots = ['09:00 AM', '09:30 AM', '10:00 AM', '10:30 AM', '11:00 AM', 
-                       '11:30 AM', '12:00 PM', '12:30 PM', '01:00 PM', '01:30 PM',
-                       '02:00 PM', '02:30 PM', '03:00 PM', '03:30 PM', '04:00 PM'];
-
-    // ✅ Status distribution: 8 Waiting, 4 In Consultation, 3 Completed
-    const statuses = [
-      'Waiting', 'Waiting', 'Waiting', 'Waiting', 'Waiting', 'Waiting', 'Waiting', 'Waiting',
-      'In Consultation', 'In Consultation', 'In Consultation', 'In Consultation',
-      'Completed', 'Completed', 'Completed'
-    ];
-
-    return patients.map((patient, index) => ({
-      id: `apt_${String(index + 1).padStart(3, '0')}`,
-      token: index + 1,
-      ...patient,
-      status: statuses[index] || 'Waiting',
-      time: timeSlots[index] || '--:--',
-    }));
-  };
-
-  const MOCK_QUEUE = generateMockPatients();
-
-  // ─── LIFECYCLE ──────────────────────────────────────────────────────
   useEffect(() => {
-    getCurrentDateTime();
+    getCurrentDate();
     loadData();
+    checkBreakStatus();
     
-    const interval = setInterval(getCurrentDateTime, 60000);
+    const interval = setInterval(() => {
+      checkBreakStatus();
+    }, 60000);
     return () => clearInterval(interval);
   }, []);
 
-  const getCurrentDateTime = () => {
+  const getCurrentDate = () => {
     const now = new Date();
     const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     const dayName = days[now.getDay()];
@@ -97,15 +78,12 @@ const TodayQueueScreen = ({ navigation }) => {
       year: 'numeric',
     });
     setCurrentDate(`${dayName}, ${dateStr}`);
-    
-    const timeStr = now.toLocaleTimeString('en-PK', {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-    setCurrentTime(timeStr);
   };
 
-  // ─── DATA LOADING ──────────────────────────────────────────────────
+  const checkBreakStatus = () => {
+    setIsBreak(isBreakTime());
+  };
+
   const loadData = async () => {
     try {
       const queueData = await AsyncStorage.getItem(QUEUE_KEY);
@@ -114,20 +92,6 @@ const TodayQueueScreen = ({ navigation }) => {
       if (queueData) {
         queueList = JSON.parse(queueData);
       }
-
-      const consultationData = await AsyncStorage.getItem(CONSULTATION_QUEUE_KEY);
-      let consultList = [];
-      if (consultationData) {
-        consultList = JSON.parse(consultationData);
-      }
-      setConsultationQueue(consultList);
-
-      const completedData = await AsyncStorage.getItem(COMPLETED_PATIENTS_KEY);
-      let completedList = [];
-      if (completedData) {
-        completedList = JSON.parse(completedData);
-      }
-      setCompletedPatients(completedList);
 
       if (queueList.length === 0) {
         queueList = MOCK_QUEUE;
@@ -145,119 +109,58 @@ const TodayQueueScreen = ({ navigation }) => {
     }
   };
 
-  // ─── REFRESH ──────────────────────────────────────────────────────
   const onRefresh = async () => {
     setRefreshing(true);
     await loadData();
+    checkBreakStatus();
     setRefreshing(false);
   };
 
-  // ─── HANDLE PATIENT PRESS ──────────────────────────────────────────
   const handlePatientPress = (item) => {
-    if (item.status === 'Waiting') {
-      Alert.alert(
-        'Call Patient',
-        `Call ${item.name} (Token #${item.token})?`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Call Now',
-            onPress: () => {
-              navigation.navigate('CallNextPatientScreen', { patient: item });
-            }
+    if (isBreak) {
+      Alert.alert('Break Time', 'Consultation is on break from 12:30 PM to 1:00 PM.');
+      return;
+    }
+    
+    Alert.alert(
+      'Call Patient',
+      `Call ${item.name} (Token #${item.token})?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Call Now',
+          onPress: () => {
+            navigation.navigate('CallNextPatientScreen', { patient: item });
           }
-        ]
-      );
-    } else if (item.status === 'In Consultation') {
-      navigation.navigate('CallNextPatientScreen', { patient: item });
-    } else {
-      Alert.alert('Completed', `${item.name} has already been attended.`);
-    }
+        }
+      ]
+    );
   };
 
-  // ─── HELPERS ──────────────────────────────────────────────────────
-  const getStatusColor = (status) => {
-    switch(status) {
-      case 'In Consultation': return COLORS.primary;
-      case 'Completed': return COLORS.success;
-      default: return COLORS.warning;
-    }
-  };
-
-  const getStatusIcon = (status) => {
-    switch(status) {
-      case 'In Consultation': return 'time-outline';
-      case 'Completed': return 'checkmark-circle-outline';
-      default: return 'hourglass-outline';
-    }
-  };
-
-  const getStatusLabel = (status) => {
-    switch(status) {
-      case 'In Consultation': return 'In Consult';
-      case 'Completed': return 'Done';
-      default: return 'Waiting';
-    }
-  };
-
-  // ─── FILTER ──────────────────────────────────────────────────────
-  const filteredQueue = filter === 'All' 
-    ? queue 
-    : filter === 'Completed' 
-      ? queue.filter(q => q.status === 'Completed')
-      : filter === 'Waiting'
-        ? queue.filter(q => q.status === 'Waiting')
-        : queue.filter(q => q.status === 'In Consultation');
-
-  // ─── RENDER QUEUE ITEM (Doctor Portal Style) ──────────────────────
+  // ─── RENDER QUEUE ITEM ──────────────────────────────────────────
   const QueueItem = ({ item }) => {
-    const statusColor = getStatusColor(item.status);
-    const isCompleted = item.status === 'Completed';
-    const isInConsult = item.status === 'In Consultation';
-    const isUrgent = item.priority === 'Urgent';
-
     return (
       <TouchableOpacity
-        style={[
-          styles.queueItem,
-          isCompleted && styles.completedItem,
-          isInConsult && styles.inConsultItem,
-          isUrgent && styles.urgentItem,
-        ]}
+        style={styles.queueItem}
         onPress={() => handlePatientPress(item)}
         activeOpacity={0.7}
+        disabled={isBreak}
       >
         <View style={styles.queueItemLeft}>
           <View style={styles.tokenBadge}>
             <Text style={styles.tokenText}>{item.token}</Text>
           </View>
           <View style={styles.queueItemInfo}>
-            <View style={styles.nameRow}>
-              <Text style={[styles.queueItemName, isCompleted && styles.completedText]}>
-                {item.name}
-              </Text>
-              {isUrgent && !isCompleted && (
-                <View style={styles.urgentBadge}>
-                  <Text style={styles.urgentBadgeText}>Urgent</Text>
-                </View>
-              )}
-            </View>
+            <Text style={styles.queueItemName}>{item.name}</Text>
             <Text style={styles.queueItemDetail}>
-              {item.age} yrs | {item.gender}
-            </Text>
-            <Text style={styles.queueItemReason}>
-              {item.reason}
+              {item.age} yrs | {item.gender} | {item.disease}
             </Text>
           </View>
-        </View>
-        <View style={styles.queueItemRight}>
-          <Text style={styles.queueItemTime}>{item.time}</Text>
         </View>
       </TouchableOpacity>
     );
   };
 
-  // ─── MAIN RENDER ──────────────────────────────────────────────────
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#F4F7FC" />
@@ -299,16 +202,10 @@ const TodayQueueScreen = ({ navigation }) => {
           </TouchableOpacity>
         </View>
 
-        {/* ─── DATE & TIME ───────────────────────────────────────────── */}
-        <View style={styles.dateTimeContainer}>
-          <View style={styles.dateTimeLeft}>
-            <Ionicons name="calendar-outline" size={wp(4)} color={COLORS.primary} />
-            <Text style={styles.dateText}>{currentDate}</Text>
-          </View>
-          <View style={styles.dateTimeRight}>
-            <Ionicons name="time-outline" size={wp(4)} color={COLORS.primary} />
-            <Text style={styles.timeText}>{currentTime}</Text>
-          </View>
+        {/* ─── DATE ───────────────────────────────────────────── */}
+        <View style={styles.dateContainer}>
+          <Ionicons name="calendar-outline" size={wp(4)} color={COLORS.primary} />
+          <Text style={styles.dateText}>{currentDate}</Text>
           {usingMockData && (
             <View style={styles.mockBadge}>
               <Text style={styles.mockBadgeText}>Demo</Text>
@@ -316,40 +213,29 @@ const TodayQueueScreen = ({ navigation }) => {
           )}
         </View>
 
-        {/* ─── FILTERS ─────────────────────────────────────────────────── */}
-        <View style={styles.filterContainer}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
-            {['All', 'Waiting', 'In Consultation', 'Completed'].map((status) => {
-              const isActive = filter === status;
-              const label = status === 'In Consultation' ? 'In Consult' : status;
-              const count = status === 'All' 
-                ? queue.length 
-                : queue.filter(q => q.status === status).length;
-              
-              return (
-                <TouchableOpacity
-                  key={status}
-                  style={[styles.filterChip, isActive && styles.filterChipActive]}
-                  onPress={() => setFilter(status)}
-                >
-                  <Text style={[styles.filterText, isActive && styles.filterTextActive]}>
-                    {label} ({count})
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        </View>
+        {/* ─── BREAK TIME BANNER ────────────────────────────────────── */}
+        {isBreak && (
+          <View style={styles.breakBanner}>
+            <Ionicons name="restaurant-outline" size={20} color={COLORS.white} />
+            <Text style={styles.breakBannerText}>Break Time (12:30 PM - 1:00 PM)</Text>
+          </View>
+        )}
 
         {/* ─── QUEUE LIST ─────────────────────────────────────────────── */}
         <View style={styles.listWrapper}>
-          {filteredQueue.length > 0 ? (
-            filteredQueue.map((item) => <QueueItem key={item.id} item={item} />)
+          {!isBreak && queue.length > 0 ? (
+            queue.map((item) => <QueueItem key={item.id} item={item} />)
+          ) : isBreak ? (
+            <View style={styles.emptyState}>
+              <Ionicons name="restaurant-outline" size={wp(12)} color={COLORS.textLight} />
+              <Text style={styles.emptyTitle}>Break Time</Text>
+              <Text style={styles.emptySub}>Consultation will resume at 1:00 PM</Text>
+            </View>
           ) : (
             <View style={styles.emptyState}>
               <Ionicons name="people-outline" size={wp(12)} color={COLORS.textLight} />
               <Text style={styles.emptyTitle}>No Patients</Text>
-              <Text style={styles.emptySub}>No patients in this filter</Text>
+              <Text style={styles.emptySub}>Queue is empty</Text>
             </View>
           )}
         </View>
@@ -365,9 +251,6 @@ const TodayQueueScreen = ({ navigation }) => {
   );
 };
 
-// ═══════════════════════════════════════════════════════════════════════
-// STYLES
-// ═══════════════════════════════════════════════════════════════════════
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -377,7 +260,6 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
 
-  // ── HEADER ──────────────────────────────────────────────────────────
   header: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -429,41 +311,24 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 
-  // ── Date & Time ─────────────────────────────────────────────────
-  dateTimeContainer: {
+  dateContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginHorizontal: 20,
+    marginHorizontal: 90,
     marginTop: 4,
     paddingVertical: 10,
     paddingHorizontal: 16,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.accent,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: COLORS.border,
-    flexWrap: 'wrap',
-    gap: 6,
-  },
-  dateTimeLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  dateTimeRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
+    gap: 8,
   },
   dateText: {
     fontSize: 13,
     fontWeight: '500',
     color: COLORS.text,
-  },
-  timeText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: COLORS.primary,
+    flex: 1,
   },
   mockBadge: {
     backgroundColor: COLORS.warning + '20',
@@ -477,50 +342,35 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // ── Filters ──────────────────────────────────────────────────────
-  filterContainer: {
+  breakBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginHorizontal: 20,
     marginTop: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    backgroundColor: COLORS.warning,
+    borderRadius: 10,
+    gap: 10,
   },
-  filterScroll: {
-    gap: 8,
-    paddingVertical: 4,
-  },
-  filterChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 20,
-    backgroundColor: '#F1F5F9',
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  filterChipActive: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
-  },
-  filterText: {
-    fontSize: 11,
-    color: COLORS.textSecondary,
-    fontWeight: '500',
-  },
-  filterTextActive: {
+  breakBannerText: {
+    fontSize: 13,
+    fontWeight: '600',
     color: COLORS.white,
   },
 
-  // ── Queue List ──────────────────────────────────────────────────
   listWrapper: {
     paddingHorizontal: 16,
     paddingTop: 8,
   },
 
-  // ── Queue Item (Doctor Portal Style) ───────────────────────────
   queueItem: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: COLORS.white,
     borderRadius: 12,
-    padding: 12,
+    padding: 14,
     marginTop: 8,
     borderWidth: 1,
     borderColor: COLORS.border,
@@ -529,18 +379,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.04,
     shadowRadius: 4,
     elevation: 1,
-  },
-  completedItem: {
-    opacity: 0.6,
-    backgroundColor: '#F8FAFC',
-  },
-  inConsultItem: {
-    borderLeftWidth: 3,
-    borderLeftColor: COLORS.primary,
-  },
-  urgentItem: {
-    borderLeftWidth: 3,
-    borderLeftColor: COLORS.danger,
   },
   queueItemLeft: {
     flexDirection: 'row',
@@ -554,7 +392,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary + '15',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 10,
+    marginRight: 12,
     borderWidth: 1,
     borderColor: COLORS.primary + '30',
   },
@@ -566,51 +404,17 @@ const styles = StyleSheet.create({
   queueItemInfo: {
     flex: 1,
   },
-  nameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
   queueItemName: {
     fontSize: 14,
     fontWeight: '600',
     color: COLORS.text,
   },
-  completedText: {
-    textDecorationLine: 'line-through',
-    color: COLORS.textLight,
-  },
   queueItemDetail: {
-    fontSize: 11,
+    fontSize: 12,
     color: COLORS.textSecondary,
     marginTop: 1,
   },
-  queueItemReason: {
-    fontSize: 11,
-    color: COLORS.textLight,
-    marginTop: 1,
-  },
-  urgentBadge: {
-    backgroundColor: COLORS.danger + '15',
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-    borderRadius: 6,
-  },
-  urgentBadgeText: {
-    fontSize: 8,
-    fontWeight: '700',
-    color: COLORS.danger,
-  },
-  queueItemRight: {
-    alignItems: 'flex-end',
-  },
-  queueItemTime: {
-    fontSize: 11,
-    color: COLORS.textLight,
-    fontWeight: '500',
-  },
 
-  // ── Empty State ──────────────────────────────────────────────────
   emptyState: {
     alignItems: 'center',
     marginTop: 40,
@@ -628,7 +432,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
 
-  // ── Footer ──────────────────────────────────────────────────────
   footer: {
     flexDirection: 'row',
     alignItems: 'center',
